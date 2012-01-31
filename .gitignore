@@ -1,0 +1,11 @@
+*~
+*.o
+*.a
+*#
+moc_*
+*.dylib
+doc/html
+.DS_Store
+Makefile
+TAGS
+include/qtprocessmanager/*.h
