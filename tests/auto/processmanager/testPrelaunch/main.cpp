@@ -41,7 +41,9 @@
 #include <QSocketNotifier>
 #include <QTimer>
 #include <QDebug>
-#include "qjsondocument.h"
+#include <QtEndian>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include "processinfo.h"
 
 QT_USE_NAMESPACE_PROCESSMANAGER
@@ -52,55 +54,83 @@ class Container : public QObject
 
 public:
     Container() : count(0) {
-        notifier = new QSocketNotifier( STDIN_FILENO, QSocketNotifier::Read, this );
-        connect(notifier, SIGNAL(activated(int)), SLOT(dataReady()));
-        notifier->setEnabled(true);
+        m_in  = new QSocketNotifier( STDIN_FILENO, QSocketNotifier::Read, this );
+        connect(m_in, SIGNAL(activated(int)), SLOT(inReady(int)));
+        m_in->setEnabled(true);
+        m_out = new QSocketNotifier( STDOUT_FILENO, QSocketNotifier::Write, this );
+        connect(m_out, SIGNAL(activated(int)), SLOT(outReady(int)));
+        m_out->setEnabled(false);
     }
 
-    void handleMessage(const QVariantMap& map) {
+    void handleMessage(const QJsonObject& object) {
         if (!count) {
-            ProcessInfo info(map);
-            qDebug() << "Received process info" << info.toMap();
+            ProcessInfo info(object.toVariantMap());
+            // qDebug() << "Received process info" << info.toMap();
         }
         else {
-            QString cmd = map.value("command").toString();
-            qDebug() << "Received command" << cmd;
+            QString cmd = object.value("command").toString();
+            // qDebug() << "Received command" << cmd;
             if (cmd == "stop") {
-                qDebug() << "Stopping";
+                // qDebug() << "Stopping";
                 exit(0);
+            }
+            else if (cmd == "crash") {
+                // qDebug() << "Crashing";
+                exit(2);
+            }
+            else {
+                m_outbuf.append(cmd.toLatin1());
+                m_outbuf.append('\n');
+                m_out->setEnabled(true);
             }
         }
         count++;
     }
 
 public slots:
-    void dataReady() {
-        qDebug() << Q_FUNC_INFO;
-        notifier->setEnabled(false);
+    void inReady(int fd) {
+        m_in->setEnabled(false);
         const int bufsize = 1024;
-        uint oldSize = buffer.size();
-        buffer.resize(oldSize + bufsize);
-        int n = ::read( STDIN_FILENO, buffer.data()+oldSize, bufsize);
+        uint oldSize = m_inbuf.size();
+        m_inbuf.resize(oldSize + bufsize);
+        int n = ::read(fd, m_inbuf.data()+oldSize, bufsize);
         if (n > 0)
-            buffer.resize(oldSize+n);
+            m_inbuf.resize(oldSize+n);
         else
-            buffer.resize(oldSize);
+            m_inbuf.resize(oldSize);
         // Could check for an error here
         // Check for a complete JSON object
-        while (buffer.size() >= 12) {
-            qint32 message_size = ((qint32 *)buffer.data())[2] + 8;  // Should use 'sizeof(Header)'
-            if (buffer.size() < message_size)
+        while (m_inbuf.size() >= 12) {
+            qint32 message_size = qFromLittleEndian(((qint32 *)m_inbuf.data())[2]) + 8;
+            if (m_inbuf.size() < message_size)
                 break;
-            QByteArray msg = buffer.left(message_size);
-            buffer = buffer.mid(message_size);
-            handleMessage(QJsonDocument::fromBinaryData(msg).toVariant().toMap());
+            QByteArray msg = m_inbuf.left(message_size);
+            m_inbuf = m_inbuf.mid(message_size);
+            handleMessage(QJsonDocument::fromBinaryData(msg).object());
         }
-        notifier->setEnabled(true);
+        m_in->setEnabled(true);
+    }
+
+    void outReady(int fd) {
+        m_out->setEnabled(false);
+        if (m_outbuf.size()) {
+            int n = ::write(fd, m_outbuf.data(), m_outbuf.size());
+            if (n == -1) {
+                qDebug() << "Failed to write to stdout";
+                exit(-1);
+            }
+            if (n < m_outbuf.size())
+                m_outbuf = m_outbuf.mid(n);
+            else
+                m_outbuf.clear();
+        }
+        if (m_outbuf.size())
+            m_out->setEnabled(true);
     }
 
 private:
-    QSocketNotifier *notifier;
-    QByteArray       buffer;
+    QSocketNotifier *m_in, *m_out;
+    QByteArray       m_inbuf, m_outbuf;
     int              count;
 };
 

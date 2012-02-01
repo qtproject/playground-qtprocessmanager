@@ -270,7 +270,7 @@ void RemoteProcessBackend::receive(const QJsonObject& message)
         }
     }
     else
-        qDebug() << Q_FUNC_INFO << "unrecognized message";
+        qDebug() << Q_FUNC_INFO << "unrecognized message" << message;
 }
 
 /*!

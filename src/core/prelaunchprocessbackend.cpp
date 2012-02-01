@@ -95,7 +95,18 @@ void PrelaunchProcessBackend::prestart()
 void PrelaunchProcessBackend::setInfo(const ProcessInfo& info)
 {
     m_info = info;
+    setDesiredPriority(m_info.priority());
+    setDesiredOomAdjustment(m_info.oomAdjustment());
     createName();
+}
+
+/*!
+  Check to see if this prelaunched process is ready to be used
+ */
+
+bool PrelaunchProcessBackend::isReady() const
+{
+    return m_process && m_process->state() == QProcess::Running;
 }
 
 /*!

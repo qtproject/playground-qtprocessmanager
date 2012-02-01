@@ -62,30 +62,7 @@ Q_DECLARE_METATYPE(QProcess::ExitStatus);
 Q_DECLARE_METATYPE(QProcess::ProcessState);
 Q_DECLARE_METATYPE(QProcess::ProcessError);
 
-class tst_ProcessManager : public QObject
-{
-    Q_OBJECT
-
-private slots:
-    void initTestCase();
-
-    void startAndKill();
-    void failToStart();
-    void startAndStop();
-    void startAndCrash();
-    void echo();
-    void priorityChangeBeforeStart();
-    void priorityChangeAfterStart();
-    void prelaunch();
-    void prelaunchRestricted();
-    void pipeLauncher();
-    void pipeLauncherCrash();
-    void socketLauncher();
-    void socketLauncherKill();
-    void socketLauncherCrash();
-    void frontend();
-    void subclassFrontend();
-};
+/******************************************************************************/
 
 const char *exitStatusToString[] = {
     "NormalExit",
@@ -133,6 +110,62 @@ private:
     QList<QString>                m_errorStrings;
 };
 
+
+bool canCheckProcessState()
+{
+    QFileInfo finfo("/bin/ps");
+    return finfo.exists();
+}
+
+bool isProcessRunning(Q_PID pid)
+{
+    QProcess p;
+    p.start("ps", QStringList() << "-o" << "pid=" << "-p" << QString::number(pid));
+    if (p.waitForStarted() && p.waitForFinished())
+            return p.readAll().split('\n').at(0).toDouble() == pid;
+
+    return false;
+}
+
+bool isProcessStopped(Q_PID pid)
+{
+    QProcess p;
+    p.start("/bin/ps", QStringList() << "-o" << "pid=" << "-p" << QString::number(pid));
+    if (p.waitForStarted() && p.waitForFinished()) {
+        QList<QByteArray> plist = p.readAll().split('\n');
+        return plist.size() == 1 && !plist.at(0).size();
+    }
+    return false;
+}
+
+static void waitForInternalProcess(ProcessBackendManager *manager, int timeout=5000)
+{
+    QTime stopWatch;
+    stopWatch.start();
+    forever {
+        QTestEventLoop::instance().enterLoop(1);
+        if (stopWatch.elapsed() >= timeout)
+            QFAIL("Timed out");
+        if (manager->internalProcesses().count() == 1)
+            break;
+    }
+}
+
+static void waitForPriority(ProcessBackend *process, int priority, int timeout=5000)
+{
+    QTime stopWatch;
+    stopWatch.start();
+    forever {
+        if (process->actualPriority() == priority)
+            break;
+        QTestEventLoop::instance().enterLoop(1);
+        if (stopWatch.elapsed() >= timeout)
+            QFAIL("Timed out");
+    }
+}
+
+
+/**********************************************************************/
 
 class Spy {
 public:
@@ -275,34 +308,330 @@ public:
     QSignalSpy stderrSpy;
 };
 
-bool canCheckProcessState()
+/******************************************************************************/
+
+static void writeLine(ProcessBackend *process, const char *command)
 {
-    QFileInfo finfo("/bin/ps");
-    return finfo.exists();
+    QByteArray data(command);
+    data += '\n';
+    process->write(data);
 }
 
-bool isProcessRunning(Q_PID pid)
+static void writeJson(ProcessBackend *process, const char *command)
 {
-    QProcess p;
-    p.start("ps", QStringList() << "-o" << "pid=" << "-p" << QString::number(pid));
-    if (p.waitForStarted() && p.waitForFinished())
-            return p.readAll().split('\n').at(0).toDouble() == pid;
-
-    return false;
+    QVariantMap map;
+    map.insert("command", command);
+    process->write(QJsonDocument::fromVariant(map).toBinaryData());
 }
 
-bool isProcessStopped(Q_PID pid)
+typedef void (*CommandFunc)(ProcessBackend *, const char *);
+
+static void startAndStopClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
 {
-    QProcess p;
-    p.start("/bin/ps", QStringList() << "-o" << "pid=" << "-p" << QString::number(pid));
-    if (p.waitForStarted() && p.waitForFinished()) {
-        QList<QByteArray> plist = p.readAll().split('\n');
-        return plist.size() == 1 && !plist.at(0).size();
-    }
-    return false;
+    ProcessBackend *process = manager->create(info);
+    QVERIFY(process);
+    QVERIFY(process->state() == QProcess::NotRunning);
+
+    Spy spy(process);
+    process->start();
+    spy.waitStart();
+    QVERIFY(process->state() == QProcess::Running);
+    spy.check(1,0,0,2);
+
+    func(process, "stop");
+    spy.waitFinished();
+    spy.check(1,0,1,3);
+    spy.checkExitCode(0);
+    spy.checkExitStatus(QProcess::NormalExit);
+
+    QVERIFY(process->state() == QProcess::NotRunning);
+    QVERIFY(process->parent() == NULL);
+    delete process;
 }
 
-/*********/
+static void startAndKillClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
+{
+    Q_UNUSED(func);
+
+    ProcessBackend *process = manager->create(info);
+    QVERIFY(process);
+    QVERIFY(process->state() == QProcess::NotRunning);
+
+    Spy spy(process);
+    process->start();
+    spy.waitStart();
+    spy.check(1,0,0,2);
+    QVERIFY(process->state() == QProcess::Running);
+
+    process->stop();
+    spy.waitFinished();
+    spy.check(1,1,1,3);
+    spy.checkExitCode(0);
+    spy.checkExitStatus(QProcess::CrashExit);
+    spy.checkErrors(QList<QProcess::ProcessError>() << QProcess::Crashed);
+
+    QVERIFY(process->state() == QProcess::NotRunning);
+    QVERIFY(process->parent() == NULL);
+    delete process;
+}
+
+static void startAndCrashClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
+{
+    ProcessBackend *process = manager->create(info);
+    QVERIFY(process);
+    QVERIFY(process->state() == QProcess::NotRunning);
+
+    Spy spy(process);
+    process->start();
+    spy.waitStart();
+    QVERIFY(process->state() == QProcess::Running);
+    spy.check(1,0,0,2);
+
+    func(process, "crash");
+    spy.waitFinished();
+    spy.check(1,0,1,3);
+    spy.checkExitCode(2);
+    spy.checkExitStatus(QProcess::NormalExit);
+
+    QVERIFY(process->state() == QProcess::NotRunning);
+    QVERIFY(process->parent() == NULL);
+    delete process;
+}
+
+static void failToStartClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
+{
+    Q_UNUSED(func);
+    info.setValue("program", "thisProgramDoesntExist");
+    ProcessBackend *process = manager->create(info);
+    QVERIFY(process);
+    QVERIFY(process->state() == QProcess::NotRunning);
+
+    Spy spy(process);
+    process->start();
+    spy.waitFailedStart();
+    spy.check(0,1,0,2);
+
+    QVERIFY(process->state() == QProcess::NotRunning);
+    QVERIFY(process->parent() == NULL);
+    delete process;
+}
+
+static void echoClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
+{
+    ProcessBackend *process = manager->create(info);
+    QVERIFY(process);
+    QVERIFY(process->state() == QProcess::NotRunning);
+
+    Spy spy(process);
+    process->start();
+    spy.waitStart();
+    QVERIFY(process->state() == QProcess::Running);
+
+    func(process, "echotest");
+    spy.waitStdout();
+    spy.checkStdout("echotest\n");
+
+    func(process, "stop");
+    spy.waitFinished();
+    spy.check(1,0,1,3);
+    spy.checkExitCode(0);
+    spy.checkExitStatus(QProcess::NormalExit);
+
+    QVERIFY(process->state() == QProcess::NotRunning);
+    QVERIFY(process->parent() == NULL);
+    delete process;
+}
+
+static void priorityChangeBeforeClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
+{
+    info.setValue("priority", 19);
+    ProcessBackend *process = manager->create(info);
+    QVERIFY(process);
+
+    Spy spy(process);
+    process->start();
+    spy.waitStart();
+    QVERIFY(process->state() == QProcess::Running);
+    QCOMPARE(process->actualPriority(), 19);
+
+    func(process, "stop");
+    spy.waitFinished();
+    spy.check(1,0,1,3);
+    spy.checkExitCode(0);
+    spy.checkExitStatus(QProcess::NormalExit);
+
+    QVERIFY(process->state() == QProcess::NotRunning);
+    QVERIFY(process->parent() == NULL);
+    delete process;
+}
+
+static void priorityChangeAfterClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
+{
+    ProcessBackend *process = manager->create(info);
+    QVERIFY(process);
+    QVERIFY(process->state() == QProcess::NotRunning);
+
+    Spy spy(process);
+    process->start();
+    spy.waitStart();
+    QVERIFY(process->state() == QProcess::Running);
+
+    process->setDesiredPriority(19);
+    waitForPriority(process, 19);
+
+    func(process, "stop");
+    spy.waitFinished();
+    spy.check(1,0,1,3);
+    spy.checkExitCode(0);
+    spy.checkExitStatus(QProcess::NormalExit);
+
+    QVERIFY(process->state() == QProcess::NotRunning);
+    QVERIFY(process->parent() == NULL);
+    delete process;
+}
+
+
+typedef void (*clientFunc)(ProcessBackendManager *, ProcessInfo, CommandFunc);
+
+static void standardFactoryTest( clientFunc func )
+{
+    ProcessBackendManager *manager = new ProcessBackendManager;
+
+    ProcessInfo info;
+    info.setValue("program", "testClient/testClient");
+    manager->addFactory(new StandardProcessBackendFactory);
+
+    func(manager, info, writeLine);
+    delete manager;
+}
+
+static void prelaunchFactoryTest( clientFunc func )
+{
+    ProcessBackendManager *manager = new ProcessBackendManager;
+
+    ProcessInfo info;
+    info.setValue("program", "testPrelaunch/testPrelaunch");
+    manager->addFactory(new PrelaunchProcessBackendFactory(info));
+
+    // Verify that there is a prelaunched process
+    QVERIFY(manager->memoryRestricted() == false);
+    waitForInternalProcess(manager);
+
+    info.setValue("prelaunch", "true");
+    func(manager, info, writeJson);
+    delete manager;
+}
+
+static void prelaunchRestrictedTest( clientFunc func )
+{
+    ProcessBackendManager *manager = new ProcessBackendManager;
+    manager->setMemoryRestricted(true);
+
+    ProcessInfo info;
+    info.setValue("program", "testPrelaunch/testPrelaunch");
+    manager->addFactory(new PrelaunchProcessBackendFactory(info));
+
+    QVERIFY(manager->memoryRestricted() == true);
+
+    info.setValue("prelaunch", "true");
+    func(manager, info, writeJson);
+    delete manager;
+}
+
+static void pipeLauncherTest( clientFunc func )
+{
+    ProcessBackendManager *manager = new ProcessBackendManager;
+    ProcessInfo info;
+    info.setValue("program", "testPipeLauncher/testPipeLauncher");
+    manager->addFactory(new PipeProcessBackendFactory(info, "testClient"));
+
+    // Wait for the factory to have launched a pipe
+    waitForInternalProcess(manager);
+    QVERIFY(manager->internalProcesses().count() == 1);
+
+    ProcessInfo info2;
+    info2.setValue("program", "testClient/testClient");
+    info2.setValue("pipe", "true");
+    func(manager, info2, writeLine);
+    delete manager;
+}
+
+static void socketLauncherTest( clientFunc func )
+{
+    QProcess *remote = new QProcess;
+    remote->setProcessChannelMode(QProcess::ForwardedChannels);
+    remote->start("testSocketLauncher/testSocketLauncher");
+    QVERIFY(remote->waitForStarted());
+
+    qDebug() << "Waiting 1000 ms to let testSocketLauncher start";
+    QTime waitTime;
+    waitTime.start();
+    while (waitTime.elapsed() < 1000)
+        QTestEventLoop::instance().enterLoop(1);
+
+    ProcessBackendManager *manager = new ProcessBackendManager;
+    manager->addFactory(new SocketProcessBackendFactory("/tmp/socketlauncher"));
+
+    ProcessInfo info;
+    info.setValue("program", "testClient/testClient");
+    func(manager, info, writeLine);
+
+    delete manager;
+    delete remote;
+}
+
+
+/******************************************************************************/
+
+class tst_ProcessManager : public QObject
+{
+    Q_OBJECT
+
+private slots:
+    void initTestCase();
+
+    void standardStartAndStop()         { standardFactoryTest(startAndStopClient); }
+    void standardStartAndKill()         { standardFactoryTest(startAndKillClient); }
+    void standardStartAndCrash()        { standardFactoryTest(startAndCrashClient); }
+    void standardFailToStart()          { standardFactoryTest(failToStartClient); }
+    void standardEcho()                 { standardFactoryTest(echoClient); }
+    void standardPriorityChangeBefore() { standardFactoryTest(priorityChangeBeforeClient); }
+    void standardPriorityChangeAfter()  { standardFactoryTest(priorityChangeAfterClient); }
+
+    void prelaunchStartAndStop()         { prelaunchFactoryTest(startAndStopClient); }
+    void prelaunchStartAndKill()         { prelaunchFactoryTest(startAndKillClient); }
+    void prelaunchStartAndCrash()        { prelaunchFactoryTest(startAndCrashClient); }
+    void prelaunchEcho()                 { prelaunchFactoryTest(echoClient); }
+    void prelaunchPriorityChangeBefore() { prelaunchFactoryTest(priorityChangeBeforeClient); }
+    void prelaunchPriorityChangeAfter()  { prelaunchFactoryTest(priorityChangeAfterClient); }
+
+    void prelaunchRestrictedStartAndStop()         { prelaunchRestrictedTest(startAndStopClient); }
+    void prelaunchRestrictedStartAndKill()         { prelaunchRestrictedTest(startAndKillClient); }
+    void prelaunchRestrictedStartAndCrash()        { prelaunchRestrictedTest(startAndCrashClient); }
+    void prelaunchRestrictedEcho()                 { prelaunchRestrictedTest(echoClient); }
+    void prelaunchRestrictedPriorityChangeBefore() { prelaunchRestrictedTest(priorityChangeBeforeClient); }
+    void prelaunchRestrictedPriorityChangeAfter()  { prelaunchRestrictedTest(priorityChangeAfterClient); }
+
+    void pipeLauncherStartAndStop()         { pipeLauncherTest(startAndStopClient); }
+    void pipeLauncherStartAndKill()         { pipeLauncherTest(startAndKillClient); }
+    void pipeLauncherStartAndCrash()        { pipeLauncherTest(startAndCrashClient); }
+    void pipeLauncherEcho()                 { pipeLauncherTest(echoClient); }
+    void pipeLauncherPriorityChangeBefore() { pipeLauncherTest(priorityChangeBeforeClient); }
+    void pipeLauncherPriorityChangeAfter()  { pipeLauncherTest(priorityChangeAfterClient); }
+
+    void socketLauncherStartAndStop()         { socketLauncherTest(startAndStopClient); }
+    void socketLauncherStartAndKill()         { socketLauncherTest(startAndKillClient); }
+    void socketLauncherStartAndCrash()        { socketLauncherTest(startAndCrashClient); }
+    void socketLauncherEcho()                 { socketLauncherTest(echoClient); }
+    void socketLauncherPriorityChangeBefore() { socketLauncherTest(priorityChangeBeforeClient); }
+    void socketLauncherPriorityChangeAfter()  { socketLauncherTest(priorityChangeAfterClient); }
+
+    void frontend();
+    void subclassFrontend();
+};
+
+
+/**********************************************************************/
 
 void tst_ProcessManager::initTestCase()
 {
@@ -311,200 +640,7 @@ void tst_ProcessManager::initTestCase()
     qRegisterMetaType<QProcess::ProcessState>("QProcess::ProcessError");
 }
 
-void tst_ProcessManager::startAndKill()
-{
-    QString socketname = "/tmp/tst_socket";
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    manager->addFactory(new StandardProcessBackendFactory);
-
-    ProcessInfo info;
-    info.setValue("program", "testClient/testClient");
-    ProcessBackend *process = manager->create(info);
-    QVERIFY(process);
-
-    Spy spy(process);
-    process->start();
-    spy.waitStart();
-    process->stop();
-    spy.waitFinished();
-    spy.check(1, 1, 1, 3);
-    spy.checkExitCode(0);
-    spy.checkExitStatus(QProcess::CrashExit);
-    spy.checkErrors(QList<QProcess::ProcessError>() << QProcess::Crashed);
-
-    QVERIFY(process->parent() == NULL);
-    delete process;
-    delete manager;
-}
-
-
-void tst_ProcessManager::failToStart()
-{
-    QString socketname = "/tmp/tst_socket";
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    manager->addFactory(new StandardProcessBackendFactory);
-
-    ProcessInfo info;
-    info.setValue("program", "thisProgramDoesntExist");
-    ProcessBackend *process = manager->create(info);
-    QVERIFY(process);
-
-    Spy spy(process);
-    process->start();
-    spy.waitFailedStart();
-    spy.check(0,1,0,2);
-
-    QVERIFY(process->parent() == NULL);
-    delete process;
-    delete manager;
-}
-
-
-void tst_ProcessManager::startAndStop()
-{
-    QString socketname = "/tmp/tst_socket";
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    manager->addFactory(new StandardProcessBackendFactory);
-
-    ProcessInfo info;
-    info.setValue("program", "testClient/testClient");
-    ProcessBackend *process = manager->create(info);
-    QVERIFY(process);
-
-    Spy spy(process);
-    process->start();
-    spy.waitStart();
-    spy.check(1,0,0,2);
-
-    process->write("echo\n");
-
-    // Now send a "stop" message
-    process->write("stop\n");
-    spy.waitFinished();
-    spy.check(1,0,1,3);
-    spy.checkExitCode(0);
-    spy.checkExitStatus(QProcess::NormalExit);
-
-    QVERIFY(process->parent() == NULL);
-    delete process;
-    delete manager;
-}
-
-void tst_ProcessManager::startAndCrash()
-{
-    QString socketname = "/tmp/tst_socket";
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    manager->addFactory(new StandardProcessBackendFactory);
-
-    ProcessInfo info;
-    info.setValue("program", "testClient/testClient");
-    ProcessBackend *process = manager->create(info);
-    QVERIFY(process);
-
-    Spy spy(process);
-    process->start();
-    spy.waitStart();
-    spy.check(1,0,0,2);
-
-    process->write("crash\n");
-    spy.waitFinished();
-    spy.check(1,0,1,3);
-    spy.checkExitCode(2);
-    spy.checkExitStatus(QProcess::NormalExit);
-
-    QVERIFY(process->parent() == NULL);
-    delete process;
-    delete manager;
-}
-
-void tst_ProcessManager::echo()
-{
-    QString socketname = "/tmp/tst_socket";
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    manager->addFactory(new StandardProcessBackendFactory);
-
-    ProcessInfo info;
-    info.setValue("program", "testClient/testClient");
-    ProcessBackend *process = manager->create(info);
-    QVERIFY(process);
-
-    Spy spy(process);
-    process->start();
-    spy.waitStart();
-
-    process->write("echotest\n");
-    spy.waitStdout();
-    spy.checkStdout("echotest\n");
-
-    process->write("stop\n");
-    spy.waitFinished();
-    spy.check(1,0,1,3);
-    spy.checkExitCode(0);
-    spy.checkExitStatus(QProcess::NormalExit);
-
-    QVERIFY(process->parent() == NULL);
-    delete process;
-    delete manager;
-}
-
-void tst_ProcessManager::priorityChangeBeforeStart()
-{
-    QString socketname = "/tmp/tst_socket";
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    manager->addFactory(new StandardProcessBackendFactory);
-
-    ProcessInfo info;
-    info.setValue("program", "testClient/testClient");
-    info.setValue("priority", 19);
-    ProcessBackend *process = manager->create(info);
-    QVERIFY(process);
-
-    Spy spy(process);
-    process->start();
-    spy.waitStart();
-
-    QVERIFY(process->actualPriority() == 19);
-
-    process->write("stop\n");
-    spy.waitFinished();
-    spy.check(1,0,1,3);
-    spy.checkExitCode(0);
-    spy.checkExitStatus(QProcess::NormalExit);
-
-    QVERIFY(process->parent() == NULL);
-    delete process;
-    delete manager;
-}
-
-void tst_ProcessManager::priorityChangeAfterStart()
-{
-    QString socketname = "/tmp/tst_socket";
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    manager->addFactory(new StandardProcessBackendFactory);
-
-    ProcessInfo info;
-    info.setValue("program", "testClient/testClient");
-    ProcessBackend *process = manager->create(info);
-    QVERIFY(process);
-
-    Spy spy(process);
-    process->start();
-    spy.waitStart();
-
-    process->setDesiredPriority(19);
-    QVERIFY(process->actualPriority() == 19);
-
-    process->write("stop\n");
-    spy.waitFinished();
-    spy.check(1,0,1,3);
-    spy.checkExitCode(0);
-    spy.checkExitStatus(QProcess::NormalExit);
-
-    QVERIFY(process->parent() == NULL);
-    delete process;
-    delete manager;
-}
-
+/*
 void tst_ProcessManager::prelaunch()
 {
     QString socketname = "/tmp/tst_socket";
@@ -597,7 +733,8 @@ void tst_ProcessManager::prelaunchRestricted()
     delete process;
     delete manager;
 }
-
+*/
+/*
 void tst_ProcessManager::pipeLauncher()
 {
     ProcessBackendManager *manager = new ProcessBackendManager;
@@ -643,8 +780,8 @@ void tst_ProcessManager::pipeLauncher()
     delete process;
     delete manager;
 }
-
-
+*/
+ /*
 void tst_ProcessManager::pipeLauncherCrash()
 {
     QString socketname = "/tmp/tst_socket";
@@ -702,8 +839,8 @@ void tst_ProcessManager::pipeLauncherCrash()
     delete process;
     qDebug() << "Deleted process";
 }
-
-
+ */
+  /*
 void tst_ProcessManager::socketLauncher()
 {
     QProcess *remote = new QProcess;
@@ -722,34 +859,13 @@ void tst_ProcessManager::socketLauncher()
 
     ProcessInfo info;
     info.setValue("program", "testClient/testClient");
-    ProcessBackend *process = manager->create(info);
-    QVERIFY(process);
+    startAndStopClient(manager, info, writeLine);
 
-    Spy spy(process);
-    process->start();
-    spy.waitStart();
-
-    qDebug() << "Checking post started";
-    spy.check(1,0,0,2);
-
-    qDebug() << "Sending echo command";
-    process->write("echo\n");
-
-    qDebug() << "Sending stop command";
-    process->write("stop\n");
-
-    qDebug() << "Waiting for finished";
-    spy.waitFinished();
-    spy.check(1,0,1,3);
-    spy.checkExitCode(0);
-    spy.checkExitStatus(QProcess::NormalExit);
-
-    QVERIFY(process->parent() == NULL);
-    delete process;
     delete manager;
     delete remote;
 }
-
+  */
+   /*
 void tst_ProcessManager::socketLauncherKill()
 {
     QProcess *remote = new QProcess;
@@ -768,22 +884,7 @@ void tst_ProcessManager::socketLauncherKill()
 
     ProcessInfo info;
     info.setValue("program", "testClient/testClient");
-    ProcessBackend *process = manager->create(info);
-    QVERIFY(process);
-
-    Spy spy(process);
-    process->start();
-    spy.waitStart();
-    spy.check(1,0,0,2);
-    process->stop();
-    spy.waitFinished();
-    spy.check(1,1,1,3);
-    spy.checkExitCode(0);
-    spy.checkExitStatus(QProcess::CrashExit);
-    spy.checkErrors(QList<QProcess::ProcessError>() << QProcess::Crashed);
-
-    QVERIFY(process->parent() == NULL);
-    delete process;
+    startAndKillClient(manager, info, writeLine);
     delete manager;
     delete remote;
 }
@@ -806,26 +907,12 @@ void tst_ProcessManager::socketLauncherCrash()
 
     ProcessInfo info;
     info.setValue("program", "testClient/testClient");
-    ProcessBackend *process = manager->create(info);
-    QVERIFY(process);
-
-    Spy spy(process);
-    process->start();
-    spy.waitStart();
-    spy.check(1,0,0,2);
-
-    process->write("crash\n");
-    spy.waitFinished();
-    spy.check(1,0,1,3);
-    spy.checkExitCode(2);
-    spy.checkExitStatus(QProcess::NormalExit);
-
-    QVERIFY(process->parent() == NULL);
-    delete process;
+    startAndCrashClient(manager, info, writeLine);
     delete manager;
     delete remote;
 }
 
+   */
 
 void tst_ProcessManager::frontend()
 {

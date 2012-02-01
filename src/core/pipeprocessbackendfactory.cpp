@@ -137,7 +137,7 @@ bool PipeProcessBackendFactory::canCreate(const ProcessInfo& info) const
 QList<Q_PID> PipeProcessBackendFactory::internalProcesses()
 {
     QList<Q_PID> list;
-    if (m_process)
+    if (m_process && m_process->state() == QProcess::Running)
         list << m_process->pid();
     return list;
 }
@@ -147,8 +147,7 @@ QList<Q_PID> PipeProcessBackendFactory::internalProcesses()
  */
 bool PipeProcessBackendFactory::send(const QJsonObject& message)
 {
-    qDebug() << Q_FUNC_INFO << message;
-
+    // qDebug() << Q_FUNC_INFO << message;
     if (m_process->state() != QProcess::Running) {
         qCritical("Pipe process not running");
         return false;
@@ -188,7 +187,7 @@ void PipeProcessBackendFactory::pipeReadyReadStandardError()
 
 void PipeProcessBackendFactory::pipeStarted()
 {
-    qDebug() << "Pipe process started";
+//    qDebug() << "Pipe process started";
 }
 
 void PipeProcessBackendFactory::pipeError(QProcess::ProcessError error)
@@ -205,7 +204,7 @@ void PipeProcessBackendFactory::pipeFinished(int exitCode, QProcess::ExitStatus 
 
 void PipeProcessBackendFactory::pipeStateChanged(QProcess::ProcessState state)
 {
-    qDebug() << "Pipe process state change" << state;
+//    qDebug() << "Pipe process state change" << state;
 }
 
 #include "moc_pipeprocessbackendfactory.cpp"

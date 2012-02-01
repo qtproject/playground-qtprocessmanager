@@ -183,9 +183,9 @@ void LauncherClient::standardOutput(const QByteArray& data)
 {
     ProcessBackend *backend = qobject_cast<ProcessBackend *>(sender());
     QJsonObject msg;
-    msg.insert(kEvent, QLatin1String("standardOutput"));
+    msg.insert(kEvent, QLatin1String("output"));
     msg.insert(kId, m_backendToId.value(backend));
-    msg.insert(QLatin1String("data"), QString::fromLocal8Bit(data.data(), data.size()));
+    msg.insert(QLatin1String("stdout"), QString::fromLocal8Bit(data.data(), data.size()));
     emit send(msg);
 }
 
@@ -197,9 +197,9 @@ void LauncherClient::standardError(const QByteArray& data)
 {
     ProcessBackend *backend = qobject_cast<ProcessBackend *>(sender());
     QJsonObject msg;
-    msg.insert(kEvent, QLatin1String("standardError"));
+    msg.insert(kEvent, QLatin1String("output"));
     msg.insert(kId, m_backendToId.value(backend));
-    msg.insert(QLatin1String("data"), QString::fromLocal8Bit(data.data(), data.size()));
+    msg.insert(QLatin1String("stderr"), QString::fromLocal8Bit(data.data(), data.size()));
     emit send(msg);
 }
 

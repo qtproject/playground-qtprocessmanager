@@ -101,18 +101,19 @@ ProcessBackend * PrelaunchProcessBackendFactory::create(const ProcessInfo& info,
 {
     PrelaunchProcessBackend *prelaunch = m_prelaunch;
 
-    if ( prelaunch && prelaunch->state() != QProcess::NotRunning) {
+    if ( prelaunch && prelaunch->isReady() ) {
+        // qDebug() << "Using existing prelaunch";
         m_prelaunch = NULL;
         m_timer.start();
         prelaunch->setInfo(info);
         prelaunch->setParent(parent);
-        return prelaunch;
     }
-
-    qDebug() << "Creating prelaunch from scratch";
-    prelaunch = new PrelaunchProcessBackend(m_info, parent);
-    prelaunch->prestart();
-    prelaunch->setInfo(info);
+    else {
+        // qDebug() << "Creating prelaunch from scratch";
+        prelaunch = new PrelaunchProcessBackend(m_info, parent);
+        prelaunch->prestart();
+        prelaunch->setInfo(info);
+    }
     return prelaunch;
 }
 
@@ -123,7 +124,7 @@ ProcessBackend * PrelaunchProcessBackendFactory::create(const ProcessInfo& info,
 QList<Q_PID> PrelaunchProcessBackendFactory::internalProcesses()
 {
     QList<Q_PID> list;
-    if (m_prelaunch)
+    if (m_prelaunch && m_prelaunch->isReady())
         list << m_prelaunch->pid();
     return list;
 }

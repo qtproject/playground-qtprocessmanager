@@ -71,6 +71,7 @@ public:
 
     void prestart();
     void setInfo(const ProcessInfo& info);
+    bool isReady() const;
 
     virtual void start();
     virtual QProcess::ProcessState state() const;

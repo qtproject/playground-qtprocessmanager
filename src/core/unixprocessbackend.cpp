@@ -104,6 +104,7 @@ void UnixProcessBackend::setDesiredPriority(qint32 priority)
 {
     ProcessBackend::setDesiredPriority(priority);
     if (m_process) {
+        // ### Is this always correct?  Could we have an m_process without a pid?
         if (setpriority(PRIO_PROCESS, m_process->pid(), priority))
             qWarning() << "Failed to set process priority from " << actualPriority() <<
                           "to" << priority << " : errno = " << errno;
@@ -195,6 +196,7 @@ void UnixProcessBackend::startProcess()
     m_process->setProcessEnvironment(env);
     m_process->setWorkingDirectory(m_info.workingDirectory());
     m_process->start(m_info.program(), m_info.arguments());
+    // qDebug() << Q_FUNC_INFO << "Started process" << m_info.program();
 }
 
 /*!

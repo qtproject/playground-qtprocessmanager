@@ -78,7 +78,7 @@ PipeLauncher::PipeLauncher(QObject *parent)
  */
 void PipeLauncher::inReady(int fd)
 {
-    qDebug() << Q_FUNC_INFO;
+//    qDebug() << Q_FUNC_INFO;
     m_in->setEnabled(false);
     const int bufsize = 1024;
     uint oldSize = m_inbuf.size();
@@ -109,7 +109,7 @@ void PipeLauncher::inReady(int fd)
  */
 void PipeLauncher::outReady(int fd)
 {
-    qDebug() << Q_FUNC_INFO;
+//    qDebug() << Q_FUNC_INFO;
     m_out->setEnabled(false);
     if (m_outbuf.size()) {
         int n = ::write(fd, m_outbuf.data(), m_outbuf.size());
