@@ -1,13 +1,7 @@
 TEMPLATE = subdirs
+CONFIG += ordered
 
-module_processmanager_src.subdir = src
-module_processmanager_src.target = module-processmanager-src
-
-module_processmanager_tests.subdir = tests
-module_processmanager_tests.target = module-processmanager-tests
-module_processmanager_tests.depends += module-processmanager-src
-
-SUBDIRS += module_processmanager_src #module_processmanager_tests
+SUBDIRS = src tests
 
 include(doc/doc.pri)
 

@@ -202,6 +202,7 @@ void RemoteProcessBackend::stop(int timeout)
         object.insert(kCommand, QLatin1String("stop"));
         object.insert(kId, m_id);
         object.insert(QLatin1String("timeout"), timeout);
+        m_factory->send(object);
     }
 }
 
@@ -226,6 +227,14 @@ qint64 RemoteProcessBackend::write(const char *data, qint64 maxSize)
     return -1;
 }
 
+/*!
+   Returns the most recent error string
+*/
+QString RemoteProcessBackend::errorString() const
+{
+    return m_errorString;
+}
+
 
 /*!
   Message received from the remote.
@@ -235,12 +244,13 @@ qint64 RemoteProcessBackend::write(const char *data, qint64 maxSize)
 void RemoteProcessBackend::receive(const QJsonObject& message)
 {
     QString event = message.value("event").toString();
-    qDebug() << Q_FUNC_INFO << message;
+    // qDebug() << Q_FUNC_INFO << message;
     if (event == "started") {
         m_pid = message.value("pid").toDouble();
         emit started();
     }
     else if (event == "error") {
+        m_errorString = message.value("errorString").toString();
         emit error(static_cast<QProcess::ProcessError>(message.value("error").toDouble()));
     }
     else if (event == "finished") {

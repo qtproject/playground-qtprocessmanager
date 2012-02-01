@@ -70,6 +70,8 @@ public:
     virtual void   stop(int timeout = 500);
     virtual qint64 write(const char *data, qint64 maxSize);
 
+    virtual QString errorString() const;
+
 private:
     friend class RemoteProcessBackendFactory;
     void killTimeout();
@@ -78,9 +80,10 @@ private:
 
 private:
     RemoteProcessBackendFactory *m_factory;
-    QProcess::ProcessState        m_state;
-    Q_PID                         m_pid;
-    qint32                        m_id;
+    QProcess::ProcessState       m_state;
+    Q_PID                        m_pid;
+    qint32                       m_id;
+    QString                      m_errorString;
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER

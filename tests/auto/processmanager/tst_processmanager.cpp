@@ -81,6 +81,7 @@ private slots:
     void pipeLauncher();
     void pipeLauncherCrash();
     void socketLauncher();
+    void socketLauncherKill();
     void socketLauncherCrash();
     void frontend();
     void subclassFrontend();
@@ -106,12 +107,39 @@ const char *errorToString[] = {
     "UnknownError"
 };
 
+class ErrorSpy : public QObject {
+    Q_OBJECT
+public:
+    ErrorSpy(ProcessBackend *target) {connect(target, SIGNAL(error(QProcess::ProcessError)),
+                                              SLOT(handleError(QProcess::ProcessError))); }
+    ErrorSpy(ProcessFrontend *target) {connect(target, SIGNAL(error(QProcess::ProcessError)),
+                                              SLOT(handleError(QProcess::ProcessError))); }
+
+    int count() const { return m_errors.size(); }
+    QProcess::ProcessError at(int i) const { return m_errors.at(i); }
+    QString                atString(int i) const { return m_errorStrings.at(i); }
+
+private slots:
+    void handleError(QProcess::ProcessError err) {
+        m_errors << err;
+        ProcessBackend *backend = qobject_cast<ProcessBackend *>(sender());
+        if (backend)
+            m_errorStrings << backend->errorString();
+        else
+            m_errorStrings << qobject_cast<ProcessFrontend *>(sender())->errorString();
+    }
+private:
+    QList<QProcess::ProcessError> m_errors;
+    QList<QString>                m_errorStrings;
+};
+
+
 class Spy {
 public:
     Spy(ProcessBackend *process)
     : stateSpy(process, SIGNAL(stateChanged(QProcess::ProcessState)))
     , startSpy(process, SIGNAL(started()))
-    , errorSpy(process, SIGNAL(error(QProcess::ProcessError)))
+    , errorSpy(process)
     , finishedSpy(process, SIGNAL(finished(int, QProcess::ExitStatus)))
     , stdoutSpy(process, SIGNAL(standardOutput(const QByteArray&)))
     , stderrSpy(process, SIGNAL(standardError(const QByteArray&))) {}
@@ -119,7 +147,7 @@ public:
     Spy(ProcessFrontend *process)
     : stateSpy(process, SIGNAL(stateChanged(QProcess::ProcessState)))
     , startSpy(process, SIGNAL(started()))
-    , errorSpy(process, SIGNAL(error(QProcess::ProcessError)))
+    , errorSpy(process)
     , finishedSpy(process, SIGNAL(finished(int, QProcess::ExitStatus)))
     , stdoutSpy(process, SIGNAL(standardOutput(const QByteArray&)))
     , stderrSpy(process, SIGNAL(standardError(const QByteArray&))) {}
@@ -131,7 +159,7 @@ public:
         QVERIFY(stateSpy.count() == stateCount);
         bool failedToStart = false;
         for (int i = 0 ; i < errorSpy.count() ; i++)
-            if (qVariantValue<QProcess::ProcessError>(errorSpy.at(i).at(0)) == QProcess::FailedToStart)
+            if (errorSpy.at(i) == QProcess::FailedToStart)
                 failedToStart = true;
 
         if (failedToStart)
@@ -213,8 +241,10 @@ public:
 
     void checkErrors(const QList<QProcess::ProcessError>& list) {
         QCOMPARE(errorSpy.count(), list.count());
-        for (int i = 0 ; i < errorSpy.count() ; i++)
-            QCOMPARE(qVariantValue<QProcess::ProcessError>(errorSpy.at(i).at(0)), list.at(i));
+        for (int i = 0 ; i < errorSpy.count() ; i++) {
+            QCOMPARE(errorSpy.at(i), list.at(i));
+            qDebug() << "Checking for error:" << list.at(i) << "string=" << errorSpy.atString(i);
+        }
     }
 
     void dump() {
@@ -231,7 +261,7 @@ public:
         }
         qDebug() << "Error count=" << errorSpy.count();
         for (int i = 0 ; i < errorSpy.count() ; i++) {
-            qDebug() << "...." << errorToString[qvariant_cast<QProcess::ProcessError>(errorSpy.at(i).at(0))];
+            qDebug() << "...." << errorToString[errorSpy.at(i)];
         }
         qDebug() << "================================ ======== ==============================";
     }
@@ -239,7 +269,7 @@ public:
     QTime      stopWatch;
     QSignalSpy stateSpy;
     QSignalSpy startSpy;
-    QSignalSpy errorSpy;
+    ErrorSpy   errorSpy;
     QSignalSpy finishedSpy;
     QSignalSpy stdoutSpy;
     QSignalSpy stderrSpy;
@@ -713,6 +743,44 @@ void tst_ProcessManager::socketLauncher()
     spy.check(1,0,1,3);
     spy.checkExitCode(0);
     spy.checkExitStatus(QProcess::NormalExit);
+
+    QVERIFY(process->parent() == NULL);
+    delete process;
+    delete manager;
+    delete remote;
+}
+
+void tst_ProcessManager::socketLauncherKill()
+{
+    QProcess *remote = new QProcess;
+    remote->setProcessChannelMode(QProcess::ForwardedChannels);
+    remote->start("testSocketLauncher/testSocketLauncher");
+    QVERIFY(remote->waitForStarted());
+
+    qDebug() << "Waiting for 500 ms to let testSocketLauncher start";
+    QTime waitTime;
+    waitTime.start();
+    while (waitTime.elapsed() < 500)
+        QTestEventLoop::instance().enterLoop(1);
+
+    ProcessBackendManager *manager = new ProcessBackendManager;
+    manager->addFactory(new SocketProcessBackendFactory("/tmp/socketlauncher"));
+
+    ProcessInfo info;
+    info.setValue("program", "testClient/testClient");
+    ProcessBackend *process = manager->create(info);
+    QVERIFY(process);
+
+    Spy spy(process);
+    process->start();
+    spy.waitStart();
+    spy.check(1,0,0,2);
+    process->stop();
+    spy.waitFinished();
+    spy.check(1,1,1,3);
+    spy.checkExitCode(0);
+    spy.checkExitStatus(QProcess::CrashExit);
+    spy.checkErrors(QList<QProcess::ProcessError>() << QProcess::Crashed);
 
     QVERIFY(process->parent() == NULL);
     delete process;

@@ -66,7 +66,7 @@ LauncherClient::LauncherClient(ProcessBackendManager *manager)
 
 void LauncherClient::receive(const QJsonObject& message)
 {
-    qDebug() << Q_FUNC_INFO << message;
+    // qDebug() << Q_FUNC_INFO << message;
     QString cmd = message.value("command").toString();
     int id = message.value("id").toDouble();
     if ( cmd == "start" ) {
@@ -157,6 +157,7 @@ void LauncherClient::error(QProcess::ProcessError err)
     msg.insert(kEvent, QLatin1String("error"));
     msg.insert(kId, m_backendToId.value(backend));
     msg.insert("error", err);
+    msg.insert("errorString", backend->errorString());
     emit send(msg);
 }
 

@@ -146,7 +146,7 @@ ProcessBackend * RemoteProcessBackendFactory::create(const ProcessInfo& info, QO
 
 void RemoteProcessBackendFactory::receive(const QJsonObject& message)
 {
-    qDebug() << Q_FUNC_INFO << message;
+    // qDebug() << Q_FUNC_INFO << message;
     int id = message.value(QLatin1String("id")).toDouble();
     if (m_backendMap.contains(id))
         m_backendMap.value(id)->receive(message);
