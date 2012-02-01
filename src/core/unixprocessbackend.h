@@ -70,6 +70,8 @@ public:
 
     virtual qint64 write(const char *data, qint64 maxSize);
 
+    virtual QString errorString() const;
+
 protected:
     bool createProcess();
     void startProcess();

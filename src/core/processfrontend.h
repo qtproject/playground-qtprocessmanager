@@ -69,6 +69,8 @@ class ProcessFrontend : public QObject
     Q_PROPERTY(int priority READ priority WRITE setPriority NOTIFY priorityChanged)
     Q_PROPERTY(int oomAdjustment READ oomAdjustment WRITE setOomAdjustment NOTIFY oomAdjustmentChanged)
 
+    Q_PROPERTY(QString errorString READ errorString)
+
 public:
     virtual ~ProcessFrontend();
 
@@ -100,6 +102,8 @@ public:
     qint64 startTime() const;
 
     Q_INVOKABLE QVariantMap processInfo() const;
+
+    QString errorString() const;
 
 signals:
     void aboutToStart();

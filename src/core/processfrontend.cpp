@@ -520,6 +520,15 @@ ProcessBackend *ProcessFrontend::backend() const
     Only applicable under Linux.
 */
 
+/*!
+    Returns a human-readable description of the last device error that
+    occurred.
+ */
+QString ProcessFrontend::errorString() const
+{
+    return m_backend->errorString();
+}
+
 #include "moc_processfrontend.cpp"
 
 QT_END_NAMESPACE_PROCESSMANAGER

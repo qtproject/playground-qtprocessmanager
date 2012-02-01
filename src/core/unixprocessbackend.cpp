@@ -327,6 +327,14 @@ void UnixProcessBackend::readyReadStandardError()
     handleStandardError(m_process->readAllStandardError());
 }
 
+/*!
+    \internal
+ */
+QString UnixProcessBackend::errorString() const
+{
+    return m_process->errorString();
+}
+
 #include "moc_unixprocessbackend.cpp"
 
 QT_END_NAMESPACE_PROCESSMANAGER

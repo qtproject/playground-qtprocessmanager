@@ -158,6 +158,16 @@ QString ProcessBackend::workingDirectory() const
 }
 
 /*!
+    Returns a human-readable description of the last device error that
+    occurred.
+ */
+QString ProcessBackend::errorString() const
+{
+    return QString();
+}
+
+
+/*!
     Return the process UID
 */
 
