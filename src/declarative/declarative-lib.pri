@@ -1,4 +1,5 @@
-QT += declarative
+QT += declarative processmanager
+
 CONFIG += network
 
 INCLUDEPATH += $$PWD

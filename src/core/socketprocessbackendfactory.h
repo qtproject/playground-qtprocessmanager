@@ -46,7 +46,7 @@ class QLocalSocket;
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-class SocketProcessBackendFactory : public RemoteProcessBackendFactory
+class Q_ADDON_PROCESSMANAGER_EXPORT SocketProcessBackendFactory : public RemoteProcessBackendFactory
 {
     Q_OBJECT
 public:

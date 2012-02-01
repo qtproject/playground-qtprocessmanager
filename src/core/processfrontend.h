@@ -50,7 +50,7 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 class ProcessBackend;
 
-class ProcessFrontend : public QObject
+class Q_ADDON_PROCESSMANAGER_EXPORT ProcessFrontend : public QObject
 {
     Q_OBJECT
 

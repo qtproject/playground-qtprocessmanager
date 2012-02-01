@@ -7,7 +7,7 @@
 
 #include "processfrontend.h"
 
-class DeclarativeProcess : public ProcessFrontend
+class Q_ADDON_PROCESSMANAGER_EXPORT DeclarativeProcess : public ProcessFrontend
 {
     Q_OBJECT
 

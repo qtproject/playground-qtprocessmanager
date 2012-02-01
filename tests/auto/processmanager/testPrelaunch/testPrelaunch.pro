@@ -1,8 +1,7 @@
 CONFIG -= app_bundle
-include(../processmanager.pri)
-include(../../../../src/core/core.pri)
+QT += processmanager
 
-LIBS += -L../../../../src/core
+include(../processmanager.pri)
 
 DESTDIR = ./
 SOURCES = main.cpp

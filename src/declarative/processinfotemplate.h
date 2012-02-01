@@ -51,7 +51,7 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 class ProcessInfo;
 
-class ProcessInfoTemplate : public QObject
+class Q_ADDON_PROCESSMANAGER_EXPORT ProcessInfoTemplate : public QObject
 {
     Q_OBJECT
 

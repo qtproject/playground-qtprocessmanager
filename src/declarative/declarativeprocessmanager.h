@@ -49,7 +49,8 @@
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-class DeclarativeProcessManager : public ProcessManager, public QDeclarativeParserStatus
+class Q_ADDON_PROCESSMANAGER_EXPORT DeclarativeProcessManager : public ProcessManager,
+                                                                public QDeclarativeParserStatus
 {
     Q_OBJECT
     Q_INTERFACES(QDeclarativeParserStatus)

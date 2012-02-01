@@ -1,4 +1,4 @@
-QT += network
+QT += network jsonstream
 
 INCLUDEPATH += $$PWD
 
@@ -21,6 +21,9 @@ PUBLIC_HEADERS += \
   $$PWD/prelaunchprocessbackend.h \
   $$PWD/remoteprocessbackend.h \
   $$PWD/processmanager-global.h \
+  $$PWD/launcherclient.h \
+  $$PWD/pipelauncher.h \
+  $$PWD/socketlauncher.h \
   $$PWD/procutils.h
 
 HEADERS += \
@@ -46,4 +49,7 @@ SOURCES += \
   $$PWD/remoteprocessbackendfactory.cpp \
   $$PWD/pipeprocessbackendfactory.cpp \
   $$PWD/socketprocessbackendfactory.cpp \
+  $$PWD/launcherclient.cpp \
+  $$PWD/pipelauncher.cpp \
+  $$PWD/socketlauncher.cpp \
   $$PWD/procutils.cpp

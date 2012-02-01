@@ -53,7 +53,7 @@ class ProcessInfo;
 class ProcessBackendFactory;
 class ProcessBackend;
 
-class ProcessBackendManager : public QObject
+class Q_ADDON_PROCESSMANAGER_EXPORT ProcessBackendManager : public QObject
 {
     Q_OBJECT
 

@@ -48,7 +48,7 @@
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-class RemoteProcessBackend : public ProcessBackend
+class Q_ADDON_PROCESSMANAGER_EXPORT RemoteProcessBackend : public ProcessBackend
 {
     Q_OBJECT
 

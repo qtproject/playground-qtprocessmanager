@@ -45,7 +45,7 @@
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-class GdbProcessBackendFactory : public StandardProcessBackendFactory
+class Q_ADDON_PROCESSMANAGER_EXPORT GdbProcessBackendFactory : public StandardProcessBackendFactory
 {
     Q_OBJECT
 

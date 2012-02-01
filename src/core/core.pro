@@ -1,16 +1,17 @@
 TEMPLATE = lib
-TARGET = processmanager-core
+TARGET   = $$QT.processmanager.name
+MODULE   = processmanager
 
-include($$PWD/../../config.pri)
+load(qt_module)
+load(qt_module_config)
+
+DESTDIR = $$QT.processmanager.libs
+VERSION = $$QT.processmanager.VERSION
+DEFINES += QT_ADDON_PROCESSMANAGER_LIB
+
+CONFIG += module create_prl
+MODULE_PRI = ../../modules/qt_processmanager.pri
+
 include($$PWD/core-lib.pri)
 
-mac {
-    QMAKE_POST_LINK = install_name_tool -id $$PWD/${TARGET} ${TARGET}
-}
-
-target.path = $$INSTALLBASE/lib
-
-headers.path = $$INSTALLBASE/include/qtprocessmanager
-headers.files = $$PUBLIC_HEADERS
-
-INSTALLS += target headers
+mac:QMAKE_FRAMEWORK_BUNDLE_NAME = $$QT.processmanager.name

@@ -49,7 +49,7 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 class PrelaunchProcessBackend;
 
-class PrelaunchProcessBackendFactory : public ProcessBackendFactory
+class Q_ADDON_PROCESSMANAGER_EXPORT PrelaunchProcessBackendFactory : public ProcessBackendFactory
 {
     Q_OBJECT
 public:

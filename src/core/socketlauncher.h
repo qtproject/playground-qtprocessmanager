@@ -37,12 +37,12 @@
 **
 ****************************************************************************/
 
-#ifndef PIPE_LAUNCHER_H
-#define PIPE_LAUNCHER_H
+#ifndef SOCKET_LAUNCHER_H
+#define SOCKET_LAUNCHER_H
 
 #include <QObject>
 #include <QJsonObject>
-#include <QSocketNotifier>
+#include <jsonserver.h>
 
 #include "processbackendmanager.h"
 
@@ -50,25 +50,26 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 class LauncherClient;
 
-class PipeLauncher : public ProcessBackendManager {
+class Q_ADDON_PROCESSMANAGER_EXPORT SocketLauncher : public ProcessBackendManager {
     Q_OBJECT
 
 public:
-    PipeLauncher(QObject *parent=0);
+    SocketLauncher(QObject *parent=0);
+    bool listen(int port, QtAddOn::JsonStream::JsonAuthority *authority = 0);
+    bool listen(const QString& socketname, QtAddOn::JsonStream::JsonAuthority *authority=0);
 
 private slots:
-    void inReady(int fd);
-    void outReady(int fd);
-    void send(const QJsonObject& object);
+    void connectionAdded(const QString& identifier);
+    void connectionRemoved(const QString& identifier);
+    void messageReceived(const QString& identifier, const QJsonObject& message);
+    void send(const QJsonObject& message);
 
 private:
-    QSocketNotifier *m_in;
-    QSocketNotifier *m_out;
-    QByteArray       m_inbuf;
-    QByteArray       m_outbuf;
-    LauncherClient  *m_client;
+    QtAddOn::JsonStream::JsonServer *m_server;
+    QMap<QString, LauncherClient*>   m_idToClient;
+    QMap<LauncherClient*, QString>   m_clientToId;
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER
 
-#endif // PIPE_LAUNCHER_H
+#endif // SOCKET_LAUNCHER_H

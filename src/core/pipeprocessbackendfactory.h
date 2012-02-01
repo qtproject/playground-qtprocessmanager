@@ -44,7 +44,7 @@
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-class PipeProcessBackendFactory : public RemoteProcessBackendFactory
+class Q_ADDON_PROCESSMANAGER_EXPORT PipeProcessBackendFactory : public RemoteProcessBackendFactory
 {
     Q_OBJECT
 public:

@@ -62,7 +62,7 @@ const QLatin1String OomAdjustment = QLatin1String("oomAdjustment");
 const QLatin1String StartOutputPattern = QLatin1String("startOutputPattern");
 }
 
-class ProcessInfo : public QObject
+class Q_ADDON_PROCESSMANAGER_EXPORT ProcessInfo : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QString identifier READ identifier WRITE setIdentifier NOTIFY identifierChanged)

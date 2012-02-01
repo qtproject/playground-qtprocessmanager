@@ -1,12 +1,9 @@
 CONFIG += testcase
 macx:CONFIG -= app_bundle
 
-QT += core network declarative testlib
-
-LIBS += -L../../../../src/core -L../../../../src/declarative
+QT += core network declarative testlib processmanager processmanagerdeclarative
 
 include(../declarative.pri)
-include(../../../../src/declarative/declarative.pri)
 
 SOURCES = ../tst_declarative.cpp
 TARGET = ../$$TESTCASE_NAME

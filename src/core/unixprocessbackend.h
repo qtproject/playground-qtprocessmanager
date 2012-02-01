@@ -47,7 +47,7 @@
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-class UnixProcessBackend : public ProcessBackend
+class Q_ADDON_PROCESSMANAGER_EXPORT UnixProcessBackend : public ProcessBackend
 {
     Q_OBJECT
 

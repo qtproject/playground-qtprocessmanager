@@ -61,7 +61,7 @@ public:
     } n;
 };
 
-class PrelaunchProcessBackend : public UnixProcessBackend
+class Q_ADDON_PROCESSMANAGER_EXPORT PrelaunchProcessBackend : public UnixProcessBackend
 {
     Q_OBJECT
 

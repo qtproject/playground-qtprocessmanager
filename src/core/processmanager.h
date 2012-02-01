@@ -55,7 +55,7 @@ class ProcessBackendFactory;
 class ProcessBackendManager;
 class ProcessBackend;
 
-class ProcessManager : public QObject
+class Q_ADDON_PROCESSMANAGER_EXPORT ProcessManager : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(bool memoryRestricted READ memoryRestricted
