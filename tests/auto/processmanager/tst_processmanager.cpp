@@ -490,6 +490,71 @@ static void priorityChangeAfterClient(ProcessBackendManager *manager, ProcessInf
     delete process;
 }
 
+#if defined(Q_OS_LINUX)
+
+static void waitForOom(ProcessBackend *process, int oom, int timeout=5000)
+{
+    QTime stopWatch;
+    stopWatch.start();
+    forever {
+        if (process->actualOomAdjustment() == oom)
+            break;
+        QTestEventLoop::instance().enterLoop(1);
+        if (stopWatch.elapsed() >= timeout)
+            QFAIL("Timed out");
+    }
+}
+
+static void oomChangeBeforeClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
+{
+    info.setOomAdjustment(500);
+    ProcessBackend *process = manager->create(info);
+    QVERIFY(process);
+
+    Spy spy(process);
+    process->start();
+    spy.waitStart();
+    QVERIFY(process->state() == QProcess::Running);
+    QCOMPARE(process->actualOomAdjustment(), 500);
+
+    func(process, "stop");
+    spy.waitFinished();
+    spy.check(1,0,1,3);
+    spy.checkExitCode(0);
+    spy.checkExitStatus(QProcess::NormalExit);
+
+    QVERIFY(process->state() == QProcess::NotRunning);
+    QVERIFY(process->parent() == NULL);
+    delete process;
+}
+
+static void oomChangeAfterClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
+{
+    ProcessBackend *process = manager->create(info);
+    QVERIFY(process);
+    QVERIFY(process->state() == QProcess::NotRunning);
+
+    Spy spy(process);
+    process->start();
+    spy.waitStart();
+    QVERIFY(process->state() == QProcess::Running);
+
+    process->setDesiredOomAdjustment(499);
+    waitForOom(process, 499);
+
+    func(process, "stop");
+    spy.waitFinished();
+    spy.check(1,0,1,3);
+    spy.checkExitCode(0);
+    spy.checkExitStatus(QProcess::NormalExit);
+
+    QVERIFY(process->state() == QProcess::NotRunning);
+    QVERIFY(process->parent() == NULL);
+    delete process;
+}
+
+#endif // defined(Q_OS_LINUX)
+
 
 typedef void (*clientFunc)(ProcessBackendManager *, ProcessInfo, CommandFunc);
 
@@ -597,6 +662,10 @@ private slots:
     void standardEcho()                 { standardFactoryTest(echoClient); }
     void standardPriorityChangeBefore() { standardFactoryTest(priorityChangeBeforeClient); }
     void standardPriorityChangeAfter()  { standardFactoryTest(priorityChangeAfterClient); }
+#if defined(Q_OS_LINUX)
+    void standardOomChangeBefore()      { standardFactoryTest(oomChangeBeforeClient); }
+    void standardOomChangeAfter()       { standardFactoryTest(oomChangeAfterClient); }
+#endif
 
     void prelaunchStartAndStop()         { prelaunchFactoryTest(startAndStopClient); }
     void prelaunchStartAndKill()         { prelaunchFactoryTest(startAndKillClient); }
@@ -604,6 +673,10 @@ private slots:
     void prelaunchEcho()                 { prelaunchFactoryTest(echoClient); }
     void prelaunchPriorityChangeBefore() { prelaunchFactoryTest(priorityChangeBeforeClient); }
     void prelaunchPriorityChangeAfter()  { prelaunchFactoryTest(priorityChangeAfterClient); }
+#if defined(Q_OS_LINUX)
+    void prelaunchOomChangeBefore()      { prelaunchFactoryTest(oomChangeBeforeClient); }
+    void prelaunchOomChangeAfter()       { prelaunchFactoryTest(oomChangeAfterClient); }
+#endif
 
     void prelaunchRestrictedStartAndStop()         { prelaunchRestrictedTest(startAndStopClient); }
     void prelaunchRestrictedStartAndKill()         { prelaunchRestrictedTest(startAndKillClient); }
@@ -611,6 +684,10 @@ private slots:
     void prelaunchRestrictedEcho()                 { prelaunchRestrictedTest(echoClient); }
     void prelaunchRestrictedPriorityChangeBefore() { prelaunchRestrictedTest(priorityChangeBeforeClient); }
     void prelaunchRestrictedPriorityChangeAfter()  { prelaunchRestrictedTest(priorityChangeAfterClient); }
+#if defined(Q_OS_LINUX)
+    void prelaunchRestrictedOomChangeBefore()      { prelaunchRestrictedTest(oomChangeBeforeClient); }
+    void prelaunchRestrictedOomChangeAfter()       { prelaunchRestrictedTest(oomChangeAfterClient); }
+#endif
 
     void pipeLauncherStartAndStop()         { pipeLauncherTest(startAndStopClient); }
     void pipeLauncherStartAndKill()         { pipeLauncherTest(startAndKillClient); }
@@ -618,6 +695,10 @@ private slots:
     void pipeLauncherEcho()                 { pipeLauncherTest(echoClient); }
     void pipeLauncherPriorityChangeBefore() { pipeLauncherTest(priorityChangeBeforeClient); }
     void pipeLauncherPriorityChangeAfter()  { pipeLauncherTest(priorityChangeAfterClient); }
+#if defined(Q_OS_LINUX)
+    void pipeLauncherOomChangeBefore()      { pipeLauncherTest(oomChangeBeforeClient); }
+    void pipeLauncherOomChangeAfter()       { pipeLauncherTest(oomChangeAfterClient); }
+#endif
 
     void socketLauncherStartAndStop()         { socketLauncherTest(startAndStopClient); }
     void socketLauncherStartAndKill()         { socketLauncherTest(startAndKillClient); }
@@ -625,6 +706,10 @@ private slots:
     void socketLauncherEcho()                 { socketLauncherTest(echoClient); }
     void socketLauncherPriorityChangeBefore() { socketLauncherTest(priorityChangeBeforeClient); }
     void socketLauncherPriorityChangeAfter()  { socketLauncherTest(priorityChangeAfterClient); }
+#if defined(Q_OS_LINUX)
+    void socketLauncherOomChangeBefore()      { socketLauncherTest(oomChangeBeforeClient); }
+    void socketLauncherOomChangeAfter()       { socketLauncherTest(oomChangeAfterClient); }
+#endif
 
     void frontend();
     void subclassFrontend();

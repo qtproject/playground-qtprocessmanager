@@ -58,6 +58,9 @@ public:
     static qint64 pidForFilename(const QString &filename);
     static qint64 pidForLocalSocket(const QLocalSocket *socket);
     static QByteArray cmdlineForPid(qint64 pid);
+
+    static qint32 oomAdjustment(pid_t pid, bool *ok=NULL);
+    static bool   setOomAdjustment(pid_t pid, qint32 oomAdjustment);
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER

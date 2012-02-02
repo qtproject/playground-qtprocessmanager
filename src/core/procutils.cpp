@@ -58,22 +58,23 @@ ProcUtils::ProcUtils()
 
 QString ProcUtils::execNameForPid(qint64 pid)
 {
+#if defined(Q_OS_LINUX)
     enum { BUFFERSIZE = 1024 };
     char buf[BUFFERSIZE];
     QString fn = QLatin1String("/proc/") + QString::number(pid).toLatin1() + QLatin1String("/exe");
     ssize_t len = readlink(fn.toLatin1(), buf, sizeof(buf) - 1);
-
     if (len != -1) {
         buf[len] = '\0';
-    } else {
-        return QString();
+        return QString(buf);
     }
-
-    return QString(buf);
+#endif
+    return QString();
 }
 
 qint64 ProcUtils::ppidForPid(pid_t pid)
 {
+    int ppid = 0;
+#if defined(Q_OS_LINUX)
     QFile statFile(QLatin1String("/proc/") + QString::number(pid) + "/stat");
     statFile.open(QIODevice::ReadOnly);
 
@@ -81,15 +82,16 @@ qint64 ProcUtils::ppidForPid(pid_t pid)
     statFile.close();
     // 954 (ofono-jdb-daemo) S 1
     int readPid = 0;
-    int ppid = 0;
     char strDummy[64];
     char state;
     sscanf(contents.constData(), "%d %s %c %d %s", &readPid, strDummy, &state, &ppid, strDummy);
+#endif
     return ppid;
 }
 
 qint64 ProcUtils::pidForFilename(const QString &filename)
 {
+#if defined(Q_OS_LINUX)
     QFile file(filename);
     if (!file.exists())
         return 0;
@@ -112,31 +114,65 @@ qint64 ProcUtils::pidForFilename(const QString &filename)
         }
     }
     closedir(d);
+#endif
     return 0;
 }
 
 qint64 ProcUtils::pidForLocalSocket(const QLocalSocket *socket)
 {
+#if defined(Q_OS_LINUX)
     if (socket) {
         struct ucred cr;
         socklen_t len = sizeof(struct ucred);
         int r = ::getsockopt(socket->socketDescriptor(), SOL_SOCKET, SO_PEERCRED, &cr, &len);
-        if (r == 0) {
+        if (r == 0)
             return (qint64)cr.pid;
-        }
     }
+#endif
     return 0;
 }
 
 QByteArray ProcUtils::cmdlineForPid(qint64 pid)
 {
     QByteArray cmdline;
+#if defined(Q_OS_LINUX)
     if (pid) {
         QFile file(QLatin1String("/proc/") + QString::number(pid) + QLatin1String("/cmdline"));
         file.open(QIODevice::ReadOnly);
         cmdline = file.readAll();
     }
     return cmdline;
+#endif
 }
+
+qint32 ProcUtils::oomAdjustment(pid_t pid, bool *ok)
+{
+    if (ok)
+        *ok = false;
+#if defined(Q_OS_LINUX)
+    QFile file(QString::fromLatin1("/proc/%1/oom_score_adj").arg(pid));
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QByteArray ba = file.read(100);
+        ba.truncate(ba.count() - 1);  // Drop the '\n' at the end
+        if (ba.count())
+            return ba.toInt(ok);
+    }
+#endif
+    return -1001;
+}
+
+bool ProcUtils::setOomAdjustment(pid_t pid, qint32 oomAdjustment)
+{
+#if defined(Q_OS_LINUX)
+    QFile file(QString::fromLatin1("/proc/%1/oom_score_adj").arg(pid));
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+        return false;
+    QByteArray value = QByteArray::number(oomAdjustment) + '\n';
+    if (file.write(value) == value.count())
+        return true;
+#endif
+    return false;
+}
+
 
 QT_END_NAMESPACE_PROCESSMANAGER

@@ -98,7 +98,7 @@ void PipeLauncher::inReady(int fd)
         m_inbuf = m_inbuf.mid(message_size);
         QJsonObject message = QJsonDocument::fromBinaryData(msg).object();
         if (message.value("remote").toString() == "stop")
-            deleteLater();
+            exit(0);
         m_client->receive(message);
     }
     m_in->setEnabled(true);

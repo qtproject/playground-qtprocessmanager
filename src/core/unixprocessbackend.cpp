@@ -41,9 +41,11 @@
 
 #include "unixprocessbackend.h"
 #include "unixsandboxprocess.h"
+#include "procutils.h"
 #include <sys/resource.h>
 #include <errno.h>
 #include <QDebug>
+#include <QFile>
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
@@ -119,8 +121,14 @@ void UnixProcessBackend::setDesiredPriority(qint32 priority)
 
 qint32 UnixProcessBackend::actualOomAdjustment() const
 {
+    // ### TODO: What if m_process doesn't have a valid PID yet?
+
     if (m_process) {
-    // ### TODO: Read correctly from /proc/<pid>/oom_score_adj
+        bool ok;
+        qint32 result = ProcUtils::oomAdjustment(m_process->pid(), &ok);
+        if (ok)
+            return result;
+        qWarning() << "Unable to read oom adjustment for" << m_process->pid();
     }
     return ProcessBackend::actualOomAdjustment();
 }
@@ -133,7 +141,8 @@ void UnixProcessBackend::setDesiredOomAdjustment(qint32 oomAdjustment)
 {
     ProcessBackend::setDesiredOomAdjustment(oomAdjustment);
     if (m_process) {
-    // ### Write to /proc/<pid>/oom_score_adj
+        if (!ProcUtils::setOomAdjustment(m_process->pid(), oomAdjustment))
+            qWarning() << "Unable to set oom adjustment for" << m_process->pid();
     }
 }
 
@@ -240,7 +249,11 @@ void UnixProcessBackend::handleProcessStarted()
 {
     if (m_info.contains("priority") && setpriority(PRIO_PROCESS, m_process->pid(), m_info.priority()))
         qWarning() << "Failed to set process priority at startup from " << actualPriority() <<
-                      "to" << m_info.priority()  << " : errno = " << errno;
+            "to" << m_info.priority()  << " : errno = " << errno;
+    if (m_info.contains("oomAdjustment") &&
+        !ProcUtils::setOomAdjustment(m_process->pid(), m_info.oomAdjustment()))
+        qWarning() << "Failed to set process oom score at startup from " << actualOomAdjustment() <<
+            "to" << m_info.oomAdjustment();
 }
 /*!
     Override this in subclasses.  Make sure you call the parent class with \a error.

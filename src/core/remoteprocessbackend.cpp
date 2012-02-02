@@ -38,6 +38,7 @@
 ****************************************************************************/
 
 #include "remoteprocessbackend.h"
+#include "procutils.h"
 #include <sys/resource.h>
 #include <errno.h>
 #include <signal.h>
@@ -141,7 +142,11 @@ void RemoteProcessBackend::setDesiredPriority(qint32 priority)
 qint32 RemoteProcessBackend::actualOomAdjustment() const
 {
     if (m_pid != -1) {
-        // ### TODO: Read correctly from /proc/<pid>/oom_score_adj
+        bool ok;
+        qint32 result = ProcUtils::oomAdjustment(m_pid, &ok);
+        if (ok)
+            return result;
+        qWarning() << "Unable to read oom adjustment for" << m_pid;
     }
     return ProcessBackend::actualOomAdjustment();
 }

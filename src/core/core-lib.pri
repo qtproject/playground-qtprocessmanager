@@ -20,12 +20,8 @@ PUBLIC_HEADERS += \
   $$PWD/standardprocessbackend.h \
   $$PWD/prelaunchprocessbackend.h \
   $$PWD/remoteprocessbackend.h \
-  $$PWD/processmanager-global.h
-
-*linux* {
-  PUBLIC_HEADERS += $$PWD/procutils.h
-  SOURCES += $$PWD/procutils.cpp
-}
+  $$PWD/processmanager-global.h \
+  $$PWD/procutils.h
 
 HEADERS += \
   $$PUBLIC_HEADERS \
@@ -49,4 +45,5 @@ SOURCES += \
   $$PWD/remoteprocessbackend.cpp \
   $$PWD/remoteprocessbackendfactory.cpp \
   $$PWD/pipeprocessbackendfactory.cpp \
-  $$PWD/socketprocessbackendfactory.cpp
+  $$PWD/socketprocessbackendfactory.cpp \
+  $$PWD/procutils.cpp
