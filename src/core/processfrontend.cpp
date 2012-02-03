@@ -133,6 +133,14 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 */
 
 /*!
+    \property ProcessFrontend::errorString
+    \brief The human-readable string describing the last error.
+
+    Returns the string describing the last error received.  This is equivalent to
+    the string passed by the error() signal.
+*/
+
+/*!
     \internal
     Constructs a ProcessFrontend instance with ProcessBackend \a process and optional \a parent
     The ProcessFrontend takes ownership of the ProcessBackend.

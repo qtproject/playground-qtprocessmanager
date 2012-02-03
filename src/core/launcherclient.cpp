@@ -69,7 +69,7 @@ void LauncherClient::receive(const QJsonObject& message)
     // qDebug() << Q_FUNC_INFO << message;
     QString cmd = message.value("command").toString();
     int id = message.value("id").toDouble();
-    if ( cmd == "start" ) {
+    if ( cmd == QLatin1String("start") ) {
         ProcessInfo info(message.value("info").toObject().toVariantMap());
         ProcessBackend *backend = m_manager->create(info, this);
         if (backend) {
@@ -88,25 +88,25 @@ void LauncherClient::receive(const QJsonObject& message)
             backend->start();
         }
     }
-    else if ( cmd == "stop" ) {
+    else if ( cmd == QLatin1String("stop") ) {
         ProcessBackend *backend = m_idToBackend.value(id);
         if (backend) {
             int timeout = message.value("timeout").toDouble();
             backend->stop(timeout);
         }
     }
-    else if ( cmd == "set" ) {
+    else if ( cmd == QLatin1String("set") ) {
         ProcessBackend *backend = m_idToBackend.value(id);
         if (backend) {
             QString key = message.value("key").toString();
             int value   = message.value("value").toDouble();
-            if (key == "priority")
+            if (key == QLatin1String("priority"))
                 backend->setDesiredPriority(value);
-            else if (key == "oomAdjustment")
+            else if (key == QLatin1String("oomAdjustment"))
                 backend->setDesiredOomAdjustment(value);
         }
     }
-    else if ( cmd == "write" ) {
+    else if ( cmd == QLatin1String("write") ) {
         QByteArray data = message.value("data").toString().toLocal8Bit();
         ProcessBackend *backend = m_idToBackend.value(id);
         if (backend)

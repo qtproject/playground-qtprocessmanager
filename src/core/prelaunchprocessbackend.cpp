@@ -101,7 +101,8 @@ void PrelaunchProcessBackend::setInfo(const ProcessInfo& info)
 }
 
 /*!
-  Check to see if this prelaunched process is ready to be used
+  Check to see if this prelaunched process is ready to be used.
+  Return true if the process has been created and is running.
  */
 
 bool PrelaunchProcessBackend::isReady() const

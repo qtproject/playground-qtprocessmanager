@@ -46,36 +46,10 @@
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 /*!
-  \qmlclass ProcessManager DeclarativeProcessManager
-  \brief The ProcessManager class encapsulates ways of creating and tracking processes.
-
-  Only a single ProcessManager class should be loaded at one time.
-
-  Typical use of the ProcessManager class is as follows:
-
-  \code
-  import QtQuick 2.0
-  import ProcessManager 1.0
-
-  ProcessManager {
-     id: myProcessManager
-
-     factories: [
-        GdbProcessBackendFactory {},
-        StandardProcessBackendFactory {}
-     ]
-  }
-  \endcode
-
+  \class DeclarativeProcessManager DeclarativeProcessManager
+  \brief The DeclarativeProcessManager class encapsulates ways of creating and tracking processes
+         suitable for QtDeclarative programs.
 */
-
-/*!
-  \qmlproperty list<ProcessBackendFactory> ProcessManager::factories
-  \brief The factories assigned to this process manager
-
-   The factories property is an ordered list of ProcessBackendFactory objects.
-*/
-
 
 /*!
   Construct a DeclarativeProcessManager with an optional \a parent

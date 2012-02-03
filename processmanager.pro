@@ -1,6 +1,6 @@
 TEMPLATE = subdirs
 CONFIG += ordered
 
-SUBDIRS = src tests
+SUBDIRS = src examples tests
 
 include(doc/doc.pri)

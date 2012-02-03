@@ -67,6 +67,8 @@ QString ProcUtils::execNameForPid(qint64 pid)
         buf[len] = '\0';
         return QString(buf);
     }
+#else
+    Q_UNUSED(pid);
 #endif
     return QString();
 }
@@ -85,6 +87,8 @@ qint64 ProcUtils::ppidForPid(pid_t pid)
     char strDummy[64];
     char state;
     sscanf(contents.constData(), "%d %s %c %d %s", &readPid, strDummy, &state, &ppid, strDummy);
+#else
+    Q_UNUSED(pid);
 #endif
     return ppid;
 }
@@ -114,6 +118,8 @@ qint64 ProcUtils::pidForFilename(const QString &filename)
         }
     }
     closedir(d);
+#else
+    Q_UNUSED(filename);
 #endif
     return 0;
 }
@@ -128,6 +134,8 @@ qint64 ProcUtils::pidForLocalSocket(const QLocalSocket *socket)
         if (r == 0)
             return (qint64)cr.pid;
     }
+#else
+    Q_UNUSED(socket);
 #endif
     return 0;
 }
@@ -141,8 +149,10 @@ QByteArray ProcUtils::cmdlineForPid(qint64 pid)
         file.open(QIODevice::ReadOnly);
         cmdline = file.readAll();
     }
-    return cmdline;
+#else
+    Q_UNUSED(pid);
 #endif
+    return cmdline;
 }
 
 qint32 ProcUtils::oomAdjustment(pid_t pid, bool *ok)
@@ -157,6 +167,8 @@ qint32 ProcUtils::oomAdjustment(pid_t pid, bool *ok)
         if (ba.count())
             return ba.toInt(ok);
     }
+#else
+    Q_UNUSED(pid);
 #endif
     return -1001;
 }
@@ -170,6 +182,9 @@ bool ProcUtils::setOomAdjustment(pid_t pid, qint32 oomAdjustment)
     QByteArray value = QByteArray::number(oomAdjustment) + '\n';
     if (file.write(value) == value.count())
         return true;
+#else
+    Q_UNUSED(pid);
+    Q_UNUSED(oomAdjustment);
 #endif
     return false;
 }

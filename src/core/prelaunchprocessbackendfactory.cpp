@@ -89,8 +89,8 @@ PrelaunchProcessBackendFactory::~PrelaunchProcessBackendFactory()
 
 bool PrelaunchProcessBackendFactory::canCreate(const ProcessInfo& info) const
 {
-    return (info.value("prelaunch").toString() == "true" &&
-        info.program() == m_info.program());
+    return (info.value("prelaunch").toString() == QLatin1String("true")
+            && info.program() == m_info.program());
 }
 
 /*!

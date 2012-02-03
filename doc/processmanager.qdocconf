@@ -4,9 +4,9 @@ project = ProcessManager
 # Directories in which to search for files to document.
 # Paths are relative to the location of this file.
 exampledirs += ../examples
-headerdirs += ./src ../src/core ../src/declarative
+headerdirs += ./src ../src/core ../src/declarative ../examples/plugin
 imagedirs += images
-sourcedirs += ./src ../src/core ../src/declarative
+sourcedirs += ./src ../src/core ../src/declarative ../examples/plugin
 
 Cpp.ignoretokens = \
     QT_BEGIN_HEADER \

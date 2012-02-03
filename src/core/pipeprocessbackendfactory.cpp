@@ -126,7 +126,7 @@ bool PipeProcessBackendFactory::canCreate(const ProcessInfo& info) const
     QString program = QFileInfo(info.program()).fileName();
     return (m_process &&
             m_process->state() == QProcess::Running &&
-            info.value("pipe").toString() == "true" &&
+            info.value("pipe").toString() == QLatin1String("true") &&
             program == m_program);
 }
 
@@ -204,6 +204,7 @@ void PipeProcessBackendFactory::pipeFinished(int exitCode, QProcess::ExitStatus 
 
 void PipeProcessBackendFactory::pipeStateChanged(QProcess::ProcessState state)
 {
+    Q_UNUSED(state);
 //    qDebug() << "Pipe process state change" << state;
 }
 

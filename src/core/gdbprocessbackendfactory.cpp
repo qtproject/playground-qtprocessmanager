@@ -71,7 +71,7 @@ GdbProcessBackendFactory::GdbProcessBackendFactory(QObject *parent)
 
 bool GdbProcessBackendFactory::canCreate(const ProcessInfo& info) const
 {
-    return (info.value("gdb").toString() == "true");
+    return (info.value("gdb").toString() == QLatin1String("true"));
 }
 
 /*!

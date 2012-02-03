@@ -70,11 +70,11 @@ public:
         else {
             QString cmd = object.value("command").toString();
             // qDebug() << "Received command" << cmd;
-            if (cmd == "stop") {
+            if (cmd == QLatin1String("stop")) {
                 // qDebug() << "Stopping";
                 exit(0);
             }
-            else if (cmd == "crash") {
+            else if (cmd == QLatin1String("crash")) {
                 // qDebug() << "Crashing";
                 exit(2);
             }

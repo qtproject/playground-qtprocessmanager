@@ -250,23 +250,23 @@ void RemoteProcessBackend::receive(const QJsonObject& message)
 {
     QString event = message.value("event").toString();
     // qDebug() << Q_FUNC_INFO << message;
-    if (event == "started") {
+    if (event == QLatin1String("started")) {
         m_pid = message.value("pid").toDouble();
         emit started();
     }
-    else if (event == "error") {
+    else if (event == QLatin1String("error")) {
         m_errorString = message.value("errorString").toString();
         emit error(static_cast<QProcess::ProcessError>(message.value("error").toDouble()));
     }
-    else if (event == "finished") {
+    else if (event == QLatin1String("finished")) {
         emit finished(message.value("exitCode").toDouble(),
                       static_cast<QProcess::ExitStatus>(message.value("exitStatus").toDouble()));
     }
-    else if (event == "stateChanged") {
+    else if (event == QLatin1String("stateChanged")) {
         m_state = static_cast<QProcess::ProcessState>(message.value("stateChanged").toDouble());
         emit stateChanged(m_state);
     }
-    else if (event == "output") {
+    else if (event == QLatin1String("output")) {
         if (message.contains("stdout")) {
             handleStandardOutput(message.value("stdout").toString().toLocal8Bit());
         }
