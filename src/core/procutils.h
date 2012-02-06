@@ -48,7 +48,7 @@ QT_FORWARD_DECLARE_CLASS(QLocalSocket)
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-class ProcUtils
+class Q_ADDON_PROCESSMANAGER_EXPORT ProcUtils
 {
     ProcUtils();
     Q_DISABLE_COPY(ProcUtils)
