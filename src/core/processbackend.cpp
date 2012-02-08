@@ -166,25 +166,6 @@ QString ProcessBackend::errorString() const
     return QString();
 }
 
-
-/*!
-    Return the process UID
-*/
-
-qint64 ProcessBackend::uid() const
-{
-    return 0;
-}
-
-/*!
-    Return the process GID
-*/
-
-qint64 ProcessBackend::gid() const
-{
-    return 0;
-}
-
 /*!
     Returns the PID of this process. If the process has not started up yet properly, its PID will be 0.
 */

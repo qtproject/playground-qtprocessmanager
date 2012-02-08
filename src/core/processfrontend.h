@@ -60,8 +60,6 @@ class Q_ADDON_PROCESSMANAGER_EXPORT ProcessFrontend : public QObject
     Q_PROPERTY(QStringList arguments READ arguments CONSTANT)
     Q_PROPERTY(QVariantMap environment READ environment CONSTANT)
     Q_PROPERTY(QString workingDirectory READ workingDirectory CONSTANT)
-    Q_PROPERTY(qint64 uid READ uid NOTIFY started)
-    Q_PROPERTY(qint64 gid READ gid NOTIFY started)
 
     Q_PROPERTY(qint64 pid READ pid NOTIFY started)
     Q_PROPERTY(qint64 startTime READ startTime NOTIFY started)
@@ -81,8 +79,6 @@ public:
     QVariantMap environment() const;
     QString     workingDirectory() const;
 
-    qint64 uid() const;
-    qint64 gid() const;
     Q_PID  pid() const;
 
     qint32 priority() const;

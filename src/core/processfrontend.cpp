@@ -91,16 +91,6 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 */
 
 /*!
-    \property ProcessFrontend::uid
-    \brief the user id (uid) of the process.
-*/
-
-/*!
-    \property ProcessFrontend::gid
-    \brief the group id (gid) of the process.
-*/
-
-/*!
     \property ProcessFrontend::pid
     \brief the process id (PID) of the process.
 
@@ -230,26 +220,6 @@ QString ProcessFrontend::workingDirectory() const
 {
     Q_ASSERT(m_backend);
     return m_backend->workingDirectory();
-}
-
-/*!
-    Return the process UID
-*/
-
-qint64 ProcessFrontend::uid() const
-{
-    Q_ASSERT(m_backend);
-    return m_backend->uid();
-}
-
-/*!
-    Return the process GID
-*/
-
-qint64 ProcessFrontend::gid() const
-{
-    Q_ASSERT(m_backend);
-    return m_backend->gid();
 }
 
 /*!

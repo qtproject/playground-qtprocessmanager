@@ -65,8 +65,6 @@ public:
 
     virtual QString     errorString() const;
 
-    virtual qint64 uid() const;
-    virtual qint64 gid() const;
     virtual Q_PID  pid() const;
 
     virtual qint32 actualPriority() const;

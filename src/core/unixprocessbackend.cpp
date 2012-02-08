@@ -94,7 +94,7 @@ Q_PID UnixProcessBackend::pid() const
 {
     if (m_process)
         return m_process->pid();
-    return 0;
+    return ProcessBackend::pid();
 }
 
 /*!

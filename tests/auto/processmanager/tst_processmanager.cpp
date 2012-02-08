@@ -119,12 +119,25 @@ bool canCheckProcessState()
     return finfo.exists();
 }
 
-bool isProcessRunning(Q_PID pid)
+static QRegExp gProcessRegex("\\s*(\\d+)\\s+(\\d+)\\s+(\\d+)");
+
+bool isProcessRunning(Q_PID pid, qint64 *uid=0, qint64 *gid=0)
 {
     QProcess p;
-    p.start("ps", QStringList() << "-o" << "pid=" << "-p" << QString::number(pid));
-    if (p.waitForStarted() && p.waitForFinished())
-            return p.readAll().split('\n').at(0).toDouble() == pid;
+    p.start("/bin/ps", QStringList() << "-o" << "pid=" << "-o" << "uid="
+            << "-o" << "gid=" << "-p" << QString::number(pid));
+    if (p.waitForStarted() && p.waitForFinished()) {
+        QList<QByteArray> plist = p.readAll().split('\n');
+        if (plist.size() == 2 && gProcessRegex.exactMatch(QString::fromLocal8Bit(plist.at(0)))) {
+            if (gProcessRegex.cap(1).toLongLong() == pid) {
+                if (uid)
+                    *uid = gProcessRegex.cap(2).toLongLong();
+                if (gid)
+                    *gid = gProcessRegex.cap(3).toLongLong();
+                return true;
+            }
+        }
+    }
 
     return false;
 }
@@ -333,7 +346,17 @@ static void verifyRunning(ProcessBackend *process)
     pid_t pgrp = ::getpgid(pid);
     QVERIFY(pid != 0);
     QCOMPARE(pgrp, pid);
+
+    qint64 uid, gid;
+    QVERIFY(isProcessRunning(pid, &uid, &gid));
+    QString uidString = qgetenv("TEST_UID");
+    QString gidString = qgetenv("TEST_GID");
+    if (!uidString.isEmpty())
+        QCOMPARE(uid, uidString.toLongLong());
+    if (!gidString.isEmpty())
+        QCOMPARE(gid, gidString.toLongLong());
 }
+
 static void cleanupProcess(ProcessBackend *process)
 {
     QVERIFY(process->state() == QProcess::NotRunning);
@@ -562,12 +585,23 @@ static void oomChangeAfterClient(ProcessBackendManager *manager, ProcessInfo inf
 
 typedef void (*clientFunc)(ProcessBackendManager *, ProcessInfo, CommandFunc);
 
+static void fixUidGid(ProcessInfo& info)
+{
+    QString uidString = qgetenv("TEST_UID");
+    QString gidString = qgetenv("TEST_GID");
+    if (!uidString.isEmpty())
+        info.setUid(uidString.toLongLong());
+    if (!gidString.isEmpty())
+        info.setGid(gidString.toLongLong());
+}
+
 static void standardFactoryTest( clientFunc func )
 {
     ProcessBackendManager *manager = new ProcessBackendManager;
 
     ProcessInfo info;
     info.setValue("program", "testClient/testClient");
+    fixUidGid(info);
     manager->addFactory(new StandardProcessBackendFactory);
 
     func(manager, info, writeLine);
@@ -587,6 +621,7 @@ static void prelaunchFactoryTest( clientFunc func )
     waitForInternalProcess(manager);
 
     info.setValue("prelaunch", "true");
+    fixUidGid(info);
     func(manager, info, writeJson);
     delete manager;
 }
@@ -603,6 +638,7 @@ static void prelaunchRestrictedTest( clientFunc func )
     QVERIFY(manager->memoryRestricted() == true);
 
     info.setValue("prelaunch", "true");
+    fixUidGid(info);
     func(manager, info, writeJson);
     delete manager;
 }
@@ -621,6 +657,7 @@ static void pipeLauncherTest( clientFunc func )
     ProcessInfo info2;
     info2.setValue("program", "testClient/testClient");
     info2.setValue("pipe", "true");
+    fixUidGid(info2);
     func(manager, info2, writeLine);
     delete manager;
 }
@@ -643,6 +680,7 @@ static void socketLauncherTest( clientFunc func )
 
     ProcessInfo info;
     info.setValue("program", "testClient/testClient");
+    fixUidGid(info);
     func(manager, info, writeLine);
 
     delete manager;

@@ -294,7 +294,7 @@ void ProcessInfo::setUid(qint64 newUid)
 
 qint64 ProcessInfo::gid() const
 {
-    return m_info.value(ProcessInfoConstants::Priority).toLongLong();
+    return m_info.value(ProcessInfoConstants::Gid).toLongLong();
 }
 
 /*!
