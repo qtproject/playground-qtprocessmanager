@@ -46,6 +46,13 @@
 #include <QJsonObject>
 #include "processinfo.h"
 
+#if defined(Q_OS_LINUX)
+#include <sys/types.h>
+#include <unistd.h>
+#include <grp.h>
+#endif
+#include <pwd.h>
+
 QT_USE_NAMESPACE_PROCESSMANAGER
 
 class Container : public QObject
@@ -66,6 +73,19 @@ public:
         if (!count) {
             ProcessInfo info(object.toVariantMap());
             // qDebug() << "Received process info" << info.toMap();
+            qint64 uid = (info.contains(ProcessInfoConstants::Uid) ? info.uid() : -1);
+            qint64 gid = (info.contains(ProcessInfoConstants::Gid) ? info.gid() : -1);
+            if (gid >= 0)
+                ::setgid(gid);
+            if (uid >= 0)
+                ::setuid(uid);
+            struct passwd * pw = getpwent();
+            if (pw)
+                ::initgroups(pw->pw_name, pw->pw_gid);
+            else {
+                qWarning() << "Unable to find UID" << ::getuid() << "to set groups";
+                ::setgroups(0,0);
+            }
         }
         else {
             QString cmd = object.value("command").toString();

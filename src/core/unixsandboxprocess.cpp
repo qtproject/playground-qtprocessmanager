@@ -46,6 +46,7 @@
 #include <unistd.h>
 #include <grp.h>
 #endif
+#include <pwd.h>
 
 #include <QDebug>
 
@@ -73,11 +74,21 @@ UnixSandboxProcess::UnixSandboxProcess(qint64 uid, qint64 gid, QObject *parent)
 
 void UnixSandboxProcess::setupChildProcess()
 {
-    qDebug() << "Setting up child process" << m_uid << m_gid;
-    ::setgroups(0,0);
-    ::setgid(m_gid);
-    ::setuid(m_uid);
+    // qDebug() << "Setting up child process" << m_uid << m_gid;
+    if (m_gid >= 0)
+        ::setgid(m_gid);
+    if (m_uid >= 0)
+        ::setuid(m_uid);
     ::umask(S_IWGRP | S_IWOTH);
+    ::setpgid(0,0);
+
+    struct passwd * pw = getpwent();
+    if (pw)
+        ::initgroups(pw->pw_name, pw->pw_gid);
+    else {
+        qWarning() << "Unable to find UID" << ::getuid() << "to set groups";
+        ::setgroups(0,0);
+    }
 }
 
 #include "moc_unixsandboxprocess.cpp"

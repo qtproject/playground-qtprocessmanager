@@ -324,6 +324,21 @@ static void writeJson(ProcessBackend *process, const char *command)
     process->write(QJsonDocument::fromVariant(map).toBinaryData());
 }
 
+static void verifyRunning(ProcessBackend *process)
+{
+    QVERIFY(process->state() == QProcess::Running);
+    pid_t pid = process->pid();
+    pid_t pgrp = ::getpgid(pid);
+    QVERIFY(pid != 0);
+    QCOMPARE(pgrp, pid);
+}
+static void cleanupProcess(ProcessBackend *process)
+{
+    QVERIFY(process->state() == QProcess::NotRunning);
+    QVERIFY(process->parent() == NULL);
+    delete process;
+}
+
 typedef void (*CommandFunc)(ProcessBackend *, const char *);
 
 static void startAndStopClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
@@ -335,7 +350,7 @@ static void startAndStopClient(ProcessBackendManager *manager, ProcessInfo info,
     Spy spy(process);
     process->start();
     spy.waitStart();
-    QVERIFY(process->state() == QProcess::Running);
+    verifyRunning(process);
     spy.check(1,0,0,2);
 
     func(process, "stop");
@@ -344,9 +359,7 @@ static void startAndStopClient(ProcessBackendManager *manager, ProcessInfo info,
     spy.checkExitCode(0);
     spy.checkExitStatus(QProcess::NormalExit);
 
-    QVERIFY(process->state() == QProcess::NotRunning);
-    QVERIFY(process->parent() == NULL);
-    delete process;
+    cleanupProcess(process);
 }
 
 static void startAndKillClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
@@ -360,8 +373,8 @@ static void startAndKillClient(ProcessBackendManager *manager, ProcessInfo info,
     Spy spy(process);
     process->start();
     spy.waitStart();
+    verifyRunning(process);
     spy.check(1,0,0,2);
-    QVERIFY(process->state() == QProcess::Running);
 
     process->stop();
     spy.waitFinished();
@@ -370,9 +383,7 @@ static void startAndKillClient(ProcessBackendManager *manager, ProcessInfo info,
     spy.checkExitStatus(QProcess::CrashExit);
     spy.checkErrors(QList<QProcess::ProcessError>() << QProcess::Crashed);
 
-    QVERIFY(process->state() == QProcess::NotRunning);
-    QVERIFY(process->parent() == NULL);
-    delete process;
+    cleanupProcess(process);
 }
 
 static void startAndCrashClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
@@ -384,7 +395,7 @@ static void startAndCrashClient(ProcessBackendManager *manager, ProcessInfo info
     Spy spy(process);
     process->start();
     spy.waitStart();
-    QVERIFY(process->state() == QProcess::Running);
+    verifyRunning(process);
     spy.check(1,0,0,2);
 
     func(process, "crash");
@@ -393,9 +404,7 @@ static void startAndCrashClient(ProcessBackendManager *manager, ProcessInfo info
     spy.checkExitCode(2);
     spy.checkExitStatus(QProcess::NormalExit);
 
-    QVERIFY(process->state() == QProcess::NotRunning);
-    QVERIFY(process->parent() == NULL);
-    delete process;
+    cleanupProcess(process);
 }
 
 static void failToStartClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
@@ -411,9 +420,7 @@ static void failToStartClient(ProcessBackendManager *manager, ProcessInfo info, 
     spy.waitFailedStart();
     spy.check(0,1,0,2);
 
-    QVERIFY(process->state() == QProcess::NotRunning);
-    QVERIFY(process->parent() == NULL);
-    delete process;
+    cleanupProcess(process);
 }
 
 static void echoClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
@@ -425,7 +432,8 @@ static void echoClient(ProcessBackendManager *manager, ProcessInfo info, Command
     Spy spy(process);
     process->start();
     spy.waitStart();
-    QVERIFY(process->state() == QProcess::Running);
+    verifyRunning(process);
+    spy.check(1,0,0,2);
 
     func(process, "echotest");
     spy.waitStdout();
@@ -437,9 +445,7 @@ static void echoClient(ProcessBackendManager *manager, ProcessInfo info, Command
     spy.checkExitCode(0);
     spy.checkExitStatus(QProcess::NormalExit);
 
-    QVERIFY(process->state() == QProcess::NotRunning);
-    QVERIFY(process->parent() == NULL);
-    delete process;
+    cleanupProcess(process);
 }
 
 static void priorityChangeBeforeClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
@@ -451,7 +457,8 @@ static void priorityChangeBeforeClient(ProcessBackendManager *manager, ProcessIn
     Spy spy(process);
     process->start();
     spy.waitStart();
-    QVERIFY(process->state() == QProcess::Running);
+    verifyRunning(process);
+    spy.check(1,0,0,2);
     QCOMPARE(process->actualPriority(), 19);
 
     func(process, "stop");
@@ -460,9 +467,7 @@ static void priorityChangeBeforeClient(ProcessBackendManager *manager, ProcessIn
     spy.checkExitCode(0);
     spy.checkExitStatus(QProcess::NormalExit);
 
-    QVERIFY(process->state() == QProcess::NotRunning);
-    QVERIFY(process->parent() == NULL);
-    delete process;
+    cleanupProcess(process);
 }
 
 static void priorityChangeAfterClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
@@ -474,7 +479,8 @@ static void priorityChangeAfterClient(ProcessBackendManager *manager, ProcessInf
     Spy spy(process);
     process->start();
     spy.waitStart();
-    QVERIFY(process->state() == QProcess::Running);
+    verifyRunning(process);
+    spy.check(1,0,0,2);
 
     process->setDesiredPriority(19);
     waitForPriority(process, 19);
@@ -485,9 +491,7 @@ static void priorityChangeAfterClient(ProcessBackendManager *manager, ProcessInf
     spy.checkExitCode(0);
     spy.checkExitStatus(QProcess::NormalExit);
 
-    QVERIFY(process->state() == QProcess::NotRunning);
-    QVERIFY(process->parent() == NULL);
-    delete process;
+    cleanupProcess(process);
 }
 
 #if defined(Q_OS_LINUX)
@@ -514,7 +518,8 @@ static void oomChangeBeforeClient(ProcessBackendManager *manager, ProcessInfo in
     Spy spy(process);
     process->start();
     spy.waitStart();
-    QVERIFY(process->state() == QProcess::Running);
+    verifyRunning(process);
+    spy.check(1,0,0,2);
     QCOMPARE(process->actualOomAdjustment(), 500);
 
     func(process, "stop");
@@ -523,9 +528,7 @@ static void oomChangeBeforeClient(ProcessBackendManager *manager, ProcessInfo in
     spy.checkExitCode(0);
     spy.checkExitStatus(QProcess::NormalExit);
 
-    QVERIFY(process->state() == QProcess::NotRunning);
-    QVERIFY(process->parent() == NULL);
-    delete process;
+    cleanupProcess(process);
 }
 
 static void oomChangeAfterClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
@@ -537,7 +540,8 @@ static void oomChangeAfterClient(ProcessBackendManager *manager, ProcessInfo inf
     Spy spy(process);
     process->start();
     spy.waitStart();
-    QVERIFY(process->state() == QProcess::Running);
+    verifyRunning(process);
+    spy.check(1,0,0,2);
 
     process->setDesiredOomAdjustment(499);
     waitForOom(process, 499);
@@ -548,9 +552,7 @@ static void oomChangeAfterClient(ProcessBackendManager *manager, ProcessInfo inf
     spy.checkExitCode(0);
     spy.checkExitStatus(QProcess::NormalExit);
 
-    QVERIFY(process->state() == QProcess::NotRunning);
-    QVERIFY(process->parent() == NULL);
-    delete process;
+    cleanupProcess(process);
 }
 
 #endif // defined(Q_OS_LINUX)
