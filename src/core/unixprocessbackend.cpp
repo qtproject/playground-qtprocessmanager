@@ -44,10 +44,21 @@
 #include "procutils.h"
 #include <sys/resource.h>
 #include <errno.h>
+#include <signal.h>
 #include <QDebug>
 #include <QFile>
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
+
+static void sendSignalToProcess(pid_t pid, int sig)
+{
+    pid_t pgrp = ::getpgid(pid);
+    if (pgrp != -1 && ::killpg(pgrp, sig) == 0)
+        return;
+
+    qWarning("Unable terminate process group: %d, switching to process %d", pgrp, pid);
+    ::kill(pid, sig);
+}
 
 /*!
     \class UnixProcessBackend
@@ -67,10 +78,13 @@ UnixProcessBackend::UnixProcessBackend(const ProcessInfo& info, QObject *parent)
 /*!
   Destroy this process object.
   Any created QProcess is a child of this object, so it will be automatically terminated.
+  We have to do some special processing to terminate the process group.
 */
 
 UnixProcessBackend::~UnixProcessBackend()
 {
+    if (m_process && m_process->state() != QProcess::NotRunning)
+        sendSignalToProcess(m_process->pid(), SIGKILL);
 }
 
 /*!
@@ -221,11 +235,12 @@ void UnixProcessBackend::stop(int timeout)
 
     if (m_process->state() != QProcess::NotRunning) {
         if (timeout > 0) {
-        m_process->terminate();
+            sendSignalToProcess(m_process->pid(), SIGTERM);
             m_killTimer.start(timeout);
-    }
-    else
-        m_process->kill();
+        }
+        else {
+            sendSignalToProcess(m_process->pid(), SIGKILL);
+        }
     }
 }
 
