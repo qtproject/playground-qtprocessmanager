@@ -56,6 +56,8 @@
 #include "pipeprocessbackendfactory.h"
 #include "socketprocessbackendfactory.h"
 
+#include <signal.h>
+
 QT_USE_NAMESPACE_PROCESSMANAGER
 
 Q_DECLARE_METATYPE(QProcess::ExitStatus);
@@ -138,7 +140,7 @@ bool isProcessStopped(Q_PID pid)
     return false;
 }
 
-static void waitForInternalProcess(ProcessBackendManager *manager, int timeout=5000)
+static void waitForInternalProcess(ProcessBackendManager *manager, int num=1, int timeout=5000)
 {
     QTime stopWatch;
     stopWatch.start();
@@ -146,7 +148,7 @@ static void waitForInternalProcess(ProcessBackendManager *manager, int timeout=5
         QTestEventLoop::instance().enterLoop(1);
         if (stopWatch.elapsed() >= timeout)
             QFAIL("Timed out");
-        if (manager->internalProcesses().count() == 1)
+        if (manager->internalProcesses().count() == num)
             break;
     }
 }
@@ -713,6 +715,8 @@ private slots:
     void socketLauncherOomChangeAfter()       { socketLauncherTest(oomChangeAfterClient); }
 #endif
 
+    void prelaunchChildAbort();
+
     void frontend();
     void subclassFrontend();
 };
@@ -999,11 +1003,30 @@ void tst_ProcessManager::socketLauncherCrash()
     delete remote;
 }
 
-   */
+*/
+
+void tst_ProcessManager::prelaunchChildAbort()
+{
+    ProcessBackendManager *manager = new ProcessBackendManager;
+    ProcessInfo info;
+    info.setValue("program", "testPrelaunch/testPrelaunch");
+    PrelaunchProcessBackendFactory *factory = new PrelaunchProcessBackendFactory(info);
+    manager->addFactory(factory);
+
+    // The factory should not have launched
+    QVERIFY(manager->internalProcesses().count() == 0);
+
+    waitForInternalProcess(manager, 1, factory->launchInterval() + 2000);
+    Q_PID pid = manager->internalProcesses().at(0);
+    // Kill the prelaunched process and verify that it is restarted
+    ::kill(pid, SIGKILL);
+    waitForInternalProcess(manager, 0);
+    waitForInternalProcess(manager, 1, factory->launchInterval() + 2000);
+    delete manager;
+}
 
 void tst_ProcessManager::frontend()
 {
-    QString socketname = "/tmp/tst_socket";
     ProcessManager *manager = new ProcessManager;
     manager->addBackendFactory(new StandardProcessBackendFactory);
 
@@ -1061,7 +1084,6 @@ private:
 
 void tst_ProcessManager::subclassFrontend()
 {
-    QString socketname = "/tmp/tst_socket";
     TestManager *manager = new TestManager;
     manager->addBackendFactory(new StandardProcessBackendFactory);
 

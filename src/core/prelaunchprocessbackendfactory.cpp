@@ -107,6 +107,7 @@ ProcessBackend * PrelaunchProcessBackendFactory::create(const ProcessInfo& info,
         m_timer.start();
         prelaunch->setInfo(info);
         prelaunch->setParent(parent);
+        prelaunch->disconnect(this);
     }
     else {
         // qDebug() << "Creating prelaunch from scratch";
@@ -130,6 +131,31 @@ QList<Q_PID> PrelaunchProcessBackendFactory::internalProcesses()
 }
 
 /*!
+  Return the current launch interval in milliseconds
+ */
+
+int PrelaunchProcessBackendFactory::launchInterval() const
+{
+    return m_timer.interval();
+}
+
+/*!
+  Set the current launch interval to \a interval milliseconds
+*/
+
+void PrelaunchProcessBackendFactory::setLaunchInterval(int interval)
+{
+    if (m_timer.interval() != interval) {
+        bool active = m_timer.isActive();
+        m_timer.stop();
+        m_timer.setInterval(interval);
+        if (active)
+            m_timer.start();
+        emit launchIntervalChanged();
+    }
+}
+
+/*!
   Under memory restriction, terminate the prelaunch process.
  */
 
@@ -147,13 +173,35 @@ void PrelaunchProcessBackendFactory::handleMemoryRestrictionChange()
     }
 }
 
+/*!
+  Launch a new prelaunched process backend.
+  In the future, it would be useful if the launch didn't require a timeout.
+ */
+
 void PrelaunchProcessBackendFactory::timeout()
 {
     Q_ASSERT(m_prelaunch == NULL);
     Q_ASSERT(!m_memoryRestricted);
 
     m_prelaunch = new PrelaunchProcessBackend(m_info, this);
+    connect(m_prelaunch, SIGNAL(finished(int,QProcess::ExitStatus)),
+            SLOT(prelaunchFinished(int,QProcess::ExitStatus)));
     m_prelaunch->prestart();
+}
+
+/*!
+  Handle a surprise termination condition - the prelaunched process died
+  unexpectedly.
+ */
+
+void PrelaunchProcessBackendFactory::prelaunchFinished(int exitCode, QProcess::ExitStatus status)
+{
+    qWarning() << Q_FUNC_INFO << "died unexpectedly" << exitCode << status;
+    if (m_prelaunch) {
+        delete m_prelaunch;
+        m_prelaunch = NULL;
+    }
+    m_timer.start();
 }
 
 #include "moc_prelaunchprocessbackendfactory.cpp"

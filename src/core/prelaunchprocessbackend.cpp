@@ -167,13 +167,12 @@ QProcess::ProcessState PrelaunchProcessBackend::state() const
 void PrelaunchProcessBackend::handleProcessStarted()
 {
     UnixProcessBackend::handleProcessStarted();
-    if (m_started)
-        emit started();
-    else {
+    if (!m_started) {
         QueuedSignal s;
         s.name = QueuedSignal::Started;
         m_queue << s;
     }
+    emit started();
 }
 
 /*!
@@ -182,14 +181,13 @@ void PrelaunchProcessBackend::handleProcessStarted()
 void PrelaunchProcessBackend::handleProcessError(QProcess::ProcessError processError)
 {
     UnixProcessBackend::handleProcessError(processError);
-    if (m_started)
-        emit error(processError);
-    else {
+    if (!m_started) {
         QueuedSignal s;
         s.name = QueuedSignal::Error;
         s.n.error = processError;
         m_queue << s;
     }
+    emit error(processError);
 }
 
 /*!
@@ -198,15 +196,14 @@ void PrelaunchProcessBackend::handleProcessError(QProcess::ProcessError processE
 void PrelaunchProcessBackend::handleProcessFinished(int exitCode, QProcess::ExitStatus status)
 {
     UnixProcessBackend::handleProcessFinished(exitCode, status);
-    if (m_started)
-        emit finished(exitCode, status);
-    else {
+    if (!m_started) {
         QueuedSignal s;
         s.name = QueuedSignal::Finished;
         s.n.f.exitCode = exitCode;
         s.n.f.exitStatus = status;
         m_queue << s;
     }
+    emit finished(exitCode, status);
 }
 
 /*!
@@ -215,14 +212,13 @@ void PrelaunchProcessBackend::handleProcessFinished(int exitCode, QProcess::Exit
 void PrelaunchProcessBackend::handleProcessStateChanged(QProcess::ProcessState state)
 {
     UnixProcessBackend::handleProcessStateChanged(state);
-    if (m_started)
-        emit stateChanged(state);
-    else {
+    if (!m_started) {
         QueuedSignal s;
         s.name = QueuedSignal::StateChanged;
         s.n.state = state;
         m_queue << s;
     }
+    emit stateChanged(state);
 }
 
 /*!

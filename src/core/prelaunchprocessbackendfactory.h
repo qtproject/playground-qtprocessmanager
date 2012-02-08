@@ -52,6 +52,8 @@ class PrelaunchProcessBackend;
 class Q_ADDON_PROCESSMANAGER_EXPORT PrelaunchProcessBackendFactory : public ProcessBackendFactory
 {
     Q_OBJECT
+    Q_PROPERTY(int launchInterval READ launchInterval WRITE setLaunchInterval NOTIFY launchIntervalChanged)
+
 public:
     PrelaunchProcessBackendFactory(const ProcessInfo& info, QObject *parent = 0);
     virtual ~PrelaunchProcessBackendFactory();
@@ -60,11 +62,18 @@ public:
 
     virtual QList<Q_PID>    internalProcesses();
 
+    int  launchInterval() const;
+    void setLaunchInterval(int interval);
+
+signals:
+    void launchIntervalChanged();
+
 protected:
     virtual void handleMemoryRestrictionChange();
 
 private slots:
     void timeout();
+    void prelaunchFinished(int, QProcess::ExitStatus);
 
 private:
     PrelaunchProcessBackend *m_prelaunch;
