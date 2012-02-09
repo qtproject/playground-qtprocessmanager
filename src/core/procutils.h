@@ -41,12 +41,60 @@
 #define PROCUTILS_H
 
 #include <QString>
+#include <QList>
+#include <QObject>
 
 QT_FORWARD_DECLARE_CLASS(QLocalSocket)
 
 #include "processmanager-global.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
+
+struct ProcessPrivateData;
+
+class Q_ADDON_PROCESSMANAGER_EXPORT ExecutingProcessInfo : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(pid_t pid READ pid CONSTANT)
+    Q_PROPERTY(pid_t ppid READ ppid CONSTANT)
+    Q_PROPERTY(pid_t pgrp READ pgrp CONSTANT)
+    Q_PROPERTY(pid_t sid READ sid CONSTANT)
+    Q_PROPERTY(uid_t uid READ uid CONSTANT)
+    Q_PROPERTY(uid_t euid READ euid CONSTANT)
+    Q_PROPERTY(uid_t suid READ suid CONSTANT)
+    Q_PROPERTY(gid_t gid READ gid CONSTANT)
+    Q_PROPERTY(gid_t egid READ egid CONSTANT)
+    Q_PROPERTY(gid_t sgid READ sgid CONSTANT)
+    Q_PROPERTY(QList<gid_t> groups READ groups CONSTANT)
+    Q_PROPERTY(int priority READ priority CONSTANT)
+    Q_PROPERTY(int nice READ nice CONSTANT)
+    Q_PROPERTY(QString name READ name CONSTANT)
+
+public:
+    ExecutingProcessInfo(pid_t pid);
+
+    bool exists() const;
+    pid_t pid() const;
+    pid_t ppid() const;
+    pid_t pgrp() const;
+    pid_t sid() const;
+    uid_t uid() const;
+    uid_t euid() const;
+    uid_t suid() const;
+    gid_t gid() const;
+    gid_t egid() const;
+    gid_t sgid() const;
+    int   priority() const;
+    int   nice() const;
+
+    QList<gid_t> groups() const { return m_groups; }
+    QString      name() const { return m_name; }
+
+private:
+    struct ProcessPrivateData *m_data;
+    QList<gid_t>               m_groups;
+    QString                    m_name;
+};
 
 class Q_ADDON_PROCESSMANAGER_EXPORT ProcUtils
 {
