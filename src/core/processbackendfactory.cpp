@@ -38,6 +38,7 @@
 ****************************************************************************/
 
 #include "processbackendfactory.h"
+#include "abstractmatcher.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
@@ -54,6 +55,7 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 ProcessBackendFactory::ProcessBackendFactory(QObject *parent)
     : QObject(parent)
+    , m_matcher(NULL)
     , m_memoryRestricted(false)
 {
 }
@@ -99,12 +101,52 @@ void ProcessBackendFactory::handleMemoryRestrictionChange()
 }
 
 /*!
+   Return the current AbstractMatcher object
+ */
+
+AbstractMatcher *ProcessBackendFactory::matcher() const
+{
+    return m_matcher;
+}
+
+/*!
+   Set a new process AbstractMatcher object \a matcher.
+   The ProcessBackendFactory takes over parentage of the AbstractMatcher.
+ */
+
+void ProcessBackendFactory::setMatcher(AbstractMatcher *matcher)
+{
+    if (matcher != m_matcher) {
+        if (m_matcher)
+            delete m_matcher;
+        m_matcher = matcher;
+        m_matcher->setParent(this);
+        emit matcherChanged();
+    }
+}
+
+/*!
   \fn bool ProcessBackendFactory::canCreate(const ProcessInfo& info) const
 
   Return true if this ProcessBackendFactory matches the ProcessInfo \a info
-  process binding and can create an appropriate process.
+  process binding and can create an appropriate process.  The default implementation
+  delegates the decision to the AbstractMatcher object.  If no AbstractMatcher
+  has been installed, the default implementation returns true.
 
-  This virtual function must be overridden.
+  This virtual function may be overridden.
+*/
+
+bool ProcessBackendFactory::canCreate(const ProcessInfo& info) const
+{
+    if (m_matcher)
+        return m_matcher->matches(info);
+    return true;
+}
+
+/*!
+  \fn void ProcessBackendFactory::matcherChanged()
+
+  Signal emitted whenever the AbstractMatcher is changed.
 */
 
 /*!

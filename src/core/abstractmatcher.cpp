@@ -37,48 +37,33 @@
 **
 ****************************************************************************/
 
-#ifndef PROCESS_BACKEND_FACTORY_H
-#define PROCESS_BACKEND_FACTORY_H
-
-#include <QObject>
-#include <QProcessEnvironment>
-
-#include "processmanager-global.h"
+#include "abstractmatcher.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-class ProcessBackend;
-class ProcessInfo;
-class AbstractMatcher;
+/*!
+  \class AbstractMatcher
+  \brief The AbstractMatcher class is a virtual class for matching creation requests.
 
-class Q_ADDON_PROCESSMANAGER_EXPORT ProcessBackendFactory : public QObject
+  You must subclass this class to do anything useful.
+*/
+
+/*!
+    Construct a AbstractMatcher with an optional \a parent.
+*/
+
+AbstractMatcher::AbstractMatcher(QObject *parent)
+    : QObject(parent)
 {
-    Q_OBJECT
-    Q_PROPERTY(AbstractMatcher* matcher READ matcher WRITE setMatcher NOTIFY matcherChanged);
+}
 
-public:
-    ProcessBackendFactory(QObject *parent = 0);
-    virtual ~ProcessBackendFactory();
-    virtual bool            canCreate(const ProcessInfo& info) const;
-    virtual ProcessBackend *create(const ProcessInfo& info, QObject *parent) = 0;
+/*!
+    \fn AbstractMatcher::matches(const ProcessInfo& info)
 
-    void                    setMemoryRestricted(bool);
-    virtual QList<Q_PID>    internalProcesses();
+    Return true if the ProcessInfo \a info record matches.
+    You must override this function.
+*/
 
-    AbstractMatcher * matcher() const;
-    void              setMatcher(AbstractMatcher *);
-
-signals:
-    void matcherChanged();
-
-protected:
-    virtual void handleMemoryRestrictionChange();
-
-protected:
-    AbstractMatcher *m_matcher;
-    bool             m_memoryRestricted;
-};
+#include "moc_abstractmatcher.cpp"
 
 QT_END_NAMESPACE_PROCESSMANAGER
-
-#endif // PROCESS_BACKEND_FACTORY_H
