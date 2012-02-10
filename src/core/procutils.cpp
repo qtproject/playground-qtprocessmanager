@@ -47,10 +47,11 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QLocalSocket>
-
 #include <QDebug>
 
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_LINUX)
+#include <QRegExp>
+#elif defined(Q_OS_MAC)
 #include <sys/sysctl.h>
 #include <errno.h>
 #endif
@@ -72,17 +73,12 @@ ExecutingProcessInfo::ExecutingProcessInfo(pid_t pid)
     : m_data(0)
 {
 #if defined(Q_OS_LINUX)
-    QFile file(QString::fromLatin1("/proc/%1/stat").arg(pid));
-    if (!file.open(QIODevice::ReadOnly))
-        return;
-
-    m_data = new ProcessPrivateData;
-    memset(m_data, 0, sizeof(ProcessPrivateData));
-    QList<QByteArray> contents = file.readAll().split(' ');
-    file.close();
+    static QRegExp statFile("^(\\d+) \\(.*\\) [RSDZTW] (\\d+) (\\d+) (\\d+)(?: \\d+){11} (\\d+) (\\d+)");
     /*
        Index, name, format, description (from man 5 page for proc)
        0  pid %d        The process ID.
+       1  name (%s)     The process name, surrounded by parenthesis
+       2  state %c      One of R (running), S (sleeping), D (disk sleep), ...
        3  ppid %d       The PID of the parent.
        4  pgrp %d       The process group ID of the process.
        5  session %d    The session ID of the process.
@@ -93,12 +89,27 @@ ExecutingProcessInfo::ExecutingProcessInfo(pid_t pid)
        18 nice %ld      The nice value (see setpriority(2)), a value in the range
                         19 (low priority) to -20 (high priority).
      */
-    m_data->pid      = contents.at(0).toInt();
-    m_data->ppid     = contents.at(3).toInt();
-    m_data->pgrp     = contents.at(4).toInt();
-    m_data->sid      = contents.at(5).toInt();
-    m_data->priority = contents.at(17).toLong();
-    m_data->nice     = contents.at(18).toLong();
+
+    QFile file(QString::fromLatin1("/proc/%1/stat").arg(pid));
+    if (!file.open(QIODevice::ReadOnly))
+        return;
+
+    m_data = new ProcessPrivateData;
+    memset(m_data, 0, sizeof(ProcessPrivateData));
+    QByteArray contents = file.readAll();
+    file.close();
+
+    if (statFile.indexIn(contents) != 0) {
+        qWarning("Did not match pid=%d", pid);
+        return;
+    }
+
+    m_data->pid      = statFile.cap(1).toInt();
+    m_data->ppid     = statFile.cap(2).toInt();
+    m_data->pgrp     = statFile.cap(3).toInt();
+    m_data->sid      = statFile.cap(4).toInt();
+    m_data->priority = statFile.cap(5).toLong();
+    m_data->nice     = statFile.cap(6).toLong();
 
     /* Some of the contents (from kernel documentation proc.txt)
        Field       Content
@@ -152,10 +163,8 @@ ExecutingProcessInfo::ExecutingProcessInfo(pid_t pid)
     name[2] = KERN_PROC_PID;
     name[3] = pid;
 
-    if (::sysctl(name, 4, NULL, &bufferSize, NULL, 0) < 0) {
-        qDebug() << "error code" << errno;
+    if (::sysctl(name, 4, NULL, &bufferSize, NULL, 0) < 0)
         return;
-    }
     struct kinfo_proc *kinfo = (struct kinfo_proc *) malloc(bufferSize);
     if (!kinfo)
         return;
@@ -169,7 +178,6 @@ ExecutingProcessInfo::ExecutingProcessInfo(pid_t pid)
         return;
     }
 
-    qDebug() << "Creating data";
     m_data = new ProcessPrivateData;
     memset(m_data, 0, sizeof(ProcessPrivateData));
 
