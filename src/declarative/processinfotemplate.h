@@ -65,6 +65,7 @@ class Q_ADDON_PROCESSMANAGER_EXPORT ProcessInfoTemplate : public QObject
     Q_PROPERTY(QDeclarativeScriptString startOutputPattern READ startOutputPattern WRITE setStartOutputPattern NOTIFY startOutputPatternChanged)
     Q_PROPERTY(QDeclarativeScriptString priority READ priority WRITE setPriority NOTIFY priorityChanged)
     Q_PROPERTY(QDeclarativeScriptString customValues READ customValues WRITE setCustomValues NOTIFY customValuesChanged)
+    Q_PROPERTY(QDeclarativeScriptString oomAdjustment READ oomAdjustment WRITE setOomAdjustment NOTIFY oomAdjustmentChanged)
 public:
     ProcessInfoTemplate(QObject *parent = 0);
 
@@ -78,6 +79,7 @@ public:
     QDeclarativeScriptString startOutputPattern() const;
     QDeclarativeScriptString priority() const;
     QDeclarativeScriptString customValues() const;
+    QDeclarativeScriptString oomAdjustment() const;
 
     Q_INVOKABLE virtual ProcessInfo *createProcessInfo(const QVariantMap &dict);
 
@@ -95,6 +97,7 @@ public slots:
     void setStartOutputPattern(const QDeclarativeScriptString &startOutputPattern);
     void setPriority(const QDeclarativeScriptString &value);
     void setCustomValues(const QDeclarativeScriptString &vals);
+    void setOomAdjustment(const QDeclarativeScriptString &vals);
 
 signals:
     void identifierChanged();
@@ -107,6 +110,7 @@ signals:
     void startOutputPatternChanged();
     void priorityChanged();
     void customValuesChanged();
+    void oomAdjustmentChanged();
 
 protected:
     virtual QVariantMap bindData(const QVariantMap &dict);

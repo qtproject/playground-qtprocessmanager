@@ -132,6 +132,13 @@ const QString ProcessInfoTemplate::kCustomValuesStr = QString::fromLatin1("_cust
 */
 
 /*!
+    \property ProcessInfoTemplate::oomAdjustment
+    \brief oomAdjustment for this template
+
+    Specifies a oomAdjustment for this template.
+*/
+
+/*!
    Constructs a ProcessInfoTemplate with optional \a parent.
  */
 
@@ -228,6 +235,15 @@ QDeclarativeScriptString ProcessInfoTemplate::priority() const
 QDeclarativeScriptString ProcessInfoTemplate::customValues() const
 {
     return scriptString(kCustomValuesStr);
+}
+
+/*!
+    Return the template oomAdjustment
+*/
+
+QDeclarativeScriptString ProcessInfoTemplate::oomAdjustment() const
+{
+    return scriptString(ProcessInfoConstants::OomAdjustment);
 }
 
 /*!
@@ -328,6 +344,16 @@ void ProcessInfoTemplate::setCustomValues(const QDeclarativeScriptString &custom
 {
     setScriptString(kCustomValuesStr, customValues);
     emit customValuesChanged();
+}
+
+/*!
+    Set the template \a oomAdjustment
+*/
+
+void ProcessInfoTemplate::setOomAdjustment(const QDeclarativeScriptString &oomAdjustment)
+{
+    setScriptString(ProcessInfoConstants::OomAdjustment, oomAdjustment);
+    emit oomAdjustmentChanged();
 }
 
 /*!
@@ -500,6 +526,11 @@ QVariantMap ProcessInfoTemplate::bindData(const QVariantMap &dict)
 /*!
     \fn void ProcessInfoTemplate::customValuesChanged()
     Emitted when the template customValues change
+*/
+
+/*!
+    \fn void ProcessInfoTemplate::oomAdjustmentChanged()
+    Emitted when the template oomAdjustment changes
 */
 
 #include "moc_processinfotemplate.cpp"
