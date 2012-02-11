@@ -8,7 +8,8 @@ PUBLIC_HEADERS += \
   $$PWD/processbackend.h \
   $$PWD/processbackendfactory.h \
   $$PWD/processbackendmanager.h \
-  $$PWD/abstractmatcher.h \
+  $$PWD/matchdelegate.h \
+  $$PWD/matchinfo.h \
   $$PWD/processinfo.h \
   $$PWD/processmanager.h \
   $$PWD/gdbprocessbackendfactory.h \
@@ -38,7 +39,8 @@ SOURCES += \
   $$PWD/processbackend.cpp \
   $$PWD/processbackendfactory.cpp \
   $$PWD/processbackendmanager.cpp \
-  $$PWD/abstractmatcher.cpp \
+  $$PWD/matchdelegate.cpp \
+  $$PWD/matchinfo.cpp \
   $$PWD/processinfo.cpp \
   $$PWD/processmanager.cpp \
   $$PWD/unixprocessbackend.cpp \

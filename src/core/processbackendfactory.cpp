@@ -38,7 +38,7 @@
 ****************************************************************************/
 
 #include "processbackendfactory.h"
-#include "abstractmatcher.h"
+#include "matchdelegate.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
@@ -55,7 +55,7 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 ProcessBackendFactory::ProcessBackendFactory(QObject *parent)
     : QObject(parent)
-    , m_matcher(NULL)
+    , m_matchDelegate(NULL)
     , m_memoryRestricted(false)
 {
 }
@@ -101,27 +101,27 @@ void ProcessBackendFactory::handleMemoryRestrictionChange()
 }
 
 /*!
-   Return the current AbstractMatcher object
+   Return the current MatchDelegate object
  */
 
-AbstractMatcher *ProcessBackendFactory::matcher() const
+MatchDelegate *ProcessBackendFactory::matchDelegate() const
 {
-    return m_matcher;
+    return m_matchDelegate;
 }
 
 /*!
-   Set a new process AbstractMatcher object \a matcher.
-   The ProcessBackendFactory takes over parentage of the AbstractMatcher.
+   Set a new process MatchDelegate object \a matchDelegate.
+   The ProcessBackendFactory takes over parentage of the MatchDelegate.
  */
 
-void ProcessBackendFactory::setMatcher(AbstractMatcher *matcher)
+void ProcessBackendFactory::setMatchDelegate(MatchDelegate *matchDelegate)
 {
-    if (matcher != m_matcher) {
-        if (m_matcher)
-            delete m_matcher;
-        m_matcher = matcher;
-        m_matcher->setParent(this);
-        emit matcherChanged();
+    if (matchDelegate != m_matchDelegate) {
+        if (m_matchDelegate)
+            delete m_matchDelegate;
+        m_matchDelegate = matchDelegate;
+        m_matchDelegate->setParent(this);
+        emit matchDelegateChanged();
     }
 }
 
@@ -130,7 +130,7 @@ void ProcessBackendFactory::setMatcher(AbstractMatcher *matcher)
 
   Return true if this ProcessBackendFactory matches the ProcessInfo \a info
   process binding and can create an appropriate process.  The default implementation
-  delegates the decision to the AbstractMatcher object.  If no AbstractMatcher
+  delegates the decision to the MatchDelegate object.  If no MatchDelegate
   has been installed, the default implementation returns true.
 
   This virtual function may be overridden.
@@ -138,15 +138,15 @@ void ProcessBackendFactory::setMatcher(AbstractMatcher *matcher)
 
 bool ProcessBackendFactory::canCreate(const ProcessInfo& info) const
 {
-    if (m_matcher)
-        return m_matcher->matches(info);
+    if (m_matchDelegate)
+        return m_matchDelegate->matches(info);
     return true;
 }
 
 /*!
-  \fn void ProcessBackendFactory::matcherChanged()
+  \fn void ProcessBackendFactory::matchDelegateChanged()
 
-  Signal emitted whenever the AbstractMatcher is changed.
+  Signal emitted whenever the MatchDelegate is changed.
 */
 
 /*!

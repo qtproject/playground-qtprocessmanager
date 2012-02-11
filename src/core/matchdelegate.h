@@ -37,33 +37,28 @@
 **
 ****************************************************************************/
 
-#include "abstractmatcher.h"
+#ifndef PROCESS_MATCHDELEGATE_H
+#define PROCESS_MATCHDELEGATE_H
+
+#include <QObject>
+
+#include "processmanager-global.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-/*!
-  \class AbstractMatcher
-  \brief The AbstractMatcher class is a virtual class for matching creation requests.
+class ProcessInfo;
 
-  You must subclass this class to do anything useful.
-*/
-
-/*!
-    Construct a AbstractMatcher with an optional \a parent.
-*/
-
-AbstractMatcher::AbstractMatcher(QObject *parent)
-    : QObject(parent)
+class Q_ADDON_PROCESSMANAGER_EXPORT MatchDelegate : public QObject
 {
-}
+    Q_OBJECT
+public:
+    explicit MatchDelegate(QObject *parent = 0);
+    virtual bool matches(const ProcessInfo& info) = 0;
 
-/*!
-    \fn AbstractMatcher::matches(const ProcessInfo& info)
-
-    Return true if the ProcessInfo \a info record matches.
-    You must override this function.
-*/
-
-#include "moc_abstractmatcher.cpp"
+private:
+    Q_DISABLE_COPY(MatchDelegate);
+};
 
 QT_END_NAMESPACE_PROCESSMANAGER
+
+#endif // PROCESS_MATCHDELEGATE_H

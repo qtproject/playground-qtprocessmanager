@@ -37,48 +37,35 @@
 **
 ****************************************************************************/
 
-#ifndef PROCESS_BACKEND_FACTORY_H
-#define PROCESS_BACKEND_FACTORY_H
+#ifndef PROCESS_MATCHINFO_H
+#define PROCESS_MATCHINFO_H
 
-#include <QObject>
-#include <QProcessEnvironment>
-
-#include "processmanager-global.h"
+#include "matchdelegate.h"
+#include "processinfo.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-class ProcessBackend;
-class ProcessInfo;
-class MatchDelegate;
-
-class Q_ADDON_PROCESSMANAGER_EXPORT ProcessBackendFactory : public QObject
+class Q_ADDON_PROCESSMANAGER_EXPORT MatchInfo : public MatchDelegate
 {
     Q_OBJECT
-    Q_PROPERTY(MatchDelegate* matchDelegate READ matchDelegate WRITE setMatchDelegate NOTIFY matchDelegateChanged);
-
+    Q_PROPERTY(ProcessInfo info READ info WRITE setInfo NOTIFY infoChanged)
 public:
-    ProcessBackendFactory(QObject *parent = 0);
-    virtual ~ProcessBackendFactory();
-    virtual bool            canCreate(const ProcessInfo& info) const;
-    virtual ProcessBackend *create(const ProcessInfo& info, QObject *parent) = 0;
+    explicit MatchInfo(QObject *parent = 0);
+    virtual bool matches(const ProcessInfo& info);
 
-    void                    setMemoryRestricted(bool);
-    virtual QList<Q_PID>    internalProcesses();
-
-    MatchDelegate * matchDelegate() const;
-    void            setMatchDelegate(MatchDelegate *);
+    ProcessInfo info() const;
+    void        setInfo(const ProcessInfo& info);
 
 signals:
-    void matchDelegateChanged();
+    void infoChanged();
 
-protected:
-    virtual void handleMemoryRestrictionChange();
+private:
+    Q_DISABLE_COPY(MatchInfo);
 
-protected:
-    MatchDelegate *m_matchDelegate;
-    bool           m_memoryRestricted;
+private:
+    ProcessInfo m_info;
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER
 
-#endif // PROCESS_BACKEND_FACTORY_H
+#endif // PROCESS_MATCHINFO_H

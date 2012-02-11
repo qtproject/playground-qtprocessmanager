@@ -1,2 +1,2 @@
 TEMPLATE = subdirs
-SUBDIRS = processmanager declarative
+SUBDIRS = processmanager declarative matcher

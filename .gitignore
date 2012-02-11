@@ -1,6 +1,7 @@
 *~
 *.o
 *.a
+*.moc
 *#
 moc_*
 *.dylib
