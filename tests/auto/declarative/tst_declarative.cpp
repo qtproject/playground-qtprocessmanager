@@ -47,6 +47,7 @@
 #include "declarativeprocessmanager.h"
 #include "standardprocessbackendfactory.h"
 #include "processfrontend.h"
+#include "processbackend.h"
 #include "process.h"
 
 QT_USE_NAMESPACE_PROCESSMANAGER
@@ -82,6 +83,11 @@ void tst_DeclarativeProcessManager::initTestCase()
     qRegisterMetaType<QProcess::ProcessState>();
     qRegisterMetaType<QProcess::ExitStatus>();
     qRegisterMetaType<QProcess::ProcessError>();
+
+    qRegisterMetaType<ProcessFrontend*>("ProcessFrontend*");
+    qRegisterMetaType<const ProcessFrontend*>("const ProcessFrontend*");
+    qRegisterMetaType<ProcessBackend*>("ProcessBackend*");
+    qRegisterMetaType<ProcessInfo*>("ProcessInfo*");
 }
 
 
