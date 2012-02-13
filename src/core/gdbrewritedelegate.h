@@ -37,55 +37,24 @@
 **
 ****************************************************************************/
 
-#ifndef PROCESS_BACKEND_FACTORY_H
-#define PROCESS_BACKEND_FACTORY_H
+#ifndef GDB_REWRITE_DELEGATE_H
+#define GDB_REWRITE_DELEGATE_H
 
-#include <QObject>
-#include <QProcessEnvironment>
-
-#include "processmanager-global.h"
+#include "rewritedelegate.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-class ProcessBackend;
-class ProcessInfo;
-class MatchDelegate;
-class RewriteDelegate;
-
-class Q_ADDON_PROCESSMANAGER_EXPORT ProcessBackendFactory : public QObject
+class Q_ADDON_PROCESSMANAGER_EXPORT GdbRewriteDelegate : public RewriteDelegate
 {
     Q_OBJECT
-    Q_PROPERTY(MatchDelegate* matchDelegate READ matchDelegate WRITE setMatchDelegate NOTIFY matchDelegateChanged);
-    Q_PROPERTY(RewriteDelegate* rewriteDelegate READ rewriteDelegate WRITE setRewriteDelegate NOTIFY rewriteDelegateChanged);
-
 public:
-    ProcessBackendFactory(QObject *parent = 0);
-    virtual ~ProcessBackendFactory();
-    virtual bool            canCreate(const ProcessInfo& info) const;
-    virtual void            rewrite(ProcessInfo& info);
-    virtual ProcessBackend *create(const ProcessInfo& info, QObject *parent) = 0;
+    explicit GdbRewriteDelegate(QObject *parent = 0);
+    virtual void rewrite(ProcessInfo& info);
 
-    void                    setMemoryRestricted(bool);
-    virtual QList<Q_PID>    internalProcesses();
-
-    MatchDelegate *   matchDelegate() const;
-    void              setMatchDelegate(MatchDelegate *);
-    RewriteDelegate * rewriteDelegate() const;
-    void              setRewriteDelegate(RewriteDelegate *);
-
-signals:
-    void matchDelegateChanged();
-    void rewriteDelegateChanged();
-
-protected:
-    virtual void handleMemoryRestrictionChange();
-
-protected:
-    MatchDelegate   *m_matchDelegate;
-    RewriteDelegate *m_rewriteDelegate;
-    bool             m_memoryRestricted;
+private:
+    Q_DISABLE_COPY(GdbRewriteDelegate);
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER
 
-#endif // PROCESS_BACKEND_FACTORY_H
+#endif // GDB_REWRITE_DELEGATE_H

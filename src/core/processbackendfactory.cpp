@@ -39,6 +39,7 @@
 
 #include "processbackendfactory.h"
 #include "matchdelegate.h"
+#include "rewritedelegate.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
@@ -56,6 +57,7 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 ProcessBackendFactory::ProcessBackendFactory(QObject *parent)
     : QObject(parent)
     , m_matchDelegate(NULL)
+    , m_rewriteDelegate(NULL)
     , m_memoryRestricted(false)
 {
 }
@@ -126,6 +128,31 @@ void ProcessBackendFactory::setMatchDelegate(MatchDelegate *matchDelegate)
 }
 
 /*!
+   Return the current RewriteDelegate object
+ */
+
+RewriteDelegate *ProcessBackendFactory::rewriteDelegate() const
+{
+    return m_rewriteDelegate;
+}
+
+/*!
+   Set a new process RewriteDelegate object \a rewriteDelegate.
+   The ProcessBackendFactory takes over parentage of the RewriteDelegate.
+ */
+
+void ProcessBackendFactory::setRewriteDelegate(RewriteDelegate *rewriteDelegate)
+{
+    if (rewriteDelegate != m_rewriteDelegate) {
+        if (m_rewriteDelegate)
+            delete m_rewriteDelegate;
+        m_rewriteDelegate = rewriteDelegate;
+        m_rewriteDelegate->setParent(this);
+        emit rewriteDelegateChanged();
+    }
+}
+
+/*!
   \fn bool ProcessBackendFactory::canCreate(const ProcessInfo& info) const
 
   Return true if this ProcessBackendFactory matches the ProcessInfo \a info
@@ -144,9 +171,30 @@ bool ProcessBackendFactory::canCreate(const ProcessInfo& info) const
 }
 
 /*!
+  \fn void ProcessBackendFactory::rewrite(ProcessInfo& info)
+
+  Rewrites the ProcessInfo \a info object by passing it to the RewriteDelegate
+  object.  If no RewriteDelegate object is installed, this function does nothing.
+
+  This virtual function may be overridden.
+*/
+
+void ProcessBackendFactory::rewrite(ProcessInfo& info)
+{
+    if (m_rewriteDelegate)
+        m_rewriteDelegate->rewrite(info);
+}
+
+/*!
   \fn void ProcessBackendFactory::matchDelegateChanged()
 
   Signal emitted whenever the MatchDelegate is changed.
+*/
+
+/*!
+  \fn void ProcessBackendFactory::rewriteDelegateChanged()
+
+  Signal emitted whenever the RewriteDelegate is changed.
 */
 
 /*!

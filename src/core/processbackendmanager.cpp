@@ -96,8 +96,11 @@ ProcessBackendManager::~ProcessBackendManager()
 ProcessBackend *ProcessBackendManager::create(const ProcessInfo& info, QObject *parent)
 {
     foreach (ProcessBackendFactory *factory, m_factories) {
-    if (factory->canCreate(info))
-        return factory->create(info, parent);
+        if (factory->canCreate(info)) {
+            ProcessInfo i = info;
+            factory->rewrite(i);
+            return factory->create(i, parent);
+        }
     }
     return NULL;
 }

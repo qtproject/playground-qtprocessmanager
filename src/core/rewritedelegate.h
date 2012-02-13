@@ -37,55 +37,27 @@
 **
 ****************************************************************************/
 
-#ifndef PROCESS_BACKEND_FACTORY_H
-#define PROCESS_BACKEND_FACTORY_H
+#ifndef REWRITE_DELEGATE_H
+#define REWRITE_DELEGATE_H
 
 #include <QObject>
-#include <QProcessEnvironment>
-
 #include "processmanager-global.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-class ProcessBackend;
 class ProcessInfo;
-class MatchDelegate;
-class RewriteDelegate;
 
-class Q_ADDON_PROCESSMANAGER_EXPORT ProcessBackendFactory : public QObject
+class Q_ADDON_PROCESSMANAGER_EXPORT RewriteDelegate : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(MatchDelegate* matchDelegate READ matchDelegate WRITE setMatchDelegate NOTIFY matchDelegateChanged);
-    Q_PROPERTY(RewriteDelegate* rewriteDelegate READ rewriteDelegate WRITE setRewriteDelegate NOTIFY rewriteDelegateChanged);
-
 public:
-    ProcessBackendFactory(QObject *parent = 0);
-    virtual ~ProcessBackendFactory();
-    virtual bool            canCreate(const ProcessInfo& info) const;
-    virtual void            rewrite(ProcessInfo& info);
-    virtual ProcessBackend *create(const ProcessInfo& info, QObject *parent) = 0;
+    explicit RewriteDelegate(QObject *parent = 0);
+    virtual void rewrite(ProcessInfo& info) = 0;
 
-    void                    setMemoryRestricted(bool);
-    virtual QList<Q_PID>    internalProcesses();
-
-    MatchDelegate *   matchDelegate() const;
-    void              setMatchDelegate(MatchDelegate *);
-    RewriteDelegate * rewriteDelegate() const;
-    void              setRewriteDelegate(RewriteDelegate *);
-
-signals:
-    void matchDelegateChanged();
-    void rewriteDelegateChanged();
-
-protected:
-    virtual void handleMemoryRestrictionChange();
-
-protected:
-    MatchDelegate   *m_matchDelegate;
-    RewriteDelegate *m_rewriteDelegate;
-    bool             m_memoryRestricted;
+private:
+    Q_DISABLE_COPY(RewriteDelegate);
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER
 
-#endif // PROCESS_BACKEND_FACTORY_H
+#endif // REWRITE_DELEGATE_H

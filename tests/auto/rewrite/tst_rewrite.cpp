@@ -37,55 +37,46 @@
 **
 ****************************************************************************/
 
-#ifndef PROCESS_BACKEND_FACTORY_H
-#define PROCESS_BACKEND_FACTORY_H
+#include <QtTest>
 
-#include <QObject>
-#include <QProcessEnvironment>
+#include "gdbrewritedelegate.h"
+#include "processinfo.h"
 
-#include "processmanager-global.h"
+QT_USE_NAMESPACE_PROCESSMANAGER
 
-QT_BEGIN_NAMESPACE_PROCESSMANAGER
+/******************************************************************************/
 
-class ProcessBackend;
-class ProcessInfo;
-class MatchDelegate;
-class RewriteDelegate;
-
-class Q_ADDON_PROCESSMANAGER_EXPORT ProcessBackendFactory : public QObject
+class TestRewrite : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(MatchDelegate* matchDelegate READ matchDelegate WRITE setMatchDelegate NOTIFY matchDelegateChanged);
-    Q_PROPERTY(RewriteDelegate* rewriteDelegate READ rewriteDelegate WRITE setRewriteDelegate NOTIFY rewriteDelegateChanged);
-
 public:
-    ProcessBackendFactory(QObject *parent = 0);
-    virtual ~ProcessBackendFactory();
-    virtual bool            canCreate(const ProcessInfo& info) const;
-    virtual void            rewrite(ProcessInfo& info);
-    virtual ProcessBackend *create(const ProcessInfo& info, QObject *parent) = 0;
+    TestRewrite(QObject *parent=0);
 
-    void                    setMemoryRestricted(bool);
-    virtual QList<Q_PID>    internalProcesses();
-
-    MatchDelegate *   matchDelegate() const;
-    void              setMatchDelegate(MatchDelegate *);
-    RewriteDelegate * rewriteDelegate() const;
-    void              setRewriteDelegate(RewriteDelegate *);
-
-signals:
-    void matchDelegateChanged();
-    void rewriteDelegateChanged();
-
-protected:
-    virtual void handleMemoryRestrictionChange();
-
-protected:
-    MatchDelegate   *m_matchDelegate;
-    RewriteDelegate *m_rewriteDelegate;
-    bool             m_memoryRestricted;
+private Q_SLOTS:
+    void rewriteGdb();
 };
 
-QT_END_NAMESPACE_PROCESSMANAGER
+TestRewrite::TestRewrite(QObject *parent)
+  : QObject(parent)
+{
+}
 
-#endif // PROCESS_BACKEND_FACTORY_H
+void TestRewrite::rewriteGdb()
+{
+    ProcessInfo info;
+    info.setProgram("/usr/bin/abc");
+    info.setArguments(QStringList() << "a" << "b");
+
+    GdbRewriteDelegate delegate;
+    delegate.rewrite(info);
+
+    QCOMPARE(info.program(), QLatin1String("gdb"));
+    QCOMPARE(info.arguments().size(), 4);
+    QCOMPARE(info.arguments().at(0), QLatin1String("--"));
+    QCOMPARE(info.arguments().at(1), QLatin1String("/usr/bin/abc"));
+    QCOMPARE(info.arguments().at(2), QLatin1String("a"));
+    QCOMPARE(info.arguments().at(3), QLatin1String("b"));
+}
+
+QTEST_MAIN(TestRewrite)
+#include "tst_rewrite.moc"

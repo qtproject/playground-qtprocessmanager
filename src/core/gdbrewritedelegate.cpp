@@ -37,55 +37,41 @@
 **
 ****************************************************************************/
 
-#ifndef PROCESS_BACKEND_FACTORY_H
-#define PROCESS_BACKEND_FACTORY_H
-
-#include <QObject>
-#include <QProcessEnvironment>
-
-#include "processmanager-global.h"
+#include <QStringList>
+#include "gdbrewritedelegate.h"
+#include "processinfo.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-class ProcessBackend;
-class ProcessInfo;
-class MatchDelegate;
-class RewriteDelegate;
+/*!
+  \class GdbRewriteDelegate
+  \brief The GdbRewriteDelegate class adds gdb to the process arguments.
+*/
 
-class Q_ADDON_PROCESSMANAGER_EXPORT ProcessBackendFactory : public QObject
+/*!
+    Construct a GdbRewriteDelegate with an optional \a parent.
+*/
+
+GdbRewriteDelegate::GdbRewriteDelegate(QObject *parent)
+    : RewriteDelegate(parent)
 {
-    Q_OBJECT
-    Q_PROPERTY(MatchDelegate* matchDelegate READ matchDelegate WRITE setMatchDelegate NOTIFY matchDelegateChanged);
-    Q_PROPERTY(RewriteDelegate* rewriteDelegate READ rewriteDelegate WRITE setRewriteDelegate NOTIFY rewriteDelegateChanged);
+}
 
-public:
-    ProcessBackendFactory(QObject *parent = 0);
-    virtual ~ProcessBackendFactory();
-    virtual bool            canCreate(const ProcessInfo& info) const;
-    virtual void            rewrite(ProcessInfo& info);
-    virtual ProcessBackend *create(const ProcessInfo& info, QObject *parent) = 0;
+/*!
+    \fn void GdbRewriteDelegate::rewrite(ProcessInfo& info)
 
-    void                    setMemoryRestricted(bool);
-    virtual QList<Q_PID>    internalProcesses();
+    Rewrites "prog arg1 arg2 ..." to be "gdb -- prog arg1 arg2..."x
+*/
 
-    MatchDelegate *   matchDelegate() const;
-    void              setMatchDelegate(MatchDelegate *);
-    RewriteDelegate * rewriteDelegate() const;
-    void              setRewriteDelegate(RewriteDelegate *);
+void GdbRewriteDelegate::rewrite(ProcessInfo& info)
+{
+    QStringList args = info.arguments();
+    args.prepend(info.program());
+    args.prepend("--");
+    info.setProgram("gdb");
+    info.setArguments(args);
+}
 
-signals:
-    void matchDelegateChanged();
-    void rewriteDelegateChanged();
-
-protected:
-    virtual void handleMemoryRestrictionChange();
-
-protected:
-    MatchDelegate   *m_matchDelegate;
-    RewriteDelegate *m_rewriteDelegate;
-    bool             m_memoryRestricted;
-};
+#include "moc_gdbrewritedelegate.cpp"
 
 QT_END_NAMESPACE_PROCESSMANAGER
-
-#endif // PROCESS_BACKEND_FACTORY_H
