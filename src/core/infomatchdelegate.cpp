@@ -39,15 +39,15 @@
 
 #include <QFileInfo>
 #include <QDebug>
-#include "matchinfo.h"
+#include "infomatchdelegate.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 /*!
-  \class MatchInfo
-  \brief The MatchInfo class matches based on a ProcessInfo structure.
+  \class InfoMatchDelegate
+  \brief The InfoMatchDelegate class matches based on a ProcessInfo structure.
 
-  The InfoWatcher class matches based on a ProcessInfo record.  If an
+  The InfoMatchDelegate class matches based on a ProcessInfo record.  If an
   attribute is set in the ProcessInfo record, the value must match
   exactly.  The only exception are the environment variables, which
   only need to match exactly for environment values set in the ProcessInfo
@@ -55,19 +55,24 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 */
 
 /*!
-    Construct a MatchInfo with an optional \a parent.
+  \property InfoMatchDelegate::info
+  \brief The ProcessInfo object used by this delegate for matching.
+ */
+
+/*!
+    Construct a InfoMatchDelegate with an optional \a parent.
 */
 
-MatchInfo::MatchInfo(QObject *parent)
+InfoMatchDelegate::InfoMatchDelegate(QObject *parent)
     : MatchDelegate(parent)
 {
 }
 
 /*!
-  Return the current ProcessInfo \a info data.
+  Return the current ProcessInfo data.
 */
 
-ProcessInfo MatchInfo::info() const
+ProcessInfo InfoMatchDelegate::info() const
 {
     return m_info;
 }
@@ -76,14 +81,14 @@ ProcessInfo MatchInfo::info() const
   Set a new ProcessInfo \a info structure.
  */
 
-void MatchInfo::setInfo(const ProcessInfo& info)
+void InfoMatchDelegate::setInfo(const ProcessInfo& info)
 {
     m_info = info;
     emit infoChanged();
 }
 
 /*!
-    \fn MatchInfo::matches(const ProcessInfo& info)
+    \fn InfoMatchDelegate::matches(const ProcessInfo& info)
 
     We look at each configured field in the ProcessInfo \a info record.
     Return true if the ProcessInfo \a info record matches.
@@ -93,7 +98,7 @@ void MatchInfo::setInfo(const ProcessInfo& info)
     All other record entries must match exactly.
 */
 
-bool MatchInfo::matches(const ProcessInfo& info)
+bool InfoMatchDelegate::matches(const ProcessInfo& info)
 {
     QMapIterator<QString, QVariant> iter(m_info.toMap());
     while (iter.hasNext()) {
@@ -115,6 +120,11 @@ bool MatchInfo::matches(const ProcessInfo& info)
     return true;
 }
 
-#include "moc_matchinfo.cpp"
+/*!
+  \fn void InfoMatchDelegate::infoChanged()
+  Signal emitted when the ProcessInfo object on this delegate has been changed.
+*/
+
+#include "moc_infomatchdelegate.cpp"
 
 QT_END_NAMESPACE_PROCESSMANAGER

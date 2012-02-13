@@ -37,20 +37,20 @@
 **
 ****************************************************************************/
 
-#ifndef PROCESS_MATCHINFO_H
-#define PROCESS_MATCHINFO_H
+#ifndef PROCESS_INFOMATCHDELEGATE_H
+#define PROCESS_INFOMATCHDELEGATE_H
 
 #include "matchdelegate.h"
 #include "processinfo.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-class Q_ADDON_PROCESSMANAGER_EXPORT MatchInfo : public MatchDelegate
+class Q_ADDON_PROCESSMANAGER_EXPORT InfoMatchDelegate : public MatchDelegate
 {
     Q_OBJECT
     Q_PROPERTY(ProcessInfo info READ info WRITE setInfo NOTIFY infoChanged)
 public:
-    explicit MatchInfo(QObject *parent = 0);
+    explicit InfoMatchDelegate(QObject *parent = 0);
     virtual bool matches(const ProcessInfo& info);
 
     ProcessInfo info() const;
@@ -60,7 +60,7 @@ signals:
     void infoChanged();
 
 private:
-    Q_DISABLE_COPY(MatchInfo);
+    Q_DISABLE_COPY(InfoMatchDelegate);
 
 private:
     ProcessInfo m_info;
@@ -68,4 +68,4 @@ private:
 
 QT_END_NAMESPACE_PROCESSMANAGER
 
-#endif // PROCESS_MATCHINFO_H
+#endif // PROCESS_INFOMATCHDELEGATE_H

@@ -51,6 +51,16 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 */
 
 /*!
+    \property ProcessBackendFactory::matchDelegate
+    \brief A MatchDelegate object assigned to this factory.
+*/
+
+/*!
+    \property ProcessBackendFactory::rewriteDelegate
+    \brief A RewriteDelegate object assigned to this factory.
+*/
+
+/*!
     Construct a ProcessBackendFactory with an optional \a parent.
 */
 

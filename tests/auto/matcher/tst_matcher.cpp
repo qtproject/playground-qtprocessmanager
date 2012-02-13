@@ -39,42 +39,24 @@
 
 #include <QtTest>
 
-#include "matchinfo.h"
+#include "infomatchdelegate.h"
+#include "keymatchdelegate.h"
 
 QT_USE_NAMESPACE_PROCESSMANAGER
 
 /******************************************************************************/
 
-class TestMatcher : public QObject
+static void _testKeyMatch(ProcessInfo& info,
+                          bool answer,
+                          const char *key=0,
+                          const QVariant& value=QVariant())
 {
-    Q_OBJECT
-public:
-    TestMatcher(QObject *parent=0);
-
-private Q_SLOTS:
-    void matchProgram();
-    void matchEnvironment();
-};
-
-TestMatcher::TestMatcher(QObject *parent)
-  : QObject(parent)
-{
-}
-
-void TestMatcher::matchProgram()
-{
-    ProcessInfo match_info;
-    match_info.setProgram("/usr/bin/abc");
-
-    MatchInfo matcher;
-    matcher.setInfo(match_info);
-
-    ProcessInfo info;
-    info.setProgram("/usr/bin/abc");
-    QVERIFY(matcher.matches(info));  // Exactly the same value
-
-    info.setProgram("abc");
-    QVERIFY(!matcher.matches(info));  // Short name shouldn't match
+    KeyMatchDelegate matcher;
+    if (key)
+        matcher.setKey(key);
+    if (!value.isNull())
+        matcher.setValue(value);
+    QCOMPARE(matcher.matches(info), answer);
 }
 
 static void _makeEnvironmentInfo(ProcessInfo& info,
@@ -91,7 +73,7 @@ static void _makeEnvironmentInfo(ProcessInfo& info,
     info.setEnvironment(test_env);
 }
 
-static void _testEnvironment(MatchInfo& matcher,
+static void _testEnvironment(InfoMatchDelegate& matcher,
                              bool answer,
                              const char *key1 = 0,
                              const char *value1 = 0,
@@ -103,9 +85,50 @@ static void _testEnvironment(MatchInfo& matcher,
     QCOMPARE(matcher.matches(test_info), answer);
 }
 
+/******************************************************************************/
+
+class TestMatcher : public QObject
+{
+    Q_OBJECT
+
+private Q_SLOTS:
+    void matchKey();
+    void matchProgram();
+    void matchEnvironment();
+};
+
+void TestMatcher::matchKey()
+{
+    ProcessInfo info;
+    info.setProgram("/usr/bin/abc");
+    info.setValue("prelaunch", "true");
+
+    _testKeyMatch(info, false);
+    _testKeyMatch(info, true, "prelaunch");
+    _testKeyMatch(info, false, "prelunch");
+    _testKeyMatch(info, true, "prelaunch", "true");
+    _testKeyMatch(info, false, "prelaunch", "false");
+}
+
+void TestMatcher::matchProgram()
+{
+    ProcessInfo match_info;
+    match_info.setProgram("/usr/bin/abc");
+
+    InfoMatchDelegate matcher;
+    matcher.setInfo(match_info);
+
+    ProcessInfo info;
+    info.setProgram("/usr/bin/abc");
+    QVERIFY(matcher.matches(info));  // Exactly the same value
+
+    info.setProgram("abc");
+    QVERIFY(!matcher.matches(info));  // Short name shouldn't match
+}
+
 void TestMatcher::matchEnvironment()
 {
-    MatchInfo matcher;
+    InfoMatchDelegate matcher;
     ProcessInfo match_info;
     _makeEnvironmentInfo(match_info, "test", "value");
     matcher.setInfo(match_info);

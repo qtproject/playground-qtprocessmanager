@@ -60,7 +60,8 @@ RewriteDelegate::RewriteDelegate(QObject *parent)
 /*!
     \fn void RewriteDelegate::rewrite(ProcessInfo& info)
 
-    You must override this function.
+    Rewrite the ProcessInfo \a info object.
+    You must override this function in a subclass.
 */
 
 #include "moc_rewritedelegate.cpp"

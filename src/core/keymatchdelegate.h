@@ -2,14 +2,14 @@
 **
 ** Copyright (C) 2012 Nokia Corporation and/or its subsidiary(-ies).
 ** All rights reserved.
-** Contact: Nokia Corporation (qt-info@nokia.com)
+** Contact: Nokia Corporation (qt-key@nokia.com)
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** GNU Lesser General Public License Usage
 ** This file may be used under the terms of the GNU Lesser General Public
 ** License version 2.1 as published by the Free Software Foundation and
 ** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
+** file. Please review the following keyrmation to ensure the GNU Lesser
 ** General Public License version 2.1 requirements will be met:
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
@@ -21,7 +21,7 @@
 ** Alternatively, this file may be used under the terms of the GNU General
 ** Public License version 3.0 as published by the Free Software Foundation
 ** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
+** file. Please review the following keyrmation to ensure the GNU General
 ** Public License version 3.0 requirements will be met:
 ** http://www.gnu.org/copyleft/gpl.html.
 **
@@ -37,24 +37,43 @@
 **
 ****************************************************************************/
 
-#ifndef GDB_PROCESS_BACKEND_FACTORY_H
-#define GDB_PROCESS_BACKEND_FACTORY_H
+#ifndef PROCESS_KEYMATCHDELEGATE_H
+#define PROCESS_KEYMATCHDELEGATE_H
 
-#include "standardprocessbackendfactory.h"
-#include "processmanager-global.h"
+#include <QVariant>
+
+#include "matchdelegate.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-class Q_ADDON_PROCESSMANAGER_EXPORT GdbProcessBackendFactory : public StandardProcessBackendFactory
+class Q_ADDON_PROCESSMANAGER_EXPORT KeyMatchDelegate : public MatchDelegate
 {
     Q_OBJECT
+    Q_PROPERTY(QString key READ key WRITE setKey NOTIFY keyChanged)
+    Q_PROPERTY(QVariant value READ value WRITE setValue NOTIFY valueChanged)
 
 public:
-    GdbProcessBackendFactory(QObject *parent=0);
-    virtual bool     canCreate(const ProcessInfo& info) const;
-    virtual ProcessBackend *create(const ProcessInfo& info, QObject *parent);
+    explicit KeyMatchDelegate(QObject *parent = 0);
+    virtual bool matches(const ProcessInfo& key);
+
+    QString  key() const;
+    void     setKey(const QString& key);
+
+    QVariant value() const;
+    void     setValue(const QVariant& value);
+
+signals:
+    void keyChanged();
+    void valueChanged();
+
+private:
+    Q_DISABLE_COPY(KeyMatchDelegate);
+
+private:
+    QString  m_key;
+    QVariant m_value;
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER
 
-#endif // GDB_PROCESS_BACKEND_FACTORY_H
+#endif // PROCESS_KEYMATCHDELEGATE_H

@@ -58,17 +58,6 @@ StandardProcessBackendFactory::StandardProcessBackendFactory(QObject *parent)
 }
 
 /*!
-  StandardProcessBackendFactory can create any type of process
-  using the ProcessInfo \a info record.
-*/
-
-bool StandardProcessBackendFactory::canCreate(const ProcessInfo& info) const
-{
-    Q_UNUSED(info);
-    return true;
-}
-
-/*!
   Construct a StandardProcessBackend from a ProcessInfo \a info record
   with \a parent.
 */

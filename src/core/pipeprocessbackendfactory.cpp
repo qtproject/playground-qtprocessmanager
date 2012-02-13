@@ -61,15 +61,12 @@ const int kPipeTimerInterval = 1000;
 /*!
   Construct a PipeProcessBackendFactory with optional \a parent.
   The \a info ProcessInfo is used to start the pipe process.
-  The \a program is used to match program names for create() requests.
 */
 
 PipeProcessBackendFactory::PipeProcessBackendFactory(const ProcessInfo& info,
-                                                           const QString& program,
-                                                           QObject *parent)
+                                                     QObject *parent)
     : RemoteProcessBackendFactory(parent)
     , m_process(NULL)
-    , m_program(program)
 {
     m_process = new QProcess;  // Note that we do NOT own the pipe process
     m_process->setReadChannel(QProcess::StandardOutput);
@@ -112,22 +109,6 @@ PipeProcessBackendFactory::~PipeProcessBackendFactory()
         m_process->waitForBytesWritten();  // Block until they have been written
         m_process = NULL;
     }
-}
-
-/*!
-  The PipeProcessBackendFactory will match the ProcessInfo \a info
-  if there is a \c info.pipe attribute set to "true" (the string) and
-  if the \c info.program attribute matches the program original specified
-  when creating the factory.
-*/
-
-bool PipeProcessBackendFactory::canCreate(const ProcessInfo& info) const
-{
-    QString program = QFileInfo(info.program()).fileName();
-    return (m_process &&
-            m_process->state() == QProcess::Running &&
-            info.value("pipe").toString() == QLatin1String("true") &&
-            program == m_program);
 }
 
 /*!

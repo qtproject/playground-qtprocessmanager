@@ -648,7 +648,7 @@ static void pipeLauncherTest( clientFunc func )
     ProcessBackendManager *manager = new ProcessBackendManager;
     ProcessInfo info;
     info.setValue("program", "testPipeLauncher/testPipeLauncher");
-    manager->addFactory(new PipeProcessBackendFactory(info, "testClient"));
+    manager->addFactory(new PipeProcessBackendFactory(info));
 
     // Wait for the factory to have launched a pipe
     waitForInternalProcess(manager);

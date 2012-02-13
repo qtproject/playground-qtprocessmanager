@@ -60,7 +60,8 @@ GdbRewriteDelegate::GdbRewriteDelegate(QObject *parent)
 /*!
     \fn void GdbRewriteDelegate::rewrite(ProcessInfo& info)
 
-    Rewrites "prog arg1 arg2 ..." to be "gdb -- prog arg1 arg2..."x
+    Rewrites the ProcessInfo \a info structure to launch gdb.
+    For example, "prog arg1 arg2 ..." becomes "gdb -- prog arg1 arg2..."
 */
 
 void GdbRewriteDelegate::rewrite(ProcessInfo& info)

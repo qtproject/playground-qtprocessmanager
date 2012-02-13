@@ -68,16 +68,29 @@ attaches a few signal handlers and then starts the backend running.
 Please note the it is the user's responsibility to correctly delete
 the backend object.
 
-In the following example, we've added a GdbProcessBackendFactory.
-The GdbProcessBackendFactory  will match any
-that has a "gdb" property set to "true" in the ProcessInfo record.  When
-it matches, it rewrites the ProcessInfo record to execute the gdb
-program with the appropriate command line arguments.
+In the next example, we'd like to be able to launch certain processes
+under GDB.  To do this, we add a new StandardProcessBackendFactory and
+set a custom MatchDelegate and RewriteDelegate.  A KeyMatchDelegate will
+match ProcessInfo records that contain a particular key value.  We
+set the delegate to match records containing a "gdb" key.  We also
+add a GdbRewritedDelegate which rewrites the ProcessInfo record to
+execute the process under gdb.
+
+Note that the order of the factories is important; the normal
+StandardProcessBackendFactory will match anything, so it must go last.
 
 \code
   ProcessBackendManager *manager = new ProcessBackendManager;
-  manager->add(new GdbProcessBackendFactory);
-  manager->add(new UnixProcessBackendFactory);
+
+  StandardProcessBackendFactory *gdb_factory = new StandardProcessBackendFactory;
+
+  KeyMatchDelegate *keymatch = new KeyMatchDelegate;
+  keymatch->setKey("gdb");
+  gdb_factory->setMatchDelegate(keymatch);
+  gdb_factory->setRewriteDelegate(new GdbRewriteDelegate);
+
+  manager->add(gdb_factory);
+  manager->add(new StandardProcessBackendFactory);
 
   ProcessInfo info;
   info.setName("lstest");

@@ -55,6 +55,11 @@ const int kPrelaunchTimerInterval = 1000;
 */
 
 /*!
+  \property PrelaunchProcessBackendFactory::launchInterval
+  \brief Time in milliseconds before a new prelaunch backend will be started
+ */
+
+/*!
   Construct a PrelaunchProcessBackendFactory with optional \a parent.
   The \a info ProcessInfo is used to start the prelaunched process.  This is
   different from the final ProcessInfo which will be passed to the prelaunched
@@ -78,19 +83,6 @@ PrelaunchProcessBackendFactory::PrelaunchProcessBackendFactory(const ProcessInfo
 
 PrelaunchProcessBackendFactory::~PrelaunchProcessBackendFactory()
 {
-}
-
-/*!
-  The PrelaunchProcessBackendFactory will match the ProcessInfo \a info
-  if there is a \c info.prelaunch attribute set to "true" (the string) and
-  if the \c info.program attribute matches the program attribute of the
-  original ProcessInfo record used to create the PrelaunchProcessBackendFactory.
-*/
-
-bool PrelaunchProcessBackendFactory::canCreate(const ProcessInfo& info) const
-{
-    return (info.value("prelaunch").toString() == QLatin1String("true")
-            && info.program() == m_info.program());
 }
 
 /*!
@@ -203,6 +195,11 @@ void PrelaunchProcessBackendFactory::prelaunchFinished(int exitCode, QProcess::E
     }
     m_timer.start();
 }
+
+/*!
+  \fn void PrelaunchProcessBackendFactory::launchIntervalChanged()
+  This signal is emitted when the launchInterval is changed.
+ */
 
 #include "moc_prelaunchprocessbackendfactory.cpp"
 

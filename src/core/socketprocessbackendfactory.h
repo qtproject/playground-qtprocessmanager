@@ -52,7 +52,6 @@ class Q_ADDON_PROCESSMANAGER_EXPORT SocketProcessBackendFactory : public RemoteP
 public:
     SocketProcessBackendFactory(const QString& socketname, QObject *parent = 0);
     virtual ~SocketProcessBackendFactory();
-
     virtual bool canCreate(const ProcessInfo& info) const;
 
 protected:

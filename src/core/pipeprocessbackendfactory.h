@@ -48,10 +48,9 @@ class Q_ADDON_PROCESSMANAGER_EXPORT PipeProcessBackendFactory : public RemotePro
 {
     Q_OBJECT
 public:
-    PipeProcessBackendFactory(const ProcessInfo& info, const QString& program, QObject *parent = 0);
+    PipeProcessBackendFactory(const ProcessInfo& info, QObject *parent = 0);
     virtual ~PipeProcessBackendFactory();
 
-    virtual bool         canCreate(const ProcessInfo& info) const;
     virtual QList<Q_PID> internalProcesses();
 
 protected:
@@ -67,7 +66,6 @@ private slots:
 
 private:
     QProcess  *m_process;
-    QString    m_program;
     QByteArray m_buffer;
 };
 

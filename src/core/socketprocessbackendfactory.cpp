@@ -78,16 +78,14 @@ SocketProcessBackendFactory::~SocketProcessBackendFactory()
 }
 
 /*!
-  The SocketProcessBackendFactory will match the ProcessInfo \a info
-  if there is a \c info.launcher attribute set to "true" (the string) and
-  if the \c info.program attribute matches the program original specified
-  when creating the factory.
+  The SocketProcessBackendFactory can only match if it has a valid
+  connection to the socket.  The \a info parameter is passed to the
+  standard matching algorithm.
 */
 
 bool SocketProcessBackendFactory::canCreate(const ProcessInfo& info) const
 {
-    Q_UNUSED(info);
-    return m_socket->isValid();
+    return m_socket->isValid() && RemoteProcessBackendFactory::canCreate(info);
 }
 
 /*!

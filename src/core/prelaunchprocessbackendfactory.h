@@ -57,7 +57,6 @@ class Q_ADDON_PROCESSMANAGER_EXPORT PrelaunchProcessBackendFactory : public Proc
 public:
     PrelaunchProcessBackendFactory(const ProcessInfo& info, QObject *parent = 0);
     virtual ~PrelaunchProcessBackendFactory();
-    virtual bool            canCreate(const ProcessInfo& info) const;
     virtual ProcessBackend *create(const ProcessInfo& info, QObject *parent);
 
     virtual QList<Q_PID>    internalProcesses();

@@ -11,10 +11,10 @@ PUBLIC_HEADERS += \
   $$PWD/matchdelegate.h \
   $$PWD/rewritedelegate.h \
   $$PWD/gdbrewritedelegate.h \
-  $$PWD/matchinfo.h \
+  $$PWD/infomatchdelegate.h \
+  $$PWD/keymatchdelegate.h \
   $$PWD/processinfo.h \
   $$PWD/processmanager.h \
-  $$PWD/gdbprocessbackendfactory.h \
   $$PWD/standardprocessbackendfactory.h \
   $$PWD/prelaunchprocessbackendfactory.h \
   $$PWD/remoteprocessbackendfactory.h \
@@ -36,7 +36,6 @@ HEADERS += \
 
 SOURCES += \
   $$PWD/process.cpp \
-  $$PWD/gdbprocessbackendfactory.cpp \
   $$PWD/processfrontend.cpp \
   $$PWD/processbackend.cpp \
   $$PWD/processbackendfactory.cpp \
@@ -44,7 +43,8 @@ SOURCES += \
   $$PWD/matchdelegate.cpp \
   $$PWD/rewritedelegate.cpp \
   $$PWD/gdbrewritedelegate.cpp \
-  $$PWD/matchinfo.cpp \
+  $$PWD/infomatchdelegate.cpp \
+  $$PWD/keymatchdelegate.cpp \
   $$PWD/processinfo.cpp \
   $$PWD/processmanager.cpp \
   $$PWD/unixprocessbackend.cpp \

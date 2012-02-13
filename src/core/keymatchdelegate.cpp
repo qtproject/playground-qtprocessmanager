@@ -37,59 +37,98 @@
 **
 ****************************************************************************/
 
-#include "gdbprocessbackendfactory.h"
+#include "keymatchdelegate.h"
 #include "processinfo.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 /*!
-  \class GdbProcessBackendFactory
-  \brief The GdbProcessBackendFactory class creates UnixProcessBackend objects
+  \class KeyMatchDelegate
+  \brief The KeyMatchDelegate class matches based on a key-value pair
 
-  This is a simple example class showing how to create a custom factory.
-  The GdbProcessBackendFactory matches ProcessInfo records with a "gdb"
-  attribute of "true" (the string, not the boolean value).  It rewrites the
-  process arguments to launch gdb with the passed application.
-
-  In the future this class will be replaced with a general "rewriting"
-  frontend to modify ProcessInfo arguments.
+  The KeyMatchDelegate class matches based on key-value pair.  It only
+  matches ProcessInfo records which contain "key".  If a "value" attribute
+  is also set, then the KeyMatchDelegate will only match a ProcessInfo
+  record if the value of the "key" record matches the value.
 */
 
 /*!
-  Construct a GdbProcessBackendFactory with optional \a parent
+  \property KeyMatchDelegate::key
+  \brief The key value required in the ProcessInfo object for a match.
+ */
+
+/*!
+  \property KeyMatchDelegate::value
+  \brief If set, this value must match the record in the ProcessInfo object.
+ */
+
+/*!
+    Construct a KeyMatchDelegate with an optional \a parent.
 */
 
-GdbProcessBackendFactory::GdbProcessBackendFactory(QObject *parent)
-    : StandardProcessBackendFactory(parent)
+KeyMatchDelegate::KeyMatchDelegate(QObject *parent)
+    : MatchDelegate(parent)
 {
 }
 
 /*!
-  GdbProcessBackendFactory will match ProcessInfo \a info objects
-  with a "gdb" attribute containing the string "true".
+  Return the current key
 */
 
-bool GdbProcessBackendFactory::canCreate(const ProcessInfo& info) const
+QString KeyMatchDelegate::key() const
 {
-    return (info.value("gdb").toString() == QLatin1String("true"));
+    return m_key;
 }
 
 /*!
-  Construct a UnixProcessBackend from a ProcessInfo \a info record and \a parent,
-  but change the program name to "gdb" and pass the original
-  program as an argument.
-*/
+  Set a new \a key.
+ */
 
-ProcessBackend * GdbProcessBackendFactory::create(const ProcessInfo& info, QObject *parent)
+void KeyMatchDelegate::setKey(const QString& key)
 {
-    ProcessInfo i = info;
-    QStringList args = i.arguments();
-    args.prepend(i.program());
-    args.prepend("--");
-    i.setProgram("gdb");
-    return StandardProcessBackendFactory::create(i, parent);
+    m_key = key;
+    emit keyChanged();
 }
 
-#include "moc_gdbprocessbackendfactory.cpp"
+/*!
+  Return the current value
+*/
+
+QVariant KeyMatchDelegate::value() const
+{
+    return m_value;
+}
+
+/*!
+  Set a new \a value.
+ */
+
+void KeyMatchDelegate::setValue(const QVariant& value)
+{
+    m_value = value;
+    emit valueChanged();
+}
+
+/*!
+    \fn KeyMatchDelegate::matches(const ProcessInfo& info)
+    \brief Check \a info for key and value attributes
+*/
+
+bool KeyMatchDelegate::matches(const ProcessInfo& info)
+{
+    return (info.contains(m_key) && (m_value.isNull() || info.value(m_key) == m_value));
+}
+
+/*!
+  \fn void KeyMatchDelegate::keyChanged()
+  Signal emitted when the key on this delegate has been changed.
+*/
+
+/*!
+  \fn void KeyMatchDelegate::valueChanged()
+  Signal emitted when the value on this delegate has been changed.
+*/
+
+#include "moc_keymatchdelegate.cpp"
 
 QT_END_NAMESPACE_PROCESSMANAGER

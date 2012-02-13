@@ -52,7 +52,6 @@ class Q_ADDON_PROCESSMANAGER_EXPORT StandardProcessBackendFactory : public Proce
 
 public:
     StandardProcessBackendFactory(QObject *parent=0);
-    virtual bool            canCreate(const ProcessInfo& info) const;
     virtual ProcessBackend *create(const ProcessInfo& info, QObject *parent);
 };
 
