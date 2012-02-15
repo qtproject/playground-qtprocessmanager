@@ -379,7 +379,7 @@ static void _writeByteArrayToFd(const QByteArray& data, const QByteArray& prefix
 void ProcessBackend::handleStandardOutput(const QByteArray &byteArray)
 {
     if (m_echo == EchoStdoutOnly || m_echo == EchoStdoutStderr) {
-        QByteArray prefix = QString("%1 [%2]: ").arg(m_name).arg(pid()).toLocal8Bit();
+        QByteArray prefix = QString::fromLatin1("%1 [%2]: ").arg(m_name).arg(pid()).toLocal8Bit();
         _writeByteArrayToFd( byteArray, prefix, stderr );
     }
     emit standardOutput(byteArray);
@@ -393,7 +393,7 @@ void ProcessBackend::handleStandardOutput(const QByteArray &byteArray)
 void ProcessBackend::handleStandardError(const QByteArray &byteArray)
 {
     if (m_echo == EchoStderrOnly || m_echo == EchoStdoutStderr) {
-        QByteArray prefix = QString("%1 [%2] ERR: ").arg(m_name).arg(pid()).toLocal8Bit();
+        QByteArray prefix = QString::fromLatin1("%1 [%2] ERR: ").arg(m_name).arg(pid()).toLocal8Bit();
         _writeByteArrayToFd( byteArray, prefix, stderr );
     }
     emit standardError(byteArray);
@@ -407,8 +407,8 @@ void ProcessBackend::handleStandardError(const QByteArray &byteArray)
 
 void ProcessBackend::createName()
 {
-    m_name = QString("%1-%2").arg(m_info.identifier().isEmpty()
-                                  ? QString("process")
+    m_name = QString::fromLatin1("%1-%2").arg(m_info.identifier().isEmpty()
+                                  ? QString::fromLatin1("process")
                                   : m_info.identifier()).arg(m_id);
 }
 

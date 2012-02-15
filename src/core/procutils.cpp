@@ -73,7 +73,7 @@ ExecutingProcessInfo::ExecutingProcessInfo(pid_t pid)
     : m_data(0)
 {
 #if defined(Q_OS_LINUX)
-    static QRegExp statFile("^(\\d+) \\(.*\\) [RSDZTW] (\\d+) (\\d+) (\\d+)(?: \\d+){11} (\\d+) (\\d+)");
+    static QRegExp statFile(QStringLiteral("^(\\d+) \\(.*\\) [RSDZTW] (\\d+) (\\d+) (\\d+)(?: \\d+){11} (\\d+) (\\d+)"));
     /*
        Index, name, format, description (from man 5 page for proc)
        0  pid %d        The process ID.
@@ -99,7 +99,7 @@ ExecutingProcessInfo::ExecutingProcessInfo(pid_t pid)
     QByteArray contents = file.readAll();
     file.close();
 
-    if (statFile.indexIn(contents) != 0) {
+    if (statFile.indexIn(QString::fromLocal8Bit(contents)) != 0) {
         qWarning("Did not match pid=%d", pid);
         return;
     }
@@ -264,11 +264,11 @@ QString ProcUtils::execNameForPid(qint64 pid)
 #if defined(Q_OS_LINUX)
     enum { BUFFERSIZE = 1024 };
     char buf[BUFFERSIZE];
-    QString fn = QLatin1String("/proc/") + QString::number(pid).toLatin1() + QLatin1String("/exe");
+    QString fn = QLatin1String("/proc/") + QString::number(pid) + QLatin1String("/exe");
     ssize_t len = readlink(fn.toLatin1(), buf, sizeof(buf) - 1);
     if (len != -1) {
         buf[len] = '\0';
-        return QString(buf);
+        return QString::fromLocal8Bit(buf);
     }
 #else
     Q_UNUSED(pid);
@@ -280,7 +280,7 @@ qint64 ProcUtils::ppidForPid(pid_t pid)
 {
     int ppid = 0;
 #if defined(Q_OS_LINUX)
-    QFile statFile(QLatin1String("/proc/") + QString::number(pid) + "/stat");
+    QFile statFile(QLatin1String("/proc/") + QString::number(pid) + QStringLiteral("/stat"));
     statFile.open(QIODevice::ReadOnly);
 
     QByteArray contents = statFile.readAll();

@@ -73,7 +73,7 @@ ssize_t readline(char *buffer, int max_len)
 }
 
 int
-main(int argc, char **argv)
+main(int /*argc*/, char ** /*argv*/)
 {
     char buffer[kBufSize+1];
 

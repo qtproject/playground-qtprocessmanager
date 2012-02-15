@@ -54,6 +54,9 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
   Create a new LauncherClient with ProcessBackendManager \a manager
  */
 
+static inline QString kEvent() { return QStringLiteral("event"); }
+static inline QString kId() { return QStringLiteral("id"); }
+
 LauncherClient::LauncherClient(ProcessBackendManager *manager)
     : QObject(manager)
     , m_manager(manager)
@@ -67,10 +70,10 @@ LauncherClient::LauncherClient(ProcessBackendManager *manager)
 void LauncherClient::receive(const QJsonObject& message)
 {
     // qDebug() << Q_FUNC_INFO << message;
-    QString cmd = message.value("command").toString();
-    int id = message.value("id").toDouble();
+    QString cmd = message.value(QStringLiteral("command")).toString();
+    int id = message.value(QStringLiteral("id")).toDouble();
     if ( cmd == QLatin1String("start") ) {
-        ProcessInfo info(message.value("info").toObject().toVariantMap());
+        ProcessInfo info(message.value(QStringLiteral("info")).toObject().toVariantMap());
         ProcessBackend *backend = m_manager->create(info, this);
         if (backend) {
             connect(backend, SIGNAL(started()), SLOT(started()));
@@ -91,15 +94,15 @@ void LauncherClient::receive(const QJsonObject& message)
     else if ( cmd == QLatin1String("stop") ) {
         ProcessBackend *backend = m_idToBackend.value(id);
         if (backend) {
-            int timeout = message.value("timeout").toDouble();
+            int timeout = message.value(QStringLiteral("timeout")).toDouble();
             backend->stop(timeout);
         }
     }
     else if ( cmd == QLatin1String("set") ) {
         ProcessBackend *backend = m_idToBackend.value(id);
         if (backend) {
-            QString key = message.value("key").toString();
-            int value   = message.value("value").toDouble();
+            QString key = message.value(QStringLiteral("key")).toString();
+            int value   = message.value(QStringLiteral("value")).toDouble();
             if (key == QLatin1String("priority"))
                 backend->setDesiredPriority(value);
             else if (key == QLatin1String("oomAdjustment"))
@@ -107,15 +110,12 @@ void LauncherClient::receive(const QJsonObject& message)
         }
     }
     else if ( cmd == QLatin1String("write") ) {
-        QByteArray data = message.value("data").toString().toLocal8Bit();
+        QByteArray data = message.value(QStringLiteral("data")).toString().toLocal8Bit();
         ProcessBackend *backend = m_idToBackend.value(id);
         if (backend)
             backend->write(data);
     }
 }
-
-static const QLatin1String kEvent("event");
-static const QLatin1String kId("id");
 
 /*!
   \internal
@@ -125,9 +125,9 @@ void LauncherClient::started()
 {
     ProcessBackend *backend = qobject_cast<ProcessBackend *>(sender());
     QJsonObject msg;
-    msg.insert(kEvent, QLatin1String("started"));
-    msg.insert(kId, m_backendToId.value(backend));
-    msg.insert("pid", (double) backend->pid());
+    msg.insert(kEvent(), QLatin1String("started"));
+    msg.insert(kId(), m_backendToId.value(backend));
+    msg.insert(QStringLiteral("pid"), (double) backend->pid());
     emit send(msg);
 }
 
@@ -139,10 +139,10 @@ void LauncherClient::finished(int exitCode, QProcess::ExitStatus exitStatus)
 {
     ProcessBackend *backend = qobject_cast<ProcessBackend *>(sender());
     QJsonObject msg;
-    msg.insert(kEvent, QLatin1String("finished"));
-    msg.insert(kId, m_backendToId.value(backend));
-    msg.insert("exitCode", exitCode);
-    msg.insert("exitStatus", exitStatus);
+    msg.insert(kEvent(), QLatin1String("finished"));
+    msg.insert(kId(), m_backendToId.value(backend));
+    msg.insert(QStringLiteral("exitCode"), exitCode);
+    msg.insert(QStringLiteral("exitStatus"), exitStatus);
     emit send(msg);
 }
 
@@ -154,10 +154,10 @@ void LauncherClient::error(QProcess::ProcessError err)
 {
     ProcessBackend *backend = qobject_cast<ProcessBackend *>(sender());
     QJsonObject msg;
-    msg.insert(kEvent, QLatin1String("error"));
-    msg.insert(kId, m_backendToId.value(backend));
-    msg.insert("error", err);
-    msg.insert("errorString", backend->errorString());
+    msg.insert(kEvent(), QLatin1String("error"));
+    msg.insert(kId(), m_backendToId.value(backend));
+    msg.insert(QStringLiteral("error"), err);
+    msg.insert(QStringLiteral("errorString"), backend->errorString());
     emit send(msg);
 }
 
@@ -169,9 +169,9 @@ void LauncherClient::stateChanged(QProcess::ProcessState state)
 {
     ProcessBackend *backend = qobject_cast<ProcessBackend *>(sender());
     QJsonObject msg;
-    msg.insert(kEvent, QLatin1String("stateChanged"));
-    msg.insert(kId, m_backendToId.value(backend));
-    msg.insert("stateChanged", state);
+    msg.insert(kEvent(), QLatin1String("stateChanged"));
+    msg.insert(kId(), m_backendToId.value(backend));
+    msg.insert(QStringLiteral("stateChanged"), state);
     emit send(msg);
 }
 
@@ -183,8 +183,8 @@ void LauncherClient::standardOutput(const QByteArray& data)
 {
     ProcessBackend *backend = qobject_cast<ProcessBackend *>(sender());
     QJsonObject msg;
-    msg.insert(kEvent, QLatin1String("output"));
-    msg.insert(kId, m_backendToId.value(backend));
+    msg.insert(kEvent(), QLatin1String("output"));
+    msg.insert(kId(), m_backendToId.value(backend));
     msg.insert(QLatin1String("stdout"), QString::fromLocal8Bit(data.data(), data.size()));
     emit send(msg);
 }
@@ -197,8 +197,8 @@ void LauncherClient::standardError(const QByteArray& data)
 {
     ProcessBackend *backend = qobject_cast<ProcessBackend *>(sender());
     QJsonObject msg;
-    msg.insert(kEvent, QLatin1String("output"));
-    msg.insert(kId, m_backendToId.value(backend));
+    msg.insert(kEvent(), QLatin1String("output"));
+    msg.insert(kId(), m_backendToId.value(backend));
     msg.insert(QLatin1String("stderr"), QString::fromLocal8Bit(data.data(), data.size()));
     emit send(msg);
 }

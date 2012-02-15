@@ -127,8 +127,8 @@ void RemoteProcessBackend::setDesiredPriority(qint32 priority)
         QJsonObject object;
         object.insert(kCommand, QLatin1String("set"));
         object.insert(kId, m_id);
-        object.insert("key", QLatin1String("priority"));
-        object.insert("value", priority);
+        object.insert(QStringLiteral("key"), QLatin1String("priority"));
+        object.insert(QStringLiteral("value"), priority);
         m_factory->send(object);
     }
 }
@@ -162,8 +162,8 @@ void RemoteProcessBackend::setDesiredOomAdjustment(qint32 oomAdjustment)
         QJsonObject object;
         object.insert(kCommand, QLatin1String("set"));
         object.insert(kId, m_id);
-        object.insert("key", QLatin1String("oomAdjustment"));
-        object.insert("value", oomAdjustment);
+        object.insert(QStringLiteral("key"), QLatin1String("oomAdjustment"));
+        object.insert(QStringLiteral("value"), oomAdjustment);
         m_factory->send(object);
     }
 }
@@ -248,30 +248,30 @@ QString RemoteProcessBackend::errorString() const
 
 void RemoteProcessBackend::receive(const QJsonObject& message)
 {
-    QString event = message.value("event").toString();
+    QString event = message.value(QStringLiteral("event")).toString();
     // qDebug() << Q_FUNC_INFO << message;
     if (event == QLatin1String("started")) {
-        m_pid = message.value("pid").toDouble();
+        m_pid = message.value(QStringLiteral("pid")).toDouble();
         emit started();
     }
     else if (event == QLatin1String("error")) {
-        m_errorString = message.value("errorString").toString();
-        emit error(static_cast<QProcess::ProcessError>(message.value("error").toDouble()));
+        m_errorString = message.value(QStringLiteral("errorString")).toString();
+        emit error(static_cast<QProcess::ProcessError>(message.value(QStringLiteral("error")).toDouble()));
     }
     else if (event == QLatin1String("finished")) {
-        emit finished(message.value("exitCode").toDouble(),
-                      static_cast<QProcess::ExitStatus>(message.value("exitStatus").toDouble()));
+        emit finished(message.value(QStringLiteral("exitCode")).toDouble(),
+                      static_cast<QProcess::ExitStatus>(message.value(QStringLiteral("exitStatus")).toDouble()));
     }
     else if (event == QLatin1String("stateChanged")) {
-        m_state = static_cast<QProcess::ProcessState>(message.value("stateChanged").toDouble());
+        m_state = static_cast<QProcess::ProcessState>(message.value(QStringLiteral("stateChanged")).toDouble());
         emit stateChanged(m_state);
     }
     else if (event == QLatin1String("output")) {
-        if (message.contains("stdout")) {
-            handleStandardOutput(message.value("stdout").toString().toLocal8Bit());
+        if (message.contains(QStringLiteral("stdout"))) {
+            handleStandardOutput(message.value(QStringLiteral("stdout")).toString().toLocal8Bit());
         }
-        if (message.contains("stderr")) {
-            handleStandardError(message.value("stderr").toString().toLocal8Bit());
+        if (message.contains(QStringLiteral("stderr"))) {
+            handleStandardError(message.value(QStringLiteral("stderr")).toString().toLocal8Bit());
         }
     }
     else

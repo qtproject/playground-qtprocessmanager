@@ -97,7 +97,7 @@ void PipeLauncher::inReady(int fd)
         QByteArray msg = m_inbuf.left(message_size);
         m_inbuf = m_inbuf.mid(message_size);
         QJsonObject message = QJsonDocument::fromBinaryData(msg).object();
-        if (message.value("remote").toString() == QLatin1String("stop"))
+        if (message.value(QStringLiteral("remote")).toString() == QLatin1String("stop"))
             exit(0);
         m_client->receive(message);
     }

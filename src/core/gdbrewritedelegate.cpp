@@ -68,8 +68,8 @@ void GdbRewriteDelegate::rewrite(ProcessInfo& info)
 {
     QStringList args = info.arguments();
     args.prepend(info.program());
-    args.prepend("--");
-    info.setProgram("gdb");
+    args.prepend(QStringLiteral("--"));
+    info.setProgram(QStringLiteral("gdb"));
     info.setArguments(args);
 }
 
