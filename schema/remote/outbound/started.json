@@ -1,0 +1,9 @@
+{
+  "title": "Started schema",
+  "description": "Signal the client that a process has sent the started() signal",
+  "properties": {
+    "event": { "type": "string", "pattern": "started", "required": true },
+    "id": { "type": "integer", "required": true },
+    "pid": { "type": "integer", "required": true }
+  }
+}

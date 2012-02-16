@@ -38,16 +38,132 @@
 ****************************************************************************/
 
 #include <QCoreApplication>
+#include <QFileInfo>
+#include <QDir>
+#include <QDebug>
+
+#include <jsonserver.h>
+#include <schemavalidator.h>
+
 #include "socketlauncher.h"
 #include "standardprocessbackendfactory.h"
 
 QT_USE_NAMESPACE_PROCESSMANAGER
 
+QString progname;
+
+static void usage()
+{
+    qWarning("Usage: %s [ARGS] <socketname>\n"
+             "\n"
+             "The socketname is the name of the Unix local socket to listen on\n"
+             "\n"
+             "Valid arguments:\n"
+             "   -validate-inbound PATH   Directory where inbound schema are stored\n"
+             "   -validate-outbound PATH  Directory where outbound schema are stored\n"
+             "   -warn                    Warn on invalid messages\n"
+             "   -drop                    Drop invalid messages\n"
+             , qPrintable(progname));
+    exit(1);
+}
+
+class ValidateMessage : public QObject {
+    Q_OBJECT
+public:
+    ValidateMessage(QObject *parent=0) : QObject(parent) {}
+public slots:
+    void failed(const QJsonObject& message) {
+        qDebug() << Q_FUNC_INFO << "Message failed to validate" << message;
+    }
+};
+
+static void loadSchemasFromDirectory(QtAddOn::JsonStream::SchemaValidator *validator, const QString& path)
+{
+    int count = 0;
+    QDir dir(path);
+    if (!dir.exists())
+        qFatal("Schema directory '%s' does not exist", qPrintable(path));
+
+    dir.setNameFilters( QStringList() << "*.json" );
+    foreach (QString filename, dir.entryList(QDir::Files | QDir::Readable)) {
+        if (!validator->loadFromFile(dir.filePath(filename))) {
+            QtAddOn::JsonStream::SchemaError err = validator->getLastError();
+            qFatal("Error loading schema file '%s', [%d] %s",
+                   qPrintable(dir.filePath(filename)), err.errorCode(), qPrintable(err.errorString()));
+        }
+        count += 1;
+    }
+
+    if (count == 0)
+        qFatal("Unable to find any schema files in directory '%s'", qPrintable(path));
+    qDebug() << progname << ": loaded" << count << "schemas from" << path;
+}
+
 int main(int argc, char **argv)
 {
+    QtAddOn::JsonStream::JsonServer::ValidatorFlags flags(QtAddOn::JsonStream::JsonServer::NoValidation);
+    QString indir, outdir;
+
     QCoreApplication app(argc, argv);
+    QStringList args = QCoreApplication::arguments();
+    progname = args.takeFirst();
+    while (args.size()) {
+        QString arg = args.at(0);
+        if (!arg.startsWith('-'))
+            break;
+        args.removeFirst();
+        if (arg == QLatin1String("-help"))
+            usage();
+        else if (arg == QLatin1String("-validate-inbound")) {
+            if (!args.size())
+                usage();
+            indir = args.takeFirst();
+            QFileInfo fi(indir);
+            if (!fi.exists() || !fi.isDir()) {
+                qWarning("Invalid inbound validation directory '%s'", qPrintable(indir));
+                exit(1);
+            }
+        }
+        else if (arg == QLatin1String("-validate-outbound")) {
+            if (!args.size())
+                usage();
+            outdir = args.takeFirst();
+            QFileInfo fi(outdir);
+            if (!fi.exists() || !fi.isDir()) {
+                qWarning("Invalid outbound validation directory '%s'", qPrintable(outdir));
+                exit(1);
+            }
+        }
+        else if (arg == QLatin1String("-warn"))
+            flags |= QtAddOn::JsonStream::JsonServer::WarnIfInvalid;
+        else if (arg == QLatin1String("-drop"))
+            flags |= QtAddOn::JsonStream::JsonServer::DropIfInvalid;
+        else {
+            qWarning("Unexpected argument '%s'", qPrintable(arg));
+            usage();
+        }
+    }
+
+    if (args.size() != 1)
+        usage();
+
     SocketLauncher launcher;
     launcher.addFactory(new StandardProcessBackendFactory);
-    launcher.listen(argv[1]);
+    if (!indir.isEmpty())
+        loadSchemasFromDirectory(launcher.server()->inboundValidator(), indir);
+    if (!outdir.isEmpty())
+        loadSchemasFromDirectory(launcher.server()->outboundValidator(), outdir);
+    launcher.server()->setValidatorFlags(flags);
+
+    ValidateMessage *vtrap = new ValidateMessage;
+
+    QObject::connect(launcher.server(), SIGNAL(inboundMessageValidationFailed(const QJsonObject&)),
+            vtrap, SLOT(failed(const QJsonObject&)));
+    QObject::connect(launcher.server(), SIGNAL(outboundMessageValidationFailed(const QJsonObject&)),
+            vtrap, SLOT(failed(const QJsonObject&)));
+
+    launcher.listen(args[0]);
     return app.exec();
 }
+
+#include "main.moc"

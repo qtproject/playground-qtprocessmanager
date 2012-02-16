@@ -1,0 +1,10 @@
+{
+    "title": "Output schema",
+    "description": "Signal the client that a process has written data on stdout or stderr",
+    "properties": {
+        "event": { "type": "string", "pattern": "output", "required": true },
+        "id": { "type": "integer", "required": true },
+        "stdout": { "type": "string" },
+        "stderr": { "type": "string" }
+  }
+}

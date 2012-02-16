@@ -92,6 +92,15 @@ bool SocketLauncher::listen(const QString& socketname, QtAddOn::JsonStream::Json
 }
 
 /*!
+  Return the internal JsonServer object.
+ */
+
+QtAddOn::JsonStream::JsonServer * SocketLauncher::server() const
+{
+    return m_server;
+}
+
+/*!
  \internal
 */
 void SocketLauncher::connectionAdded(const QString& identifier)

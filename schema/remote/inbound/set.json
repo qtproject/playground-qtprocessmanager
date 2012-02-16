@@ -1,0 +1,19 @@
+{
+    "title": "Set schema",
+    "description": "The client would like to change a setting on an existing process",
+    "properties": {
+        "command": { "type": "string", "pattern": "set", "required": true },
+        "id": { "type": "integer", "required": true },
+
+        "key": {
+            "type": "string",
+            "enum": ["priority", "oomAdjustment"],
+            "required": true
+        },
+
+        "value": {
+            "type": "integer",
+            "required": true
+        }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "title": "State Changed schema",
+  "description": "Signal the client that a process has sent the stateChanged() signal",
+  "properties": {
+    "event": { "type": "string", "pattern": "stateChanged", "required": true },
+    "id": { "type": "integer", "required": true },
+    "stateChanged": { "type": "integer", "required": true },
+  }
+}

@@ -1,0 +1,9 @@
+{
+    "title": "Stop schema",
+    "description": "The client request a process to be stopped",
+    "properties": {
+        "command": { "type": "string", "pattern": "stop", "required": true },
+        "id": { "type": "integer", "required": true },
+        "timeout": { "type": "integer", "required": true }
+  }
+}

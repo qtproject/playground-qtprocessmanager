@@ -1,0 +1,13 @@
+{
+    "title": "Write schema",
+    "description": "The client is writing data to the stdin of an existing process",
+    "properties": {
+        "command": { "type": "string", "pattern": "write", "required": true },
+        "id": { "type": "integer", "required": true },
+
+        "data": {
+            "type": "string",
+            "required": true
+        }
+  }
+}

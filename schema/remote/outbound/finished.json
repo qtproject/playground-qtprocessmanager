@@ -1,0 +1,10 @@
+{
+  "title": "Finished schema",
+  "description": "Signal the client that a process has sent the finished() signal",
+  "properties": {
+    "event": { "type": "string", "pattern": "finished", "required": true },
+    "id": { "type": "integer", "required": true },
+    "exitCode": { "type": "integer", "required": true },
+    "exitStatus": { "type": "integer", "required": true }
+  }
+}

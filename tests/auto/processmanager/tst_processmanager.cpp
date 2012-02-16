@@ -676,12 +676,12 @@ static void pipeLauncherTest( clientFunc func )
 }
 
 
-static void socketLauncherTest( clientFunc func )
+static void socketLauncherTest( clientFunc func, QStringList args=QStringList() )
 {
     QProcess *remote = new QProcess;
     QString socketName = QLatin1String("/tmp/socketlauncher");
     remote->setProcessChannelMode(QProcess::ForwardedChannels);
-    remote->start("testSocketLauncher/testSocketLauncher", QStringList() << socketName);
+    remote->start("testSocketLauncher/testSocketLauncher", args << socketName);
     QVERIFY(remote->waitForStarted());
     waitForSocket(socketName);
 
@@ -697,6 +697,15 @@ static void socketLauncherTest( clientFunc func )
 
     delete manager;
     delete remote;
+}
+
+static void socketSchemaTest( clientFunc func )
+{
+    QStringList args;
+    args << "-validate-inbound" << "../../../schema/remote/inbound"
+         << "-validate-outbound" << "../../../schema/remote/outbound"
+         << "-warn" << "-drop";
+    socketLauncherTest(func, args);
 }
 
 
@@ -763,6 +772,17 @@ private slots:
 #if defined(Q_OS_LINUX)
     void socketLauncherOomChangeBefore()      { socketLauncherTest(oomChangeBeforeClient); }
     void socketLauncherOomChangeAfter()       { socketLauncherTest(oomChangeAfterClient); }
+#endif
+
+    void socketSchemaStartAndStop()         { socketSchemaTest(startAndStopClient); }
+    void socketSchemaStartAndKill()         { socketSchemaTest(startAndKillClient); }
+    void socketSchemaStartAndCrash()        { socketSchemaTest(startAndCrashClient); }
+    void socketSchemaEcho()                 { socketSchemaTest(echoClient); }
+    void socketSchemaPriorityChangeBefore() { socketSchemaTest(priorityChangeBeforeClient); }
+    void socketSchemaPriorityChangeAfter()  { socketSchemaTest(priorityChangeAfterClient); }
+#if defined(Q_OS_LINUX)
+    void socketSchemaOomChangeBefore()      { socketSchemaTest(oomChangeBeforeClient); }
+    void socketSchemaOomChangeAfter()       { socketSchemaTest(oomChangeAfterClient); }
 #endif
 
     void prelaunchChildAbort();

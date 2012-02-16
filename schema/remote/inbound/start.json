@@ -1,0 +1,9 @@
+{
+    "title": "Start schema",
+    "description": "The client request a new process to be started",
+    "properties": {
+        "command": { "type": "string", "pattern": "start", "required": true },
+        "id": { "type": "integer", "required": true },
+        "info": { "type": "object", "required": true }
+  }
+}

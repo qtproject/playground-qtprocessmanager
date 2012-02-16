@@ -58,6 +58,8 @@ public:
     Q_INVOKABLE bool listen(int port, QtAddOn::JsonStream::JsonAuthority *authority = 0);
     Q_INVOKABLE bool listen(const QString& socketname, QtAddOn::JsonStream::JsonAuthority *authority=0);
 
+    QtAddOn::JsonStream::JsonServer * server() const;
+
 private slots:
     void connectionAdded(const QString& identifier);
     void connectionRemoved(const QString& identifier);

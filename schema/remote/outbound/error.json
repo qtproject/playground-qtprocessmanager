@@ -1,0 +1,10 @@
+{
+  "title": "Error schema",
+  "description": "Signal the client that a process has sent the error() signal",
+  "properties": {
+    "event": { "type": "string", "pattern": "error", "required": true },
+    "id": { "type": "integer", "required": true },
+    "error": { "type": "integer", "required": true },
+    "errorString": { "type": "string", "required": true }
+  }
+}
