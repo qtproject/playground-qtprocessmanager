@@ -1,3 +1,3 @@
 TEMPLATE = subdirs
 
-SUBDIRS = testDeclarative test
+SUBDIRS = testDeclarative testSocketLauncher test

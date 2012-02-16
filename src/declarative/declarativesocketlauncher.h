@@ -37,57 +37,42 @@
 **
 ****************************************************************************/
 
-#ifndef DECLARATIVE_PROCESS_MANAGER_H
-#define DECLARATIVE_PROCESS_MANAGER_H
+#ifndef DECLARATIVE_SOCKET_LAUNCHER_H
+#define DECLARATIVE_SOCKET_LAUNCHER_H
 
-#include "processmanager.h"
-#include <QDeclarativeListProperty>
-#include <QDeclarativeParserStatus>
-#include <qdeclarative.h>
+#include <QtDeclarative>
+#include "socketlauncher.h"
 
-#include "processmanager-global.h"
+class JsonAuthority;
+class QtAddOn::JsonStream::JsonAuthority;
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-class Q_ADDON_PROCESSMANAGER_EXPORT DeclarativeProcessManager : public ProcessManager,
+class Q_ADDON_PROCESSMANAGER_EXPORT DeclarativeSocketLauncher : public SocketLauncher,
                                                                 public QDeclarativeParserStatus
 {
     Q_OBJECT
     Q_INTERFACES(QDeclarativeParserStatus)
     Q_PROPERTY(QDeclarativeListProperty<ProcessBackendFactory> factories READ factories)
+    Q_PROPERTY(QDeclarativeListProperty<QObject> children READ children)
+    Q_CLASSINFO("DefaultProperty", "children")
 
 public:
-    DeclarativeProcessManager(QObject *parent=0);
+    DeclarativeSocketLauncher(QObject *parent=0);
     QDeclarativeListProperty<ProcessBackendFactory> factories();
+    QDeclarativeListProperty<QObject>               children();
 
     void classBegin();
     void componentComplete();
 
-signals:
-    void processAboutToStart(const QString& name);
-    void processAboutToStop(const QString& name);
-    void processStarted(const QString& name);
-    void processError(const QString& name, int error);
-    void processFinished(const QString& name, int exitCode, int exitStatus);
-    void processStateChanged(const QString& name, int state);
-    void processDestroyed(const QString &name);
-
-protected slots:
-    virtual void processFrontendAboutToStart();
-    virtual void processFrontendAboutToStop();
-    virtual void processFrontendStarted();
-    virtual void processFrontendError(QProcess::ProcessError);
-    virtual void processFrontendFinished(int, QProcess::ExitStatus);
-    virtual void processFrontendStateChanged(QProcess::ProcessState);
-    virtual void processFrontendDestroyed();
-
 private:
     static void append_factory(QDeclarativeListProperty<ProcessBackendFactory>*,
                                ProcessBackendFactory*);
+    QList<QObject *> m_children;
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER
 
-QML_DECLARE_TYPE(QT_PREPEND_NAMESPACE_PROCESSMANAGER(DeclarativeProcessManager))
+QML_DECLARE_TYPE(QT_PREPEND_NAMESPACE_PROCESSMANAGER(DeclarativeSocketLauncher))
 
-#endif // DECLARATIVE_PROCESS_MANAGER_H
+#endif // DECLARATIVE_SOCKET_LAUNCHER_H

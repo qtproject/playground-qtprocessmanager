@@ -43,9 +43,14 @@
 #include <QDeclarativeEngine>
 #include <QDeclarativeComponent>
 #include <QDeclarativeProperty>
+#include <QProcess>
+#include <QLocalSocket>
+
+#include <jsonuidrangeauthority.h>
 
 #include "declarativeprocessmanager.h"
 #include "standardprocessbackendfactory.h"
+#include "socketprocessbackendfactory.h"
 #include "processfrontend.h"
 #include "processbackend.h"
 #include "process.h"
@@ -56,9 +61,6 @@ Q_DECLARE_METATYPE(QProcess::ExitStatus);
 Q_DECLARE_METATYPE(QProcess::ProcessState);
 Q_DECLARE_METATYPE(QProcess::ProcessError);
 
-// QML_DECLARE_TYPE(ProcessBackendFactory)
-// QML_DECLARE_TYPE(StandardProcessBackendFactory)
-
 class tst_DeclarativeProcessManager : public QObject
 {
     Q_OBJECT
@@ -67,6 +69,8 @@ private slots:
     void initTestCase();
 
     void basic();
+    void socketLauncher();
+    void socketRangeLauncher();
 };
 
 
@@ -76,6 +80,7 @@ void tst_DeclarativeProcessManager::initTestCase()
     const char *uri = "Test";
     qmlRegisterType<ProcessBackendFactory>();
     qmlRegisterType<StandardProcessBackendFactory>(uri, 1, 0, "StandardProcessBackendFactory");
+    qmlRegisterType<SocketProcessBackendFactory>(uri, 1, 0, "SocketProcessBackendFactory");
     qmlRegisterType<ProcessFrontend>();
     qmlRegisterType<DeclarativeProcessManager>(uri, 1, 0, "DeclarativeProcessManager");
     qmlRegisterUncreatableType<Process>(uri, 1, 0, "Process", "Don't try to make this");
@@ -88,6 +93,24 @@ void tst_DeclarativeProcessManager::initTestCase()
     qRegisterMetaType<const ProcessFrontend*>("const ProcessFrontend*");
     qRegisterMetaType<ProcessBackend*>("ProcessBackend*");
     qRegisterMetaType<ProcessInfo*>("ProcessInfo*");
+}
+
+
+static void waitForSocket(const QString& socketname, int timeout=5000)
+{
+    QTime stopWatch;
+    stopWatch.start();
+    forever {
+        if (stopWatch.elapsed() >= timeout)
+            QFAIL("Timed out");
+        else {
+            QLocalSocket socket;
+            socket.connectToServer(socketname);
+            if (socket.waitForConnected(timeout))
+                break;
+        }
+        QTestEventLoop::instance().enterLoop(1);
+    }
 }
 
 
@@ -125,31 +148,31 @@ public:
         forever {
             if (startSpy.count())
                 break;
-            QTestEventLoop::instance().enterLoop(1);
             if (stopWatch.elapsed() >= timeout)
                 QFAIL("Timed out");
+            QTestEventLoop::instance().enterLoop(1);
         }
     }
 
     void waitFailedStart(int timeout=5000) {
         stopWatch.restart();
         forever {
-            QTestEventLoop::instance().enterLoop(1);
-            if (stopWatch.elapsed() >= timeout)
-                QFAIL("Timed out");
             if (errorSpy.count())
                 break;
+            if (stopWatch.elapsed() >= timeout)
+                QFAIL("Timed out");
+            QTestEventLoop::instance().enterLoop(1);
         }
     }
 
     void waitFinished(int timeout=5000) {
         stopWatch.restart();
         forever {
-            QTestEventLoop::instance().enterLoop(1);
-            if (stopWatch.elapsed() >= timeout)
-                QFAIL("Timed out");
             if (finishedSpy.count())
                 break;
+            if (stopWatch.elapsed() >= timeout)
+                QFAIL("Timed out");
+            QTestEventLoop::instance().enterLoop(1);
         }
     }
 
@@ -176,10 +199,10 @@ public:
     QSignalSpy finishedSpy;
 };
 
-void tst_DeclarativeProcessManager::basic()
+static void _frontendTest(const QString& filename)
 {
     QDeclarativeEngine    engine;
-    QDeclarativeComponent component(&engine, QUrl::fromLocalFile("data/testfrontend.qml"));
+    QDeclarativeComponent component(&engine, QUrl::fromLocalFile(filename));
     if (component.isError())
         qWarning() << component.errors();
     DeclarativeProcessManager *manager = qobject_cast<DeclarativeProcessManager*>(component.create());
@@ -189,12 +212,10 @@ void tst_DeclarativeProcessManager::basic()
     QVERIFY(QMetaObject::invokeMethod(manager, "makeProcess", Q_RETURN_ARG(QVariant, name)));
     ProcessFrontend *frontend = manager->processForName(name.toString());
     QVERIFY(frontend);
-    qDebug() << "Internal frontend object" << frontend;
 
     Spy spy(frontend);
     QVERIFY(QMetaObject::invokeMethod(manager, "startProcess", Q_ARG(QVariant, name)));
     spy.waitStart();
-    return;
 
     QVERIFY(QMetaObject::invokeMethod(manager, "stopProcess", Q_ARG(QVariant, name)));
     spy.waitFinished();
@@ -202,6 +223,33 @@ void tst_DeclarativeProcessManager::basic()
     spy.checkExitCode(0);
     spy.checkExitStatus(QProcess::CrashExit);
     spy.checkErrors(QList<QProcess::ProcessError>() << QProcess::Crashed);
+}
+
+void tst_DeclarativeProcessManager::basic()
+{
+    _frontendTest("data/testfrontend.qml");
+}
+
+void tst_DeclarativeProcessManager::socketLauncher()
+{
+    QProcess remote;
+    remote.setProcessChannelMode(QProcess::ForwardedChannels);
+    remote.start("testSocketLauncher/testSocketLauncher", QStringList() << "data/testsocket.qml");
+    QVERIFY(remote.waitForStarted());
+    waitForSocket("/tmp/socket_launcher");
+
+    _frontendTest("data/testsocketfrontend.qml");
+}
+
+void tst_DeclarativeProcessManager::socketRangeLauncher()
+{
+    QProcess remote;
+    remote.setProcessChannelMode(QProcess::ForwardedChannels);
+    remote.start("testSocketLauncher/testSocketLauncher", QStringList() << "data/testrangesocket.qml");
+    QVERIFY(remote.waitForStarted());
+    waitForSocket("/tmp/socket_launcher");
+
+    _frontendTest("data/testsocketfrontend.qml");
 }
 
 

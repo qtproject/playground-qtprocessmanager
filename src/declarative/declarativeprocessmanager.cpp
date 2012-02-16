@@ -77,8 +77,8 @@ void DeclarativeProcessManager::componentComplete()
 /*!
   \internal
 */
-void append_factory(QDeclarativeListProperty<ProcessBackendFactory> *list,
-                    ProcessBackendFactory *factory)
+void DeclarativeProcessManager::append_factory(QDeclarativeListProperty<ProcessBackendFactory> *list,
+                                               ProcessBackendFactory *factory)
 {
     DeclarativeProcessManager *manager = static_cast<DeclarativeProcessManager *>(list->object);
     if (factory && manager)
