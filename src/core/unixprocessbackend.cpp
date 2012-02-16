@@ -261,10 +261,11 @@ qint64 UnixProcessBackend::write(const char *data, qint64 maxSize)
 */
 void UnixProcessBackend::handleProcessStarted()
 {
-    if (m_info.contains(QStringLiteral("priority")) && setpriority(PRIO_PROCESS, m_process->pid(), m_info.priority()))
+    if (m_info.contains(ProcessInfoConstants::Priority) &&
+        setpriority(PRIO_PROCESS, m_process->pid(), m_info.priority()))
         qWarning() << "Failed to set process priority at startup from " << actualPriority() <<
             "to" << m_info.priority()  << " : errno = " << errno;
-    if (m_info.contains(QStringLiteral("oomAdjustment")) &&
+    if (m_info.contains(ProcessInfoConstants::OomAdjustment) &&
         !ProcUtils::setOomAdjustment(m_process->pid(), m_info.oomAdjustment()))
         qWarning() << "Failed to set process oom score at startup from " << actualOomAdjustment() <<
             "to" << m_info.oomAdjustment();

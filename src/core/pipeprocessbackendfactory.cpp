@@ -39,6 +39,7 @@
 
 #include "pipeprocessbackendfactory.h"
 #include "remoteprocessbackend.h"
+#include "remoteprotocol.h"
 
 #include <QDebug>
 #include <QJsonDocument>
@@ -104,7 +105,7 @@ PipeProcessBackendFactory::~PipeProcessBackendFactory()
     //           However, we do send it a "stop" message before we exit
     if (m_process) {
         QJsonObject object;
-        object.insert(QLatin1String("remote"), QLatin1String("stop"));
+        object.insert(RemoteProtocol::remote(), RemoteProtocol::stop());
         m_process->write(QJsonDocument(object).toBinaryData());
         m_process->waitForBytesWritten();  // Block until they have been written
         m_process = NULL;

@@ -28,7 +28,8 @@ PUBLIC_HEADERS += \
   $$PWD/launcherclient.h \
   $$PWD/pipelauncher.h \
   $$PWD/socketlauncher.h \
-  $$PWD/procutils.h
+  $$PWD/procutils.h \
+  $$PWD/remoteprotocol.h
 
 HEADERS += \
   $$PUBLIC_HEADERS \

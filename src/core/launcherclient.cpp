@@ -40,6 +40,7 @@
 #include <QDebug>
 
 #include "launcherclient.h"
+#include "remoteprotocol.h"
 #include "processbackend.h"
 #include "processbackendmanager.h"
 
@@ -54,9 +55,6 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
   Create a new LauncherClient with ProcessBackendManager \a manager
  */
 
-static inline QString kEvent() { return QStringLiteral("event"); }
-static inline QString kId() { return QStringLiteral("id"); }
-
 LauncherClient::LauncherClient(ProcessBackendManager *manager)
     : QObject(manager)
     , m_manager(manager)
@@ -70,10 +68,10 @@ LauncherClient::LauncherClient(ProcessBackendManager *manager)
 void LauncherClient::receive(const QJsonObject& message)
 {
     // qDebug() << Q_FUNC_INFO << message;
-    QString cmd = message.value(QStringLiteral("command")).toString();
-    int id = message.value(QStringLiteral("id")).toDouble();
-    if ( cmd == QLatin1String("start") ) {
-        ProcessInfo info(message.value(QStringLiteral("info")).toObject().toVariantMap());
+    QString cmd = message.value(RemoteProtocol::command()).toString();
+    int id = message.value(RemoteProtocol::id()).toDouble();
+    if ( cmd == RemoteProtocol::start() ) {
+        ProcessInfo info(message.value(RemoteProtocol::info()).toObject().toVariantMap());
         ProcessBackend *backend = m_manager->create(info, this);
         if (backend) {
             connect(backend, SIGNAL(started()), SLOT(started()));
@@ -91,26 +89,26 @@ void LauncherClient::receive(const QJsonObject& message)
             backend->start();
         }
     }
-    else if ( cmd == QLatin1String("stop") ) {
+    else if ( cmd == RemoteProtocol::stop() ) {
         ProcessBackend *backend = m_idToBackend.value(id);
         if (backend) {
-            int timeout = message.value(QStringLiteral("timeout")).toDouble();
+            int timeout = message.value(RemoteProtocol::timeout()).toDouble();
             backend->stop(timeout);
         }
     }
-    else if ( cmd == QLatin1String("set") ) {
+    else if ( cmd == RemoteProtocol::set() ) {
         ProcessBackend *backend = m_idToBackend.value(id);
         if (backend) {
-            QString key = message.value(QStringLiteral("key")).toString();
-            int value   = message.value(QStringLiteral("value")).toDouble();
-            if (key == QLatin1String("priority"))
+            QString key = message.value(RemoteProtocol::key()).toString();
+            int value   = message.value(RemoteProtocol::value()).toDouble();
+            if (key == RemoteProtocol::priority())
                 backend->setDesiredPriority(value);
-            else if (key == QLatin1String("oomAdjustment"))
+            else if (key == RemoteProtocol::oomAdjustment())
                 backend->setDesiredOomAdjustment(value);
         }
     }
-    else if ( cmd == QLatin1String("write") ) {
-        QByteArray data = message.value(QStringLiteral("data")).toString().toLocal8Bit();
+    else if ( cmd == RemoteProtocol::write() ) {
+        QByteArray data = message.value(RemoteProtocol::data()).toString().toLocal8Bit();
         ProcessBackend *backend = m_idToBackend.value(id);
         if (backend)
             backend->write(data);
@@ -125,9 +123,9 @@ void LauncherClient::started()
 {
     ProcessBackend *backend = qobject_cast<ProcessBackend *>(sender());
     QJsonObject msg;
-    msg.insert(kEvent(), QLatin1String("started"));
-    msg.insert(kId(), m_backendToId.value(backend));
-    msg.insert(QStringLiteral("pid"), (double) backend->pid());
+    msg.insert(RemoteProtocol::event(), RemoteProtocol::started());
+    msg.insert(RemoteProtocol::id(), m_backendToId.value(backend));
+    msg.insert(RemoteProtocol::pid(), (double) backend->pid());
     emit send(msg);
 }
 
@@ -139,10 +137,10 @@ void LauncherClient::finished(int exitCode, QProcess::ExitStatus exitStatus)
 {
     ProcessBackend *backend = qobject_cast<ProcessBackend *>(sender());
     QJsonObject msg;
-    msg.insert(kEvent(), QLatin1String("finished"));
-    msg.insert(kId(), m_backendToId.value(backend));
-    msg.insert(QStringLiteral("exitCode"), exitCode);
-    msg.insert(QStringLiteral("exitStatus"), exitStatus);
+    msg.insert(RemoteProtocol::event(), RemoteProtocol::finished());
+    msg.insert(RemoteProtocol::id(), m_backendToId.value(backend));
+    msg.insert(RemoteProtocol::exitCode(), exitCode);
+    msg.insert(RemoteProtocol::exitStatus(), exitStatus);
     emit send(msg);
 }
 
@@ -154,10 +152,10 @@ void LauncherClient::error(QProcess::ProcessError err)
 {
     ProcessBackend *backend = qobject_cast<ProcessBackend *>(sender());
     QJsonObject msg;
-    msg.insert(kEvent(), QLatin1String("error"));
-    msg.insert(kId(), m_backendToId.value(backend));
-    msg.insert(QStringLiteral("error"), err);
-    msg.insert(QStringLiteral("errorString"), backend->errorString());
+    msg.insert(RemoteProtocol::event(), RemoteProtocol::error());
+    msg.insert(RemoteProtocol::id(), m_backendToId.value(backend));
+    msg.insert(RemoteProtocol::error(), err);
+    msg.insert(RemoteProtocol::errorString(), backend->errorString());
     emit send(msg);
 }
 
@@ -169,9 +167,9 @@ void LauncherClient::stateChanged(QProcess::ProcessState state)
 {
     ProcessBackend *backend = qobject_cast<ProcessBackend *>(sender());
     QJsonObject msg;
-    msg.insert(kEvent(), QLatin1String("stateChanged"));
-    msg.insert(kId(), m_backendToId.value(backend));
-    msg.insert(QStringLiteral("stateChanged"), state);
+    msg.insert(RemoteProtocol::event(), RemoteProtocol::stateChanged());
+    msg.insert(RemoteProtocol::id(), m_backendToId.value(backend));
+    msg.insert(RemoteProtocol::stateChanged(), state);
     emit send(msg);
 }
 
@@ -183,9 +181,9 @@ void LauncherClient::standardOutput(const QByteArray& data)
 {
     ProcessBackend *backend = qobject_cast<ProcessBackend *>(sender());
     QJsonObject msg;
-    msg.insert(kEvent(), QLatin1String("output"));
-    msg.insert(kId(), m_backendToId.value(backend));
-    msg.insert(QLatin1String("stdout"), QString::fromLocal8Bit(data.data(), data.size()));
+    msg.insert(RemoteProtocol::event(), RemoteProtocol::output());
+    msg.insert(RemoteProtocol::id(), m_backendToId.value(backend));
+    msg.insert(RemoteProtocol::stdout(), QString::fromLocal8Bit(data.data(), data.size()));
     emit send(msg);
 }
 
@@ -197,9 +195,9 @@ void LauncherClient::standardError(const QByteArray& data)
 {
     ProcessBackend *backend = qobject_cast<ProcessBackend *>(sender());
     QJsonObject msg;
-    msg.insert(kEvent(), QLatin1String("output"));
-    msg.insert(kId(), m_backendToId.value(backend));
-    msg.insert(QLatin1String("stderr"), QString::fromLocal8Bit(data.data(), data.size()));
+    msg.insert(RemoteProtocol::event(), RemoteProtocol::output());
+    msg.insert(RemoteProtocol::id(), m_backendToId.value(backend));
+    msg.insert(RemoteProtocol::stderr(), QString::fromLocal8Bit(data.data(), data.size()));
     emit send(msg);
 }
 

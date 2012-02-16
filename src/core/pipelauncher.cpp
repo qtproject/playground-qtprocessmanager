@@ -44,6 +44,7 @@
 
 #include "pipelauncher.h"
 #include "launcherclient.h"
+#include "remoteprotocol.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
@@ -97,7 +98,7 @@ void PipeLauncher::inReady(int fd)
         QByteArray msg = m_inbuf.left(message_size);
         m_inbuf = m_inbuf.mid(message_size);
         QJsonObject message = QJsonDocument::fromBinaryData(msg).object();
-        if (message.value(QStringLiteral("remote")).toString() == QLatin1String("stop"))
+        if (message.value(RemoteProtocol::remote()).toString() == RemoteProtocol::stop())
             exit(0);
         m_client->receive(message);
     }

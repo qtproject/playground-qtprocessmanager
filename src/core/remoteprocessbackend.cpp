@@ -38,6 +38,7 @@
 ****************************************************************************/
 
 #include "remoteprocessbackend.h"
+#include "remoteprotocol.h"
 #include "procutils.h"
 #include <sys/resource.h>
 #include <errno.h>
@@ -45,10 +46,6 @@
 #include <QDebug>
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
-
-static const QLatin1String kCommand("command");
-static const QLatin1String kId("id");
-static const QLatin1String kSignal("signal");
 
 /*!
     \class RemoteProcessBackend
@@ -125,10 +122,10 @@ void RemoteProcessBackend::setDesiredPriority(qint32 priority)
     ProcessBackend::setDesiredPriority(priority);
     if (m_factory && m_pid != -1) {
         QJsonObject object;
-        object.insert(kCommand, QLatin1String("set"));
-        object.insert(kId, m_id);
-        object.insert(QStringLiteral("key"), QLatin1String("priority"));
-        object.insert(QStringLiteral("value"), priority);
+        object.insert(RemoteProtocol::command(), RemoteProtocol::set());
+        object.insert(RemoteProtocol::id(), m_id);
+        object.insert(RemoteProtocol::key(), RemoteProtocol::priority());
+        object.insert(RemoteProtocol::value(), priority);
         m_factory->send(object);
     }
 }
@@ -160,10 +157,10 @@ void RemoteProcessBackend::setDesiredOomAdjustment(qint32 oomAdjustment)
     ProcessBackend::setDesiredOomAdjustment(oomAdjustment);
     if (m_factory && m_pid != -1) {
         QJsonObject object;
-        object.insert(kCommand, QLatin1String("set"));
-        object.insert(kId, m_id);
-        object.insert(QStringLiteral("key"), QLatin1String("oomAdjustment"));
-        object.insert(QStringLiteral("value"), oomAdjustment);
+        object.insert(RemoteProtocol::command(), RemoteProtocol::set());
+        object.insert(RemoteProtocol::id(), m_id);
+        object.insert(RemoteProtocol::key(), RemoteProtocol::oomAdjustment());
+        object.insert(RemoteProtocol::value(), oomAdjustment);
         m_factory->send(object);
     }
 }
@@ -187,9 +184,9 @@ void RemoteProcessBackend::start()
 {
     if (m_factory) {
         QJsonObject object;
-        object.insert(kCommand, QLatin1String("start"));
-        object.insert(kId, m_id);
-        object.insert(QLatin1String("info"), QJsonValue::fromVariant(m_info.toMap()));
+        object.insert(RemoteProtocol::command(), RemoteProtocol::start());
+        object.insert(RemoteProtocol::id(), m_id);
+        object.insert(RemoteProtocol::info(), QJsonValue::fromVariant(m_info.toMap()));
         m_factory->send(object);
     }
 }
@@ -204,9 +201,9 @@ void RemoteProcessBackend::stop(int timeout)
 {
     if (m_factory) {
         QJsonObject object;
-        object.insert(kCommand, QLatin1String("stop"));
-        object.insert(kId, m_id);
-        object.insert(QLatin1String("timeout"), timeout);
+        object.insert(RemoteProtocol::command(), RemoteProtocol::stop());
+        object.insert(RemoteProtocol::id(), m_id);
+        object.insert(RemoteProtocol::timeout(), timeout);
         m_factory->send(object);
     }
 }
@@ -223,9 +220,9 @@ qint64 RemoteProcessBackend::write(const char *data, qint64 maxSize)
 {
     if (m_factory) {
         QJsonObject object;
-        object.insert(kCommand, QLatin1String("write"));
-        object.insert(kId, m_id);
-        object.insert(QLatin1String("data"), QString::fromLocal8Bit(data, maxSize));
+        object.insert(RemoteProtocol::command(), RemoteProtocol::write());
+        object.insert(RemoteProtocol::id(), m_id);
+        object.insert(RemoteProtocol::data(), QString::fromLocal8Bit(data, maxSize));
         if (m_factory->send(object))
             return maxSize;
     }
@@ -248,30 +245,30 @@ QString RemoteProcessBackend::errorString() const
 
 void RemoteProcessBackend::receive(const QJsonObject& message)
 {
-    QString event = message.value(QStringLiteral("event")).toString();
+    QString event = message.value(RemoteProtocol::event()).toString();
     // qDebug() << Q_FUNC_INFO << message;
-    if (event == QLatin1String("started")) {
-        m_pid = message.value(QStringLiteral("pid")).toDouble();
+    if (event == RemoteProtocol::started()) {
+        m_pid = message.value(RemoteProtocol::pid()).toDouble();
         emit started();
     }
-    else if (event == QLatin1String("error")) {
-        m_errorString = message.value(QStringLiteral("errorString")).toString();
-        emit error(static_cast<QProcess::ProcessError>(message.value(QStringLiteral("error")).toDouble()));
+    else if (event == RemoteProtocol::error()) {
+        m_errorString = message.value(RemoteProtocol::errorString()).toString();
+        emit error(static_cast<QProcess::ProcessError>(message.value(RemoteProtocol::error()).toDouble()));
     }
-    else if (event == QLatin1String("finished")) {
-        emit finished(message.value(QStringLiteral("exitCode")).toDouble(),
-                      static_cast<QProcess::ExitStatus>(message.value(QStringLiteral("exitStatus")).toDouble()));
+    else if (event == RemoteProtocol::finished()) {
+        emit finished(message.value(RemoteProtocol::exitCode()).toDouble(),
+                      static_cast<QProcess::ExitStatus>(message.value(RemoteProtocol::exitStatus()).toDouble()));
     }
-    else if (event == QLatin1String("stateChanged")) {
-        m_state = static_cast<QProcess::ProcessState>(message.value(QStringLiteral("stateChanged")).toDouble());
+    else if (event == RemoteProtocol::stateChanged()) {
+        m_state = static_cast<QProcess::ProcessState>(message.value(RemoteProtocol::stateChanged()).toDouble());
         emit stateChanged(m_state);
     }
-    else if (event == QLatin1String("output")) {
-        if (message.contains(QStringLiteral("stdout"))) {
-            handleStandardOutput(message.value(QStringLiteral("stdout")).toString().toLocal8Bit());
+    else if (event == RemoteProtocol::output()) {
+        if (message.contains(RemoteProtocol::stdout())) {
+            handleStandardOutput(message.value(RemoteProtocol::stdout()).toString().toLocal8Bit());
         }
-        if (message.contains(QStringLiteral("stderr"))) {
-            handleStandardError(message.value(QStringLiteral("stderr")).toString().toLocal8Bit());
+        if (message.contains(RemoteProtocol::stderr())) {
+            handleStandardError(message.value(RemoteProtocol::stderr()).toString().toLocal8Bit());
         }
     }
     else
@@ -286,9 +283,9 @@ void RemoteProcessBackend::killTimeout()
 {
     if (m_factory) {
         QJsonObject object;
-        object.insert(kCommand, kSignal);
-        object.insert(kId, m_id);
-        object.insert(kSignal, SIGKILL);
+        object.insert(RemoteProtocol::command(), RemoteProtocol::signal());
+        object.insert(RemoteProtocol::id(), m_id);
+        object.insert(RemoteProtocol::signal(), SIGKILL);
         m_factory->send(object);
     }
 }

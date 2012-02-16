@@ -55,8 +55,12 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 */
 
 /*!
+  \property SocketProcessBackendFactory::socketName
+  The name of the Unix local socket that this factory should connect to.
+ */
+
+/*!
   Construct a SocketProcessBackendFactory with optional \a parent.
-  Connect to an application launcher listening on Unix local socket \a socketname
 */
 
 SocketProcessBackendFactory::SocketProcessBackendFactory(QObject *parent)
