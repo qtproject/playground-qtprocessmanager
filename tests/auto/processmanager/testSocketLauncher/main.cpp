@@ -48,6 +48,6 @@ int main(int argc, char **argv)
     QCoreApplication app(argc, argv);
     SocketLauncher launcher;
     launcher.addFactory(new StandardProcessBackendFactory);
-    launcher.listen("/tmp/socketlauncher");
+    launcher.listen(argv[1]);
     return app.exec();
 }

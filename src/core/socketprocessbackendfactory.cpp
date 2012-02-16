@@ -59,14 +59,12 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
   Connect to an application launcher listening on Unix local socket \a socketname
 */
 
-SocketProcessBackendFactory::SocketProcessBackendFactory(const QString& socketname,
-                                                             QObject *parent)
+SocketProcessBackendFactory::SocketProcessBackendFactory(QObject *parent)
     : RemoteProcessBackendFactory(parent)
 {
     m_socket = new QLocalSocket(this);
     connect(m_socket, SIGNAL(disconnected()), SLOT(disconnected()));
     connect(m_socket, SIGNAL(readyRead()), SLOT(readyRead()));
-    m_socket->connectToServer(socketname);
 }
 
 /*!
@@ -86,6 +84,29 @@ SocketProcessBackendFactory::~SocketProcessBackendFactory()
 bool SocketProcessBackendFactory::canCreate(const ProcessInfo& info) const
 {
     return m_socket->isValid() && RemoteProcessBackendFactory::canCreate(info);
+}
+
+/*!
+  Returns the current socket name.  An empty string indicates that no socket has been set.
+*/
+
+QString SocketProcessBackendFactory::socketName() const
+{
+    return m_socket->serverName();
+}
+
+/*!
+  Set the socket name and connect to the server.  If the connection fails,
+  you will not be notified, but the socketName() function will return null.
+*/
+
+void SocketProcessBackendFactory::setSocketName(const QString& socketname)
+{
+    if (socketname != m_socket->serverName()) {
+        m_socket->abort();
+        m_socket->connectToServer(socketname);
+        emit socketNameChanged();
+    }
 }
 
 /*!
@@ -123,6 +144,11 @@ bool SocketProcessBackendFactory::send(const QJsonObject& message)
     return (m_socket->isValid() &&
             m_socket->write(QJsonDocument(message).toBinaryData()) != -1);
 }
+
+/*!
+  \fn void SocketProcessBackendFactory::socketNameChanged()
+  Signal emitted when the socket name has been changed
+*/
 
 #include "moc_socketprocessbackendfactory.cpp"
 

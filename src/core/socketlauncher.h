@@ -55,8 +55,8 @@ class Q_ADDON_PROCESSMANAGER_EXPORT SocketLauncher : public ProcessBackendManage
 
 public:
     SocketLauncher(QObject *parent=0);
-    bool listen(int port, QtAddOn::JsonStream::JsonAuthority *authority = 0);
-    bool listen(const QString& socketname, QtAddOn::JsonStream::JsonAuthority *authority=0);
+    Q_INVOKABLE bool listen(int port, QtAddOn::JsonStream::JsonAuthority *authority = 0);
+    Q_INVOKABLE bool listen(const QString& socketname, QtAddOn::JsonStream::JsonAuthority *authority=0);
 
 private slots:
     void connectionAdded(const QString& identifier);
@@ -71,5 +71,7 @@ private:
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER
+
+QT_PROCESSMANAGER_DECLARE_METATYPE_PTR(SocketLauncher)
 
 #endif // SOCKET_LAUNCHER_H

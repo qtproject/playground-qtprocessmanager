@@ -49,10 +49,18 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 class Q_ADDON_PROCESSMANAGER_EXPORT SocketProcessBackendFactory : public RemoteProcessBackendFactory
 {
     Q_OBJECT
+    Q_PROPERTY(QString socketName READ socketName WRITE setSocketName NOTIFY socketNameChanged)
+
 public:
-    SocketProcessBackendFactory(const QString& socketname, QObject *parent = 0);
+    SocketProcessBackendFactory(QObject *parent = 0);
     virtual ~SocketProcessBackendFactory();
     virtual bool canCreate(const ProcessInfo& info) const;
+
+    QString socketName() const;
+    void    setSocketName(const QString&);
+
+signals:
+    void    socketNameChanged();
 
 protected:
     virtual bool send(const QJsonObject&);

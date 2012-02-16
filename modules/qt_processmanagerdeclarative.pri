@@ -11,6 +11,6 @@ QT.processmanagerdeclarative.sources = $$QT_MODULE_BASE/src
 QT.processmanagerdeclarative.libs = $$QT_MODULE_LIB_BASE
 QT.processmanagerdeclarative.plugins = $$QT_MODULE_PLUGIN_BASE
 QT.processmanagerdeclarative.imports = $$QT_MODULE_IMPORT_BASE
-QT.processmanagerdeclarative.depends = core network
+QT.processmanagerdeclarative.depends = core network declarative processmanager
 
 QT_CONFIG += processmanagerdeclarative

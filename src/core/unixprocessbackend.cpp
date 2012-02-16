@@ -53,10 +53,10 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 static void sendSignalToProcess(pid_t pid, int sig)
 {
     pid_t pgrp = ::getpgid(pid);
-    if (pgrp != -1 && ::killpg(pgrp, sig) == 0)
+    if (pgrp != -1 && pgrp != ::getpgrp() && ::killpg(pgrp, sig) == 0)
         return;
 
-    qWarning("Unable terminate process group: %d, switching to process %d", pgrp, pid);
+    qWarning("Unable terminate process group: %d, directly killing process %d", pgrp, pid);
     ::kill(pid, sig);
 }
 

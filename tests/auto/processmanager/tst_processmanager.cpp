@@ -43,6 +43,7 @@
 #include <QDeclarativeEngine>
 #include <QDeclarativeComponent>
 #include <QDeclarativeProperty>
+#include <QLocalSocket>
 
 #include "process.h"
 #include "processbackendmanager.h"
@@ -158,11 +159,28 @@ static void waitForInternalProcess(ProcessBackendManager *manager, int num=1, in
     QTime stopWatch;
     stopWatch.start();
     forever {
-        QTestEventLoop::instance().enterLoop(1);
         if (stopWatch.elapsed() >= timeout)
             QFAIL("Timed out");
         if (manager->internalProcesses().count() == num)
             break;
+        QTestEventLoop::instance().enterLoop(1);
+    }
+}
+
+static void waitForSocket(const QString& socketname, int timeout=5000)
+{
+    QTime stopWatch;
+    stopWatch.start();
+    forever {
+        if (stopWatch.elapsed() >= timeout)
+            QFAIL("Timed out");
+        else {
+            QLocalSocket socket;
+            socket.connectToServer(socketname);
+            if (socket.waitForConnected(timeout))
+                break;
+        }
+        QTestEventLoop::instance().enterLoop(1);
     }
 }
 
@@ -171,11 +189,11 @@ static void waitForPriority(ProcessBackend *process, int priority, int timeout=5
     QTime stopWatch;
     stopWatch.start();
     forever {
+        if (stopWatch.elapsed() >= timeout)
+            QFAIL("Timed out");
         if (process->actualPriority() == priority)
             break;
         QTestEventLoop::instance().enterLoop(1);
-        if (stopWatch.elapsed() >= timeout)
-            QFAIL("Timed out");
     }
 }
 
@@ -222,7 +240,6 @@ public:
     }
 
     void checkStdout(const QByteArray s) {
-        qDebug() << "Checking stdout for" << s;
         for (int i = 0 ; i < stdoutSpy.count() ; i++) {
             QByteArray b = stdoutSpy.at(i).at(0).toByteArray();
             if (b == s)
@@ -234,33 +251,33 @@ public:
     void waitStart(int timeout=5000) {
         stopWatch.restart();
         forever {
-            QTestEventLoop::instance().enterLoop(1);
-            if (stopWatch.elapsed() >= timeout)
-                QFAIL("Timed out");
             if (startSpy.count())
                 break;
+            if (stopWatch.elapsed() >= timeout)
+                QFAIL("Timed out");
+            QTestEventLoop::instance().enterLoop(1);
         }
     }
 
     void waitFailedStart(int timeout=5000) {
         stopWatch.restart();
         forever {
-            QTestEventLoop::instance().enterLoop(1);
-            if (stopWatch.elapsed() >= timeout)
-                QFAIL("Timed out");
             if (errorSpy.count())
                 break;
+            if (stopWatch.elapsed() >= timeout)
+                QFAIL("Timed out");
+            QTestEventLoop::instance().enterLoop(1);
         }
     }
 
     void waitFinished(int timeout=5000) {
         stopWatch.restart();
         forever {
-            QTestEventLoop::instance().enterLoop(1);
-            if (stopWatch.elapsed() >= timeout)
-                QFAIL("Timed out");
             if (finishedSpy.count())
                 break;
+            if (stopWatch.elapsed() >= timeout)
+                QFAIL("Timed out");
+            QTestEventLoop::instance().enterLoop(1);
         }
     }
 
@@ -268,12 +285,11 @@ public:
         stopWatch.restart();
         int count = stdoutSpy.count();
         forever {
-            QTestEventLoop::instance().enterLoop(1);
+            if (stdoutSpy.count() != count)
+                break;
             if (stopWatch.elapsed() >= timeout)
                 QFAIL("Timed out");
-            if (stdoutSpy.count() != count) {
-                break;
-            }
+            QTestEventLoop::instance().enterLoop(1);
         }
     }
 
@@ -289,10 +305,8 @@ public:
 
     void checkErrors(const QList<QProcess::ProcessError>& list) {
         QCOMPARE(errorSpy.count(), list.count());
-        for (int i = 0 ; i < errorSpy.count() ; i++) {
+        for (int i = 0 ; i < errorSpy.count() ; i++)
             QCOMPARE(errorSpy.at(i), list.at(i));
-            qDebug() << "Checking for error:" << list.at(i) << "string=" << errorSpy.atString(i);
-        }
     }
 
     void dump() {
@@ -377,7 +391,6 @@ static void startAndStopClient(ProcessBackendManager *manager, ProcessInfo info,
     spy.waitStart();
     verifyRunning(process);
     spy.check(1,0,0,2);
-
     func(process, "stop");
     spy.waitFinished();
     spy.check(1,0,1,3);
@@ -528,9 +541,9 @@ static void waitForOom(ProcessBackend *process, int oom, int timeout=5000)
     forever {
         if (process->actualOomAdjustment() == oom)
             break;
-        QTestEventLoop::instance().enterLoop(1);
         if (stopWatch.elapsed() >= timeout)
             QFAIL("Timed out");
+        QTestEventLoop::instance().enterLoop(1);
     }
 }
 
@@ -662,21 +675,20 @@ static void pipeLauncherTest( clientFunc func )
     delete manager;
 }
 
+
 static void socketLauncherTest( clientFunc func )
 {
     QProcess *remote = new QProcess;
+    QString socketName = QLatin1String("/tmp/socketlauncher");
     remote->setProcessChannelMode(QProcess::ForwardedChannels);
-    remote->start("testSocketLauncher/testSocketLauncher");
+    remote->start("testSocketLauncher/testSocketLauncher", QStringList() << socketName);
     QVERIFY(remote->waitForStarted());
-
-    qDebug() << "Waiting 1000 ms to let testSocketLauncher start";
-    QTime waitTime;
-    waitTime.start();
-    while (waitTime.elapsed() < 1000)
-        QTestEventLoop::instance().enterLoop(1);
+    waitForSocket(socketName);
 
     ProcessBackendManager *manager = new ProcessBackendManager;
-    manager->addFactory(new SocketProcessBackendFactory("/tmp/socketlauncher"));
+    SocketProcessBackendFactory *factory = new SocketProcessBackendFactory;
+    factory->setSocketName(socketName);
+    manager->addFactory(factory);
 
     ProcessInfo info;
     info.setValue("program", "testClient/testClient");
@@ -769,280 +781,6 @@ void tst_ProcessManager::initTestCase()
     qRegisterMetaType<QProcess::ProcessState>("QProcess::ProcessError");
 }
 
-/*
-void tst_ProcessManager::prelaunch()
-{
-    QString socketname = "/tmp/tst_socket";
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    ProcessInfo info;
-    info.setValue("program", "testPrelaunch/testPrelaunch");
-    manager->addFactory(new PrelaunchProcessBackendFactory(info));
-
-    // The factory should not have launched a prelaunch yet
-    QVERIFY(manager->memoryRestricted() == false);
-    QVERIFY(manager->internalProcesses().count() == 0);
-
-    qDebug() << "Waiting for 2 seconds";
-    QTime waitTime;
-    waitTime.start();
-    while (waitTime.elapsed() < 2000)
-        QTestEventLoop::instance().enterLoop(1);
-
-    // Verify that there is a prelaunched process
-    QVERIFY(manager->memoryRestricted() == false);
-    QVERIFY(manager->internalProcesses().count() == 1);
-
-    info.setValue("prelaunch", "true");
-    ProcessBackend *process = manager->create(info);
-    QVERIFY(process);
-    QVERIFY(process->state() == QProcess::NotRunning);
-
-    Spy spy(process);
-    process->start();
-    spy.waitStart();
-    spy.check(1,0,0,2);
-
-    QVERIFY(process->state() == QProcess::Running);
-
-    QVariantMap map;
-    map.insert("command", "stop");
-    process->write(QJsonDocument::fromVariant(map).toBinaryData());
-    spy.waitFinished();
-    spy.check(1,0,1,3);
-    spy.checkExitCode(0);
-    spy.checkExitStatus(QProcess::NormalExit);
-
-    QVERIFY(process->parent() == NULL);
-    delete process;
-    delete manager;
-}
-
-void tst_ProcessManager::prelaunchRestricted()
-{
-    QString socketname = "/tmp/tst_socket";
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    manager->setMemoryRestricted(true);
-
-    ProcessInfo info;
-    info.setValue("program", "testPrelaunch/testPrelaunch");
-    manager->addFactory(new PrelaunchProcessBackendFactory(info));
-
-    // The factory should not have launched a prelaunch yet
-    QVERIFY(manager->memoryRestricted() == true);
-    QVERIFY(manager->internalProcesses().count() == 0);
-
-    qDebug() << "Waiting for 2 seconds";
-    QTime waitTime;
-    waitTime.start();
-    while (waitTime.elapsed() < 2000)
-        QTestEventLoop::instance().enterLoop(1);
-
-    // The factory should still not have prelaunched anything
-    QVERIFY(manager->memoryRestricted() == true);
-    QVERIFY(manager->internalProcesses().count() == 0);
-
-    info.setValue("prelaunch", "true");
-    ProcessBackend *process = manager->create(info);
-    QVERIFY(process);
-
-    Spy spy(process);
-    process->start();
-    spy.waitStart();
-    spy.check(1,0,0,2);
-
-    QVariantMap map;
-    map.insert("command", "stop");
-    process->write(QJsonDocument::fromVariant(map).toBinaryData());
-    spy.waitFinished();
-    spy.check(1,0,1,3);
-    spy.checkExitCode(0);
-    spy.checkExitStatus(QProcess::NormalExit);
-
-    QVERIFY(process->parent() == NULL);
-    delete process;
-    delete manager;
-}
-*/
-/*
-void tst_ProcessManager::pipeLauncher()
-{
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    ProcessInfo info;
-    info.setValue("program", "testPipeLauncher/testPipeLauncher");
-    manager->addFactory(new PipeProcessBackendFactory(info, "testClient"));
-
-    qDebug() << "Waiting for 500 ms let pipe start";
-    QTime waitTime;
-    waitTime.start();
-    while (waitTime.elapsed() < 500)
-        QTestEventLoop::instance().enterLoop(1);
-
-    // The factory should have launched a pipe by now
-    QVERIFY(manager->internalProcesses().count() == 1);
-
-    ProcessInfo info2;
-    info2.setValue("program", "testClient/testClient");
-    info2.setValue("pipe", "true");
-    ProcessBackend *process = manager->create(info2);
-    QVERIFY(process);
-
-    Spy spy(process);
-    process->start();
-    spy.waitStart();
-
-    qDebug() << "Checking post started";
-    spy.check(1,0,0,2);
-
-    qDebug() << "Sending echo command";
-    process->write("echo\n");
-
-    qDebug() << "Sending stop command";
-    process->write("stop\n");
-
-    qDebug() << "Waiting for finished";
-    spy.waitFinished();
-    spy.check(1,0,1,3);
-    spy.checkExitCode(0);
-    spy.checkExitStatus(QProcess::NormalExit);
-
-    QVERIFY(process->parent() == NULL);
-    delete process;
-    delete manager;
-}
-*/
- /*
-void tst_ProcessManager::pipeLauncherCrash()
-{
-    QString socketname = "/tmp/tst_socket";
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    ProcessInfo info;
-    info.setValue("program", "testPipeLauncher/testPipeLauncher");
-    manager->addFactory(new PipeProcessBackendFactory(info, "testClient"));
-
-    qDebug() << "Waiting for 500 ms let pipe start";
-    QTime waitTime;
-    waitTime.start();
-    while (waitTime.elapsed() < 500)
-        QTestEventLoop::instance().enterLoop(1);
-
-    // The factory should have launched a pipe by now
-    QVERIFY(manager->internalProcesses().count() == 1);
-
-    ProcessInfo info2;
-    info2.setValue("program", "testClient/testClient");
-    info2.setValue("pipe", "true");
-    ProcessBackend *process = manager->create(info2);
-    QVERIFY(process);
-
-    Spy spy(process);
-    process->start();
-    spy.waitStart();
-
-    qDebug() << "Checking post started";
-    spy.check(1,0,0,2);
-
-    QList<Q_PID> plist = manager->internalProcesses();
-    QCOMPARE(plist.count(), 1);
-
-    if (canCheckProcessState()) {
-        qDebug() << "Verifying that all processes are running";
-        foreach (Q_PID pid, plist)
-            QVERIFY(isProcessRunning(pid));
-    }
-
-    qDebug() << "Deleting manager process";
-    delete manager;
-
-    qDebug() << "Waiting for 1000 ms to let the pipe stop";
-    waitTime.restart();
-    while (waitTime.elapsed() < 1000)
-        QTestEventLoop::instance().enterLoop(1);
-
-    if (canCheckProcessState()) {
-        foreach (Q_PID pid, plist) {
-            qDebug() << "Checking process" << pid;
-            QVERIFY(isProcessStopped(pid));
-        }
-    }
-
-    delete process;
-    qDebug() << "Deleted process";
-}
- */
-  /*
-void tst_ProcessManager::socketLauncher()
-{
-    QProcess *remote = new QProcess;
-    remote->setProcessChannelMode(QProcess::ForwardedChannels);
-    remote->start("testSocketLauncher/testSocketLauncher");
-    QVERIFY(remote->waitForStarted());
-
-    qDebug() << "Waiting for 500 ms to let testSocketLauncher start";
-    QTime waitTime;
-    waitTime.start();
-    while (waitTime.elapsed() < 500)
-        QTestEventLoop::instance().enterLoop(1);
-
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    manager->addFactory(new SocketProcessBackendFactory("/tmp/socketlauncher"));
-
-    ProcessInfo info;
-    info.setValue("program", "testClient/testClient");
-    startAndStopClient(manager, info, writeLine);
-
-    delete manager;
-    delete remote;
-}
-  */
-   /*
-void tst_ProcessManager::socketLauncherKill()
-{
-    QProcess *remote = new QProcess;
-    remote->setProcessChannelMode(QProcess::ForwardedChannels);
-    remote->start("testSocketLauncher/testSocketLauncher");
-    QVERIFY(remote->waitForStarted());
-
-    qDebug() << "Waiting for 500 ms to let testSocketLauncher start";
-    QTime waitTime;
-    waitTime.start();
-    while (waitTime.elapsed() < 500)
-        QTestEventLoop::instance().enterLoop(1);
-
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    manager->addFactory(new SocketProcessBackendFactory("/tmp/socketlauncher"));
-
-    ProcessInfo info;
-    info.setValue("program", "testClient/testClient");
-    startAndKillClient(manager, info, writeLine);
-    delete manager;
-    delete remote;
-}
-
-void tst_ProcessManager::socketLauncherCrash()
-{
-    QProcess *remote = new QProcess;
-    remote->setProcessChannelMode(QProcess::ForwardedChannels);
-    remote->start("testSocketLauncher/testSocketLauncher");
-    QVERIFY(remote->waitForStarted());
-
-    qDebug() << "Waiting for 500 ms to let testSocketLauncher start";
-    QTime waitTime;
-    waitTime.start();
-    while (waitTime.elapsed() < 500)
-        QTestEventLoop::instance().enterLoop(1);
-
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    manager->addFactory(new SocketProcessBackendFactory("/tmp/socketlauncher"));
-
-    ProcessInfo info;
-    info.setValue("program", "testClient/testClient");
-    startAndCrashClient(manager, info, writeLine);
-    delete manager;
-    delete remote;
-}
-
-*/
-
 void tst_ProcessManager::prelaunchChildAbort()
 {
     ProcessBackendManager *manager = new ProcessBackendManager;
@@ -1090,7 +828,6 @@ void tst_ProcessManager::frontend()
     QCOMPARE(manager->size(), 0);
     delete manager;
 }
-
 
 class TestProcess : public ProcessFrontend {
     Q_OBJECT

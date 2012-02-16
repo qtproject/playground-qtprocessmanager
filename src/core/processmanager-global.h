@@ -61,12 +61,8 @@
 #  define QT_PREPEND_NAMESPACE_PROCESSMANAGER(name) ::QtAddOn::ProcessManager::name
 #endif
 
-// The compiler will not correctly expand this:
-//      Q_DECLARE_METATYPE(QT_PREPEND_NAMESPACE_PROCESSMANAGER(ProcessFrontend) *)
-// so we add an extra level of indirection so the correct expanded typename is processed
-// by Q_DECLARE_METATYPE.
-#define QT_PROCESSMANAGER_DECLARE_METATYPE(TYPE) \
-    Q_DECLARE_METATYPE(TYPE)
+#define QT_PROCESSMANAGER_DECLARE_METATYPE_PTR(name)  Q_DECLARE_METATYPE(QtAddOn::ProcessManager::name *)
+#define QT_PROCESSMANAGER_DECLARE_METATYPE_CONST_PTR(name)  Q_DECLARE_METATYPE(const QtAddOn::ProcessManager::name *)
 
 // a workaround for moc - if there is a header file that doesn't use processmanager
 // namespace, we still force moc to do "using namespace" but the namespace have to

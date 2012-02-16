@@ -74,13 +74,12 @@ UnixSandboxProcess::UnixSandboxProcess(qint64 uid, qint64 gid, QObject *parent)
 
 void UnixSandboxProcess::setupChildProcess()
 {
-    // qDebug() << "Setting up child process" << m_uid << m_gid;
+    ::setpgid(0,0);
     if (m_gid >= 0)
         ::setgid(m_gid);
     if (m_uid >= 0)
         ::setuid(m_uid);
     ::umask(S_IWGRP | S_IWOTH);
-    ::setpgid(0,0);
 
     struct passwd * pw = getpwent();
     if (pw)
