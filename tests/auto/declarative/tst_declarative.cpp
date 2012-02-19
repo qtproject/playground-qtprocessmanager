@@ -43,12 +43,15 @@
 #include <QDeclarativeEngine>
 #include <QDeclarativeComponent>
 #include <QDeclarativeProperty>
+#include <QDeclarativeContext>
 #include <QProcess>
 #include <QLocalSocket>
 
 #include <jsonuidrangeauthority.h>
 
 #include "declarativeprocessmanager.h"
+#include "declarativematchdelegate.h"
+#include "matchdelegate.h"
 #include "standardprocessbackendfactory.h"
 #include "socketprocessbackendfactory.h"
 #include "processfrontend.h"
@@ -69,8 +72,11 @@ private slots:
     void initTestCase();
 
     void basic();
+    void matchDelegate();
     void socketLauncher();
     void socketRangeLauncher();
+
+    void match();
 };
 
 
@@ -78,11 +84,15 @@ void tst_DeclarativeProcessManager::initTestCase()
 {
     qDebug() << "Registering types";
     const char *uri = "Test";
+
+    qmlRegisterType<MatchDelegate>();
     qmlRegisterType<ProcessBackendFactory>();
+    qmlRegisterType<ProcessFrontend>();
+
     qmlRegisterType<StandardProcessBackendFactory>(uri, 1, 0, "StandardProcessBackendFactory");
     qmlRegisterType<SocketProcessBackendFactory>(uri, 1, 0, "SocketProcessBackendFactory");
-    qmlRegisterType<ProcessFrontend>();
     qmlRegisterType<DeclarativeProcessManager>(uri, 1, 0, "DeclarativeProcessManager");
+    qmlRegisterType<DeclarativeMatchDelegate>(uri, 1, 0, "DeclarativeMatchDelegate");
     qmlRegisterUncreatableType<Process>(uri, 1, 0, "Process", "Don't try to make this");
 
     qRegisterMetaType<QProcess::ProcessState>();
@@ -205,29 +215,37 @@ static void _frontendTest(const QString& filename)
     QDeclarativeComponent component(&engine, QUrl::fromLocalFile(filename));
     if (component.isError())
         qWarning() << component.errors();
+
     DeclarativeProcessManager *manager = qobject_cast<DeclarativeProcessManager*>(component.create());
     QVERIFY(manager != NULL);
 
-    QVariant name;
-    QVERIFY(QMetaObject::invokeMethod(manager, "makeProcess", Q_RETURN_ARG(QVariant, name)));
-    ProcessFrontend *frontend = manager->processForName(name.toString());
-    QVERIFY(frontend);
+    for (int i = 0 ; i < 3 ; i++ ) {
+        QVariant name;
+        QVERIFY(QMetaObject::invokeMethod(manager, "makeProcess", Q_RETURN_ARG(QVariant, name)));
+        ProcessFrontend *frontend = manager->processForName(name.toString());
+        QVERIFY(frontend);
 
-    Spy spy(frontend);
-    QVERIFY(QMetaObject::invokeMethod(manager, "startProcess", Q_ARG(QVariant, name)));
-    spy.waitStart();
+        Spy spy(frontend);
+        QVERIFY(QMetaObject::invokeMethod(manager, "startProcess", Q_ARG(QVariant, name)));
+        spy.waitStart();
 
-    QVERIFY(QMetaObject::invokeMethod(manager, "stopProcess", Q_ARG(QVariant, name)));
-    spy.waitFinished();
-    spy.check(1, 1, 1, 3);
-    spy.checkExitCode(0);
-    spy.checkExitStatus(QProcess::CrashExit);
-    spy.checkErrors(QList<QProcess::ProcessError>() << QProcess::Crashed);
+        QVERIFY(QMetaObject::invokeMethod(manager, "stopProcess", Q_ARG(QVariant, name)));
+        spy.waitFinished();
+        spy.check(1, 1, 1, 3);
+        spy.checkExitCode(0);
+        spy.checkExitStatus(QProcess::CrashExit);
+        spy.checkErrors(QList<QProcess::ProcessError>() << QProcess::Crashed);
+    }
 }
 
 void tst_DeclarativeProcessManager::basic()
 {
     _frontendTest("data/testfrontend.qml");
+}
+
+void tst_DeclarativeProcessManager::matchDelegate()
+{
+    _frontendTest("data/testmatch.qml");
 }
 
 void tst_DeclarativeProcessManager::socketLauncher()
@@ -252,6 +270,46 @@ void tst_DeclarativeProcessManager::socketRangeLauncher()
     _frontendTest("data/testsocketfrontend.qml");
 }
 
+const char *kTest = "import QtQuick 2.0; import Test 1.0; \n"
+"DeclarativeMatchDelegate { \n"
+"  script: { \n"
+"     if ( model.program == \"goodprogram\" ) return true; \n"
+"     if ( model.program == \"badprogram\" ) return false; \n"
+"     if ( model.priority > 10 ) return true; \n"
+"     if ( model.environment[\"debug\"] ) return true; \n"
+"     return false; \n"
+"  }\n"
+    "}\n";
+
+void tst_DeclarativeProcessManager::match()
+{
+    QDeclarativeEngine    engine;
+    QDeclarativeContext   context(&engine);
+    QDeclarativeComponent component(&engine);
+    component.setData(kTest, QUrl());
+    QCOMPARE(component.status(), QDeclarativeComponent::Ready);
+    DeclarativeMatchDelegate *delegate = qobject_cast<DeclarativeMatchDelegate *>(component.create());
+    QVERIFY(delegate);
+
+    ProcessInfo info;
+    info.setProgram("goodprogram");
+    QCOMPARE(delegate->matches(info), true);
+
+    info.setProgram("badprogram");
+    QCOMPARE(delegate->matches(info), false);
+
+    info.setProgram("aprogram");
+    info.setPriority(20);
+    QCOMPARE(delegate->matches(info), true);
+
+    info.setPriority(0);
+    QCOMPARE(delegate->matches(info), false);
+
+    QVariantMap env = info.environment();
+    env.insert("debug", "true");
+    info.setEnvironment(env);
+    QCOMPARE(delegate->matches(info), true);
+}
 
 QTEST_MAIN(tst_DeclarativeProcessManager)
 

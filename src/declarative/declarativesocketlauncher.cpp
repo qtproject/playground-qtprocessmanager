@@ -42,37 +42,79 @@
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 /*!
-  \class DeclarativeSocketLauncher DeclarativeSocketLauncher
-  \brief The DeclarativeSocketLauncher class encapsulates ways of creating and tracking processes
+  \qmlclass Launcher DeclarativeSocketLauncher
+  \brief The Launcher class encapsulates ways of creating and tracking processes
          suitable for QtDeclarative programs.
+
+   The Launcher class is used to create a standalone program for launching
+   and tracking child processes.  Other programs can connect to the Launcher using
+   a JsonStream-formatted socket connection.
+
+   Here is an example of a simple launcher instantiation:
+
+   \qml
+   import QtQuick 2.0
+   import Test 1.0
+
+   Launcher {
+       id: socket_launcher
+
+       factories: [
+           StandardProcessBackendFactory {
+               id: gdbFactory
+               matchDelegate: KeyMatchDelegate { key: "gdb" }
+               rewriteDelegate: GdbRewriteDelegate {}
+           },
+           StandardProcessBackendFactory {
+               id: standardFactory
+           }
+       ]
+
+       JsonUIDRangeAuthority {
+           id: rangeAuthority
+           minimum: 0
+           maximum: 1000
+       }
+
+       Component.onCompleted: {
+           socket_launcher.listen("/tmp/socket_launcher", rangeAuthority);
+       }
+   }
+   \endqml
+
+   Note that the Launcher object has been configured with two factories, the first
+   of which rewrites any ProcessInfo objects containing a "gdb" attribute to
+   use the gdb server.  The Launcher object also has a JsonUIDRangeAuthority object
+   which is assigned to the internal JsonServer.
 */
 
 /*!
-  Construct a DeclarativeSocketLauncher with an optional \a parent
-*/
+  \qmlproperty list<ProcessBackendFactory> Launcher::factories
+  List of ProcessBackendFactory objects.
+
+  The order of the list is important - when launching a new
+  process each factory in turn will be given a chance.
+ */
+
+/*!
+  \qmlproperty list<Object> Launcher::children
+  Generic child objects of this Launcher - allows extra objects like Authorities
+  to be instantiated under this class.
+ */
 
 DeclarativeSocketLauncher::DeclarativeSocketLauncher(QObject *parent)
     : SocketLauncher(parent)
 {
 }
 
-/*!
-    \internal
-*/
 void DeclarativeSocketLauncher::classBegin()
 {
 }
 
-/*!
-    \internal
-*/
 void DeclarativeSocketLauncher::componentComplete()
 {
 }
 
-/*!
-  \internal
-*/
 void DeclarativeSocketLauncher::append_factory(QDeclarativeListProperty<ProcessBackendFactory> *list,
                                                ProcessBackendFactory *factory)
 {
@@ -81,18 +123,10 @@ void DeclarativeSocketLauncher::append_factory(QDeclarativeListProperty<ProcessB
         launcher->addFactory(factory);
 }
 
-/*!
-    \internal
- */
-
 QDeclarativeListProperty<ProcessBackendFactory> DeclarativeSocketLauncher::factories()
 {
     return QDeclarativeListProperty<ProcessBackendFactory>(this, NULL, append_factory);
 }
-
-/*!
-   \internal
-*/
 
 QDeclarativeListProperty<QObject> DeclarativeSocketLauncher::children()
 {
