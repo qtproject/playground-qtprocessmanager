@@ -51,7 +51,7 @@
 
 #include "declarativeprocessmanager.h"
 #include "declarativematchdelegate.h"
-#include "matchdelegate.h"
+#include "declarativerewritedelegate.h"
 #include "standardprocessbackendfactory.h"
 #include "socketprocessbackendfactory.h"
 #include "processfrontend.h"
@@ -77,6 +77,7 @@ private slots:
     void socketRangeLauncher();
 
     void match();
+    void rewrite();
 };
 
 
@@ -86,6 +87,7 @@ void tst_DeclarativeProcessManager::initTestCase()
     const char *uri = "Test";
 
     qmlRegisterType<MatchDelegate>();
+    qmlRegisterType<RewriteDelegate>();
     qmlRegisterType<ProcessBackendFactory>();
     qmlRegisterType<ProcessFrontend>();
 
@@ -93,6 +95,7 @@ void tst_DeclarativeProcessManager::initTestCase()
     qmlRegisterType<SocketProcessBackendFactory>(uri, 1, 0, "SocketProcessBackendFactory");
     qmlRegisterType<DeclarativeProcessManager>(uri, 1, 0, "DeclarativeProcessManager");
     qmlRegisterType<DeclarativeMatchDelegate>(uri, 1, 0, "DeclarativeMatchDelegate");
+    qmlRegisterType<DeclarativeRewriteDelegate>(uri, 1, 0, "DeclarativeRewriteDelegate");
     qmlRegisterUncreatableType<Process>(uri, 1, 0, "Process", "Don't try to make this");
 
     qRegisterMetaType<QProcess::ProcessState>();
@@ -270,7 +273,7 @@ void tst_DeclarativeProcessManager::socketRangeLauncher()
     _frontendTest("data/testsocketfrontend.qml");
 }
 
-const char *kTest = "import QtQuick 2.0; import Test 1.0; \n"
+const char *kMatchTest = "import QtQuick 2.0; import Test 1.0; \n"
 "DeclarativeMatchDelegate { \n"
 "  script: { \n"
 "     if ( model.program == \"goodprogram\" ) return true; \n"
@@ -279,14 +282,14 @@ const char *kTest = "import QtQuick 2.0; import Test 1.0; \n"
 "     if ( model.environment[\"debug\"] ) return true; \n"
 "     return false; \n"
 "  }\n"
-    "}\n";
+"}";
 
 void tst_DeclarativeProcessManager::match()
 {
     QDeclarativeEngine    engine;
     QDeclarativeContext   context(&engine);
     QDeclarativeComponent component(&engine);
-    component.setData(kTest, QUrl());
+    component.setData(kMatchTest, QUrl());
     QCOMPARE(component.status(), QDeclarativeComponent::Ready);
     DeclarativeMatchDelegate *delegate = qobject_cast<DeclarativeMatchDelegate *>(component.create());
     QVERIFY(delegate);
@@ -309,6 +312,52 @@ void tst_DeclarativeProcessManager::match()
     env.insert("debug", "true");
     info.setEnvironment(env);
     QCOMPARE(delegate->matches(info), true);
+}
+
+const char *kRewriteTest = "import QtQuick 2.0; import Test 1.0; \n"
+"DeclarativeRewriteDelegate { \n"
+"  script: { \n"
+"     model.program = \"foo-\"+model.program; \n"
+"     var oldargs = model.arguments; \n"
+"     oldargs.unshift(\"puppy\"); \n"
+"     model.arguments = oldargs; \n"
+"     var env = model.environment; \n"
+"     env[\"friendly\"] = \"yes\"; \n"
+"     env[\"noiselevel\"] = 85; \n"
+"     model.environment = env; \n"
+"  }\n"
+"}\n";
+
+void tst_DeclarativeProcessManager::rewrite()
+{
+    QDeclarativeEngine    engine;
+    QDeclarativeContext   context(&engine);
+    QDeclarativeComponent component(&engine);
+    component.setData(kRewriteTest, QUrl());
+    QCOMPARE(component.status(), QDeclarativeComponent::Ready);
+    DeclarativeRewriteDelegate *delegate = qobject_cast<DeclarativeRewriteDelegate *>(component.create());
+    QVERIFY(delegate);
+
+    ProcessInfo info;
+    info.setProgram("goodprogram");
+    info.setArguments(QStringList() << "cat");
+    QVariantMap env;
+    env.insert(QStringLiteral("gdb"), QStringLiteral("false"));
+    env.insert(QStringLiteral("fed"), QStringLiteral("true"));
+    env.insert(QStringLiteral("IQ"), 120);
+    info.setEnvironment(env);
+
+    delegate->rewrite(info);
+    QCOMPARE(info.program(), QStringLiteral("foo-goodprogram"));
+    QStringList args = info.arguments();
+    QCOMPARE(args.size(), 2);
+    QCOMPARE(args.at(0), QStringLiteral("puppy"));
+    QCOMPARE(args.at(1), QStringLiteral("cat"));
+    QVERIFY(info.environment().contains(QStringLiteral("gdb")));
+    QVERIFY(info.environment().contains(QStringLiteral("friendly")));
+    QCOMPARE(info.environment().value(QStringLiteral("friendly")).toString(), QStringLiteral("yes"));
+    QVERIFY(info.environment().contains(QStringLiteral("noiselevel")));
+    QCOMPARE(info.environment().value(QStringLiteral("noiselevel")).toInt(), 85);
 }
 
 QTEST_MAIN(tst_DeclarativeProcessManager)
