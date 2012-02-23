@@ -37,77 +37,16 @@
 **
 ****************************************************************************/
 
-#include <sys/types.h>
-#include <sys/uio.h>
-#include <unistd.h>
-#include <string.h>
-#include <signal.h>
-#include <stdio.h>
+#ifndef FORK_LAUNCHER_H
+#define FORK_LAUNCHER_H
 
-const int kBufSize = 100;
+#include "processmanager-global.h"
 
-ssize_t writeline(char *buffer, int len)
-{
-    char *b = buffer;
-    while ( len > 0 ) {
-        ssize_t r = write(STDOUT_FILENO, b, len);
-        if (r < 0)
-            return r;
-        b += r;
-        len -= r;
-    }
-    return 0;
-}
+QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-ssize_t readline(char *buffer, int max_len)
-{
-    int len = 0;
-    char c = 0;
-    while (len < max_len && c != '\r' && c != '\n') {
-        ssize_t count = read(STDIN_FILENO, &c, 1);
-        if (count <= 0)
-            return count;
-        *buffer++ = c;
-        len++;
-    }
-    *buffer = 0;
-    return len;
-}
+Q_CORE_EXPORT void forklauncher(int *argc, char ***argv);
+Q_CORE_EXPORT void displayFileDescriptors(int argc, char **argv);
 
-static char tough[] = "tough\n";
+QT_END_NAMESPACE_PROCESSMANAGER
 
-int
-main(int argc, char **argv)
-{
-    for (int i = 1 ; i < argc ; i++) {
-        if (!strcmp(argv[i], "-noterm")) {
-            struct sigaction action;
-            memset(&action, 0, sizeof(action));
-            action.sa_handler=SIG_IGN;
-            if (sigaction(SIGTERM, &action, NULL) < 0) {
-                perror("Unable ignore SIGTERM");
-                return 1;
-            }
-            if (writeline(tough, strlen(tough)) < 0)
-                return 3;
-        }
-    }
-    char buffer[kBufSize+1];
-
-    while (1) {
-        ssize_t count = readline(buffer, kBufSize);
-        if (count < 0)
-            return 1;
-        if (count == 0)
-            return 0;
-
-        if (strncmp("stop", buffer, 4) == 0)
-            return 0;
-        if (strncmp("crash", buffer, 5) == 0)
-            return 2;
-
-        ssize_t result = writeline(buffer, count);
-        if (result < 0)
-            return 2;
-    }
-}
+#endif // FORK_LAUNCHER_H

@@ -43,9 +43,6 @@
 #include <QtDeclarative>
 #include "socketlauncher.h"
 
-class JsonAuthority;
-class QtAddOn::JsonStream::JsonAuthority;
-
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 class Q_ADDON_PROCESSMANAGER_EXPORT DeclarativeSocketLauncher : public SocketLauncher,

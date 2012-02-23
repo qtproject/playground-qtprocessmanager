@@ -40,6 +40,8 @@
 #ifndef _REMOTE_PROTOCOL_H
 #define _REMOTE_PROTOCOL_H
 
+#include <QString>
+
 #include "processmanager-global.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER

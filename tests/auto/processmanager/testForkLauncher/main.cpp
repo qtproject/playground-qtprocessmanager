@@ -44,9 +44,8 @@
 #include <QtEndian>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include "processinfo.h"
-#include <signal.h>
-#include <stdio.h>
+
+#include "forklauncher.h"
 
 #if defined(Q_OS_LINUX)
 #include <sys/types.h>
@@ -62,7 +61,7 @@ class Container : public QObject
     Q_OBJECT
 
 public:
-    Container() : count(0) {
+    Container() {
         m_in  = new QSocketNotifier( STDIN_FILENO, QSocketNotifier::Read, this );
         connect(m_in, SIGNAL(activated(int)), SLOT(inReady(int)));
         m_in->setEnabled(true);
@@ -71,42 +70,20 @@ public:
         m_out->setEnabled(false);
     }
 
-    void handleMessage(const QJsonObject& object) {
-        if (!count) {
-            ProcessInfo info(object.toVariantMap());
-            // qDebug() << "Received process info" << info.toMap();
-            qint64 uid = (info.contains(ProcessInfoConstants::Uid) ? info.uid() : -1);
-            qint64 gid = (info.contains(ProcessInfoConstants::Gid) ? info.gid() : -1);
-            if (gid >= 0)
-                ::setgid(gid);
-            if (uid >= 0)
-                ::setuid(uid);
-            struct passwd * pw = getpwent();
-            if (pw)
-                ::initgroups(pw->pw_name, pw->pw_gid);
-            else {
-                qWarning() << "Unable to find UID" << ::getuid() << "to set groups";
-                ::setgroups(0,0);
-            }
+    void handleMessage(const QString& cmd) {
+        if (cmd == QLatin1String("stop")) {
+            qDebug() << "Stopping";
+            exit(0);
+        }
+        else if (cmd == QLatin1String("crash")) {
+            qDebug() << "Crashing";
+            exit(2);
         }
         else {
-            QString cmd = object.value("command").toString();
-            // qDebug() << "Received command" << cmd;
-            if (cmd == QLatin1String("stop")) {
-                // qDebug() << "Stopping";
-                exit(0);
-            }
-            else if (cmd == QLatin1String("crash")) {
-                // qDebug() << "Crashing";
-                exit(2);
-            }
-            else {
-                m_outbuf.append(cmd.toLatin1());
-                m_outbuf.append('\n');
-                m_out->setEnabled(true);
-            }
+            m_outbuf.append(cmd.toLatin1());
+            m_outbuf.append('\n');
+            m_out->setEnabled(true);
         }
-        count++;
     }
 
 public slots:
@@ -120,15 +97,13 @@ public slots:
             m_inbuf.resize(oldSize+n);
         else
             m_inbuf.resize(oldSize);
-        // Could check for an error here
-        // Check for a complete JSON object
-        while (m_inbuf.size() >= 12) {
-            qint32 message_size = qFromLittleEndian(((qint32 *)m_inbuf.data())[2]) + 8;
-            if (m_inbuf.size() < message_size)
-                break;
-            QByteArray msg = m_inbuf.left(message_size);
-            m_inbuf = m_inbuf.mid(message_size);
-            handleMessage(QJsonDocument::fromBinaryData(msg).object());
+
+        int offset;
+        while ((offset=m_inbuf.indexOf('\n')) != -1) {
+            QByteArray msg = m_inbuf.left(offset);
+            m_inbuf = m_inbuf.mid(offset + 1);
+            if (msg.size() > 0)
+                handleMessage(QString::fromLocal8Bit(msg));
         }
         m_in->setEnabled(true);
     }
@@ -153,34 +128,14 @@ public slots:
 private:
     QSocketNotifier *m_in, *m_out;
     QByteArray       m_inbuf, m_outbuf;
-    int              count;
 };
 
 int
 main(int argc, char **argv)
 {
+    forklauncher(&argc, &argv);
     QCoreApplication app(argc, argv);
-    QStringList args = QCoreApplication::arguments();
-    QString progname = args.takeFirst();
-    while (args.size()) {
-        QString arg = args.at(0);
-        if (!arg.startsWith('-'))
-            break;
-        args.removeFirst();
-        if (arg == QStringLiteral("-noterm")) {
-            struct sigaction action;
-            memset(&action, 0, sizeof(action));
-            action.sa_handler=SIG_IGN;
-            if (sigaction(SIGTERM, &action, NULL) < 0) {
-                perror("Unable ignore SIGTERM");
-                return 1;
-            }
-            qDebug() << "tough";
-        }
-    }
-
     Container c;
-    qDebug() << "testPrelaunch running";
     return app.exec();
 }
 

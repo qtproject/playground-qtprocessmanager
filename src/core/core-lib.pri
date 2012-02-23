@@ -29,7 +29,8 @@ PUBLIC_HEADERS += \
   $$PWD/pipelauncher.h \
   $$PWD/socketlauncher.h \
   $$PWD/procutils.h \
-  $$PWD/remoteprotocol.h
+  $$PWD/remoteprotocol.h \
+  $$PWD/forklauncher.h
 
 HEADERS += \
   $$PUBLIC_HEADERS \
@@ -61,4 +62,5 @@ SOURCES += \
   $$PWD/launcherclient.cpp \
   $$PWD/pipelauncher.cpp \
   $$PWD/socketlauncher.cpp \
-  $$PWD/procutils.cpp
+  $$PWD/procutils.cpp \
+  $$PWD/forklauncher.cpp

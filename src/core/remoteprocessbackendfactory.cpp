@@ -40,8 +40,6 @@
 #include "remoteprocessbackendfactory.h"
 #include "remoteprocessbackend.h"
 
-#include <QDebug>
-
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 const int kRemoteTimerInterval = 1000;
@@ -146,7 +144,6 @@ ProcessBackend * RemoteProcessBackendFactory::create(const ProcessInfo& info, QO
 
 void RemoteProcessBackendFactory::receive(const QJsonObject& message)
 {
-    // qDebug() << Q_FUNC_INFO << message;
     int id = message.value(QLatin1String("id")).toDouble();
     if (m_backendMap.contains(id))
         m_backendMap.value(id)->receive(message);

@@ -1,3 +1,3 @@
 TEMPLATE = subdirs
 
-SUBDIRS = testClient testPrelaunch testPipeLauncher testSocketLauncher test
+SUBDIRS = testClient testPrelaunch testPipeLauncher testSocketLauncher testForkLauncher test
