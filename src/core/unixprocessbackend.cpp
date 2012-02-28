@@ -37,8 +37,6 @@
 **
 ****************************************************************************/
 
-
-
 #include "unixprocessbackend.h"
 #include "unixsandboxprocess.h"
 #include "procutils.h"
@@ -49,16 +47,6 @@
 #include <QFile>
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
-
-static void sendSignalToProcess(pid_t pid, int sig)
-{
-    pid_t pgrp = ::getpgid(pid);
-    if (pgrp != -1 && pgrp != ::getpgrp() && ::killpg(pgrp, sig) == 0)
-        return;
-
-    qWarning("Unable terminate process group: %d, directly killing process %d", pgrp, pid);
-    ::kill(pid, sig);
-}
 
 /*!
     \class UnixProcessBackend
@@ -84,7 +72,7 @@ UnixProcessBackend::UnixProcessBackend(const ProcessInfo& info, QObject *parent)
 UnixProcessBackend::~UnixProcessBackend()
 {
     if (m_process && m_process->state() != QProcess::NotRunning)
-        sendSignalToProcess(m_process->pid(), SIGKILL);
+        ProcUtils::sendSignalToProcess(m_process->pid(), SIGKILL);
 }
 
 /*!
@@ -235,11 +223,11 @@ void UnixProcessBackend::stop(int timeout)
 
     if (m_process->state() != QProcess::NotRunning) {
         if (timeout > 0) {
-            sendSignalToProcess(m_process->pid(), SIGTERM);
+            ProcUtils::sendSignalToProcess(m_process->pid(), SIGTERM);
             m_killTimer.start(timeout);
         }
         else {
-            sendSignalToProcess(m_process->pid(), SIGKILL);
+            ProcUtils::sendSignalToProcess(m_process->pid(), SIGKILL);
         }
     }
 }

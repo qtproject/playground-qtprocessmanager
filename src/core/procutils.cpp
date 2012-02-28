@@ -43,6 +43,8 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/resource.h>
+#include <signal.h>
 
 #include <QFile>
 #include <QFileInfo>
@@ -55,6 +57,7 @@
 #include <sys/sysctl.h>
 #include <errno.h>
 #endif
+
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
@@ -390,6 +393,20 @@ bool ProcUtils::setOomAdjustment(pid_t pid, qint32 oomAdjustment)
     Q_UNUSED(oomAdjustment);
 #endif
     return false;
+}
+
+/*!
+  Send a signal to a process or process group.
+ */
+
+void ProcUtils::sendSignalToProcess(pid_t pid, int sig)
+{
+    pid_t pgrp = ::getpgid(pid);
+    if (pgrp != -1 && pgrp != ::getpgrp() && ::killpg(pgrp, sig) == 0)
+        return;
+
+    qWarning("Unable terminate process group: %d, directly killing process %d", pgrp, pid);
+    ::kill(pid, sig);
 }
 
 #include "moc_procutils.cpp"

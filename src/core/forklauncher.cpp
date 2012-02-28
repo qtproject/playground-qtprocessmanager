@@ -47,13 +47,12 @@
 #include <QElapsedTimer>
 #include <QProcess>
 
-#include <signal.h>
+//#include <signal.h>
 #include <sys/select.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <pwd.h>
 #include <errno.h>
-#include <sys/resource.h>
 #include <fcntl.h>
 
 // Linux only?
@@ -301,7 +300,7 @@ void ChildProcess::processFdSet(QByteArray& outgoing, fd_set& rfds, fd_set& wfds
     }
     if (m_state == SentSigTerm && m_timer.hasExpired(m_timeout)) {
         m_state = SentSigKill;
-        ::kill(m_pid, SIGKILL);
+        ProcUtils::sendSignalToProcess(m_pid, SIGKILL);
     }
 }
 
@@ -317,11 +316,11 @@ void ChildProcess::stop(int timeout)
             m_state = SentSigTerm;
             m_timeout = timeout;
             m_timer.start();
-            ::kill(m_pid, SIGTERM);
+            ProcUtils::sendSignalToProcess(m_pid, SIGTERM);
         }
         else {
             m_state = SentSigKill;
-            ::kill(m_pid, SIGKILL);
+            ProcUtils::sendSignalToProcess(m_pid, SIGKILL);
         }
     }
 }
