@@ -53,6 +53,7 @@
 #include <grp.h>
 #endif
 #include <pwd.h>
+#include <signal.h>
 
 QT_USE_NAMESPACE_PROCESSMANAGER
 
@@ -135,6 +136,20 @@ main(int argc, char **argv)
 {
     forklauncher(&argc, &argv);
     QCoreApplication app(argc, argv);
+
+    for (int i = 1 ; i < argc ; i++) {
+        if (!strcmp(argv[i], "-noterm")) {
+            struct sigaction action;
+            ::memset(&action, 0, sizeof(action));
+            action.sa_handler=SIG_IGN;
+            if (::sigaction(SIGTERM, &action, NULL) < 0) {
+                ::perror("Unable ignore SIGTERM");
+                return 1;
+            }
+            qDebug() << "Running in tough mode";
+        }
+    }
+
     Container c;
     return app.exec();
 }

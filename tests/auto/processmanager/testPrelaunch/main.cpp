@@ -180,7 +180,6 @@ main(int argc, char **argv)
     }
 
     Container c;
-    qDebug() << "testPrelaunch running";
     return app.exec();
 }
 

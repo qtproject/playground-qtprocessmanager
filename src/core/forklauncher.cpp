@@ -47,7 +47,7 @@
 #include <QElapsedTimer>
 #include <QProcess>
 
-//#include <signal.h>
+#include <signal.h>
 #include <sys/select.h>
 #include <sys/stat.h>
 #include <sys/types.h>

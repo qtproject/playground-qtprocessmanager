@@ -464,7 +464,7 @@ static void startAndKillClient(ProcessBackendManager *manager, ProcessInfo info,
 
     cleanupProcess(process);
 }
-
+/*
 static void startAndKillTough(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
 {
     Q_UNUSED(func);
@@ -473,6 +473,7 @@ static void startAndKillTough(ProcessBackendManager *manager, ProcessInfo info, 
     info.setArguments(args);
     startAndKillClient(manager, info, func);
 }
+*/
 
 static void startAndCrashClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
 {
@@ -582,8 +583,6 @@ static void priorityChangeAfterClient(ProcessBackendManager *manager, ProcessInf
     cleanupProcess(process);
 }
 
-#if defined(Q_OS_LINUX)
-
 static void waitForOom(ProcessBackend *process, int oom, int timeout=5000)
 {
     QTime stopWatch;
@@ -597,8 +596,22 @@ static void waitForOom(ProcessBackend *process, int oom, int timeout=5000)
     }
 }
 
+/* Dynamically check to see if oomAdjustments are available */
+
+static bool canRunOomAdjustment()
+{
+#if defined(Q_OS_LINUX)
+    QFile file(QString::fromLatin1("/proc/%1/oom_score_adj").arg(::getpid()));
+    return file.exists();
+#endif
+    return false;
+}
+
 static void oomChangeBeforeClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
 {
+    if (!canRunOomAdjustment())
+        return;
+
     info.setOomAdjustment(500);
     ProcessBackend *process = manager->create(info);
     QVERIFY(process);
@@ -621,6 +634,9 @@ static void oomChangeBeforeClient(ProcessBackendManager *manager, ProcessInfo in
 
 static void oomChangeAfterClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
 {
+    if (!canRunOomAdjustment())
+        return;
+
     ProcessBackend *process = manager->create(info);
     QVERIFY(process);
     QVERIFY(process->state() == QProcess::NotRunning);
@@ -643,10 +659,9 @@ static void oomChangeAfterClient(ProcessBackendManager *manager, ProcessInfo inf
     cleanupProcess(process);
 }
 
-#endif // defined(Q_OS_LINUX)
-
 
 typedef void (*clientFunc)(ProcessBackendManager *, ProcessInfo, CommandFunc);
+typedef void (*infoFunc)(ProcessInfo&);
 
 static void fixUidGid(ProcessInfo& info)
 {
@@ -658,55 +673,66 @@ static void fixUidGid(ProcessInfo& info)
         info.setGid(gidString.toLongLong());
 }
 
-static void standardTest( clientFunc func )
+static void makeTough(ProcessInfo& info)
+{
+    QStringList args = info.arguments();
+    args << QStringLiteral("-noterm");
+    info.setArguments(args);
+}
+
+static void standardTest( clientFunc func, infoFunc infoFixup=0 )
 {
     ProcessBackendManager *manager = new ProcessBackendManager;
+    manager->addFactory(new StandardProcessBackendFactory);
 
     ProcessInfo info;
     info.setValue("program", "testClient/testClient");
+    if (infoFixup)
+        infoFixup(info);
     fixUidGid(info);
-    manager->addFactory(new StandardProcessBackendFactory);
 
     func(manager, info, writeLine);
     delete manager;
 }
 
-static void prelaunchTest( clientFunc func )
+static void prelaunchTest( clientFunc func, infoFunc infoFixup=0 )
 {
     ProcessBackendManager *manager = new ProcessBackendManager;
 
     ProcessInfo info;
     info.setValue("program", "testPrelaunch/testPrelaunch");
+    if (infoFixup)
+        infoFixup(info);
     manager->addFactory(new PrelaunchProcessBackendFactory(info));
 
     // Verify that there is a prelaunched process
     QVERIFY(manager->memoryRestricted() == false);
     waitForInternalProcess(manager);
 
-    info.setValue("prelaunch", "true");
     fixUidGid(info);
     func(manager, info, writeJson);
     delete manager;
 }
 
-static void prelaunchRestrictedTest( clientFunc func )
+static void prelaunchRestrictedTest( clientFunc func, infoFunc infoFixup=0 )
 {
     ProcessBackendManager *manager = new ProcessBackendManager;
     manager->setMemoryRestricted(true);
 
     ProcessInfo info;
     info.setValue("program", "testPrelaunch/testPrelaunch");
+    if (infoFixup)
+        infoFixup(info);
     manager->addFactory(new PrelaunchProcessBackendFactory(info));
 
     QVERIFY(manager->memoryRestricted() == true);
 
-    info.setValue("prelaunch", "true");
     fixUidGid(info);
     func(manager, info, writeJson);
     delete manager;
 }
 
-static void pipeLauncherTest( clientFunc func )
+static void pipeLauncherTest( clientFunc func, infoFunc infoFixup=0 )
 {
     ProcessBackendManager *manager = new ProcessBackendManager;
     ProcessInfo info;
@@ -720,17 +746,20 @@ static void pipeLauncherTest( clientFunc func )
     ProcessInfo info2;
     info2.setValue("program", "testClient/testClient");
     info2.setValue("pipe", "true");
+    if (infoFixup)
+        infoFixup(info2);
     fixUidGid(info2);
     func(manager, info2, writeLine);
     delete manager;
 }
 
 
-static void socketLauncherTest( clientFunc func, QStringList args=QStringList() )
+static void socketLauncherTest( clientFunc func, QStringList args=QStringList(), infoFunc infoFixup=0  )
 {
     QProcess *remote = new QProcess;
     QString socketName = QLatin1String("/tmp/socketlauncher");
     remote->setProcessChannelMode(QProcess::ForwardedChannels);
+    qDebug() << "USING ARGS" << args;
     remote->start("testSocketLauncher/testSocketLauncher", args << socketName);
     QVERIFY(remote->waitForStarted());
     waitForSocket(socketName);
@@ -742,6 +771,8 @@ static void socketLauncherTest( clientFunc func, QStringList args=QStringList() 
 
     ProcessInfo info;
     info.setValue("program", "testClient/testClient");
+    if (infoFixup)
+        infoFixup(info);
     fixUidGid(info);
     func(manager, info, writeLine);
 
@@ -749,9 +780,18 @@ static void socketLauncherTest( clientFunc func, QStringList args=QStringList() 
     delete remote;
 }
 
-#if defined(Q_OS_LINUX)
-static void forkLauncherTest( clientFunc func )
+static void socketSchemaTest( clientFunc func, infoFunc infoFixup=0 )
 {
+    QStringList args;
+    args << "-validate-inbound" << "../../../schema/remote/inbound"
+         << "-validate-outbound" << "../../../schema/remote/outbound"
+         << "-warn" << "-drop";
+    socketLauncherTest(func, args, infoFixup);
+}
+
+static void forkLauncherTest( clientFunc func, infoFunc infoFixup=0  )
+{
+#if defined(Q_OS_LINUX)
     ProcessBackendManager *manager = new ProcessBackendManager;
     ProcessInfo info;
     info.setValue("program", "testForkLauncher/testForkLauncher");
@@ -763,19 +803,18 @@ static void forkLauncherTest( clientFunc func )
 
     ProcessInfo info2;
     fixUidGid(info2);
+    if (infoFixup)
+        infoFixup(info2);
     func(manager, info2, writeLine);
     delete manager;
-}
+#else
+    Q_UNUSED(func);
+    Q_UNUSED(infoFixup);
 #endif
-
-static void socketSchemaTest( clientFunc func )
-{
-    QStringList args;
-    args << "-validate-inbound" << "../../../schema/remote/inbound"
-         << "-validate-outbound" << "../../../schema/remote/outbound"
-         << "-warn" << "-drop";
-    socketLauncherTest(func, args);
 }
+
+
+
 
 
 /******************************************************************************/
@@ -790,94 +829,80 @@ private slots:
     void standardStartAndStop()         { standardTest(startAndStopClient); }
     void standardStartAndStopMultiple() { standardTest(startAndStopMultiple); }
     void standardStartAndKill()         { standardTest(startAndKillClient); }
-    void standardStartAndKillTough()    { standardTest(startAndKillTough); }
+    void standardStartAndKillTough()    { standardTest(startAndKillClient, makeTough); }
     void standardStartAndCrash()        { standardTest(startAndCrashClient); }
     void standardFailToStart()          { standardTest(failToStartClient); }
     void standardEcho()                 { standardTest(echoClient); }
     void standardPriorityChangeBefore() { standardTest(priorityChangeBeforeClient); }
     void standardPriorityChangeAfter()  { standardTest(priorityChangeAfterClient); }
-#if defined(Q_OS_LINUX)
     void standardOomChangeBefore()      { standardTest(oomChangeBeforeClient); }
     void standardOomChangeAfter()       { standardTest(oomChangeAfterClient); }
-#endif
 
     void prelaunchStartAndStop()         { prelaunchTest(startAndStopClient); }
     void prelaunchStartAndStopMultiple() { prelaunchTest(startAndStopMultiple); }
     void prelaunchStartAndKill()         { prelaunchTest(startAndKillClient); }
-    void prelaunchStartAndKillTough()    { prelaunchTest(startAndKillTough); }
+    void prelaunchStartAndKillTough()    { prelaunchTest(startAndKillClient, makeTough); }
     void prelaunchStartAndCrash()        { prelaunchTest(startAndCrashClient); }
     void prelaunchEcho()                 { prelaunchTest(echoClient); }
     void prelaunchPriorityChangeBefore() { prelaunchTest(priorityChangeBeforeClient); }
     void prelaunchPriorityChangeAfter()  { prelaunchTest(priorityChangeAfterClient); }
-#if defined(Q_OS_LINUX)
     void prelaunchOomChangeBefore()      { prelaunchTest(oomChangeBeforeClient); }
     void prelaunchOomChangeAfter()       { prelaunchTest(oomChangeAfterClient); }
-#endif
 
     void prelaunchRestrictedStartAndStop()         { prelaunchRestrictedTest(startAndStopClient); }
     void prelaunchRestrictedStartAndStopMultiple() { prelaunchRestrictedTest(startAndStopMultiple); }
     void prelaunchRestrictedStartAndKill()         { prelaunchRestrictedTest(startAndKillClient); }
-    void prelaunchRestrictedStartAndKillTough()    { prelaunchRestrictedTest(startAndKillTough); }
+    void prelaunchRestrictedStartAndKillTough()    { prelaunchRestrictedTest(startAndKillClient, makeTough); }
     void prelaunchRestrictedStartAndCrash()        { prelaunchRestrictedTest(startAndCrashClient); }
     void prelaunchRestrictedEcho()                 { prelaunchRestrictedTest(echoClient); }
     void prelaunchRestrictedPriorityChangeBefore() { prelaunchRestrictedTest(priorityChangeBeforeClient); }
     void prelaunchRestrictedPriorityChangeAfter()  { prelaunchRestrictedTest(priorityChangeAfterClient); }
-#if defined(Q_OS_LINUX)
     void prelaunchRestrictedOomChangeBefore()      { prelaunchRestrictedTest(oomChangeBeforeClient); }
     void prelaunchRestrictedOomChangeAfter()       { prelaunchRestrictedTest(oomChangeAfterClient); }
-#endif
 
     void pipeLauncherStartAndStop()         { pipeLauncherTest(startAndStopClient); }
     void pipeLauncherStartAndStopMultiple() { pipeLauncherTest(startAndStopMultiple); }
     void pipeLauncherStartAndKill()         { pipeLauncherTest(startAndKillClient); }
-    void pipeLauncherStartAndKillTough()    { pipeLauncherTest(startAndKillTough); }
+    void pipeLauncherStartAndKillTough()    { pipeLauncherTest(startAndKillClient, makeTough); }
     void pipeLauncherStartAndCrash()        { pipeLauncherTest(startAndCrashClient); }
     void pipeLauncherEcho()                 { pipeLauncherTest(echoClient); }
     void pipeLauncherPriorityChangeBefore() { pipeLauncherTest(priorityChangeBeforeClient); }
     void pipeLauncherPriorityChangeAfter()  { pipeLauncherTest(priorityChangeAfterClient); }
-#if defined(Q_OS_LINUX)
     void pipeLauncherOomChangeBefore()      { pipeLauncherTest(oomChangeBeforeClient); }
     void pipeLauncherOomChangeAfter()       { pipeLauncherTest(oomChangeAfterClient); }
-#endif
 
     void socketLauncherStartAndStop()         { socketLauncherTest(startAndStopClient); }
     void socketLauncherStartAndStopMultiple() { socketLauncherTest(startAndStopMultiple); }
     void socketLauncherStartAndKill()         { socketLauncherTest(startAndKillClient); }
-    void socketLauncherStartAndKillTough()    { socketLauncherTest(startAndKillTough); }
+    void socketLauncherStartAndKillTough()    { socketLauncherTest(startAndKillClient, QStringList(), makeTough); }
     void socketLauncherStartAndCrash()        { socketLauncherTest(startAndCrashClient); }
     void socketLauncherEcho()                 { socketLauncherTest(echoClient); }
     void socketLauncherPriorityChangeBefore() { socketLauncherTest(priorityChangeBeforeClient); }
     void socketLauncherPriorityChangeAfter()  { socketLauncherTest(priorityChangeAfterClient); }
-#if defined(Q_OS_LINUX)
     void socketLauncherOomChangeBefore()      { socketLauncherTest(oomChangeBeforeClient); }
     void socketLauncherOomChangeAfter()       { socketLauncherTest(oomChangeAfterClient); }
-#endif
 
     void socketSchemaStartAndStop()         { socketSchemaTest(startAndStopClient); }
     void socketSchemaStartAndStopMultiple() { socketSchemaTest(startAndStopMultiple); }
     void socketSchemaStartAndKill()         { socketSchemaTest(startAndKillClient); }
-    void socketSchemaStartAndKillTough()    { socketSchemaTest(startAndKillTough); }
+    void socketSchemaStartAndKillTough()    { socketSchemaTest(startAndKillClient, makeTough); }
     void socketSchemaStartAndCrash()        { socketSchemaTest(startAndCrashClient); }
     void socketSchemaEcho()                 { socketSchemaTest(echoClient); }
     void socketSchemaPriorityChangeBefore() { socketSchemaTest(priorityChangeBeforeClient); }
     void socketSchemaPriorityChangeAfter()  { socketSchemaTest(priorityChangeAfterClient); }
-#if defined(Q_OS_LINUX)
     void socketSchemaOomChangeBefore()      { socketSchemaTest(oomChangeBeforeClient); }
     void socketSchemaOomChangeAfter()       { socketSchemaTest(oomChangeAfterClient); }
-#endif
 
-#if defined(Q_OS_LINUX)
     void forkLauncherStartAndStop()         { forkLauncherTest(startAndStopClient); }
     void forkLauncherStartAndStopMultiple() { forkLauncherTest(startAndStopMultiple); }
     void forkLauncherStartAndKill()         { forkLauncherTest(startAndKillClient); }
-    void forkLauncherStartAndKillTough()    { forkLauncherTest(startAndKillTough); }
+    void forkLauncherStartAndKillTough()    { forkLauncherTest(startAndKillClient, makeTough); }
     void forkLauncherStartAndCrash()        { forkLauncherTest(startAndCrashClient); }
     void forkLauncherEcho()                 { forkLauncherTest(echoClient); }
     void forkLauncherPriorityChangeBefore() { forkLauncherTest(priorityChangeBeforeClient); }
     void forkLauncherPriorityChangeAfter()  { forkLauncherTest(priorityChangeAfterClient); }
     void forkLauncherOomChangeBefore()      { forkLauncherTest(oomChangeBeforeClient); }
     void forkLauncherOomChangeAfter()       { forkLauncherTest(oomChangeAfterClient); }
-#endif
 
     void prelaunchChildAbort();
 
