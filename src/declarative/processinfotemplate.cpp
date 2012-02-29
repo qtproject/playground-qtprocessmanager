@@ -457,6 +457,14 @@ QString ProcessInfoTemplate::absoluteFilePath(const QString &url, const QString 
 }
 
 /*!
+    Returns true if a value for \a tag hs been set in the dictionary, or false otherwise.
+*/
+bool ProcessInfoTemplate::contains(const QString &tag)
+{
+    return m_dict.contains(tag);
+}
+
+/*!
   Returns the boundData from binding \a dict.
  */
 

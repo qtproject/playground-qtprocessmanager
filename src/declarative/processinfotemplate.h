@@ -86,6 +86,8 @@ public:
     Q_INVOKABLE QVariant bind(const QString &tag, const QVariant &defaultValue = QVariant());
     Q_INVOKABLE QString absoluteFilePath(const QString &url, const QString &filename = QString()) const;
 
+    Q_INVOKABLE bool contains(const QString &tag);
+
 public slots:
     void setIdentifier(const QString &identifier);
     void setProgramName(const QDeclarativeScriptString &programName);
