@@ -40,9 +40,6 @@
 #include <QtTest>
 #include <QtCore/QMetaType>
 #include <QFileInfo>
-#include <QDeclarativeEngine>
-#include <QDeclarativeComponent>
-#include <QDeclarativeProperty>
 #include <QLocalSocket>
 
 #include "process.h"

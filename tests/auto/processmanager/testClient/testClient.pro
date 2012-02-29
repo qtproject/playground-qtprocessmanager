@@ -2,6 +2,7 @@ CONFIG -= app_bundle
 include(../processmanager.pri)
 
 QT += processmanager
+QT -= gui
 
 DESTDIR = ./
 SOURCES = main.cpp

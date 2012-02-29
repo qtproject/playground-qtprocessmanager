@@ -1,4 +1,5 @@
 QT += network jsonstream
+QT -= gui
 
 INCLUDEPATH += $$PWD
 
