@@ -415,7 +415,7 @@ QVariant ProcessInfoTemplate::bindScript(const QDeclarativeScriptString &script)
         // out the real value after evaluating it.
 
         QString scriptStr = QStringLiteral("script");
-        QString jsonWrapper = QString::fromLatin1("{\"%1\": %2}").arg(scriptStr).arg(script.script());
+        QString jsonWrapper = QString::fromUtf8("{\"%1\": %2}").arg(scriptStr).arg(script.script());
         QDeclarativeExpression expr(script.context(), this, jsonWrapper);
 
         return expr.evaluate().toMap().value(scriptStr);
