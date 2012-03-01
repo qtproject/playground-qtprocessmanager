@@ -21,6 +21,7 @@ PUBLIC_HEADERS += \
   $$PWD/remoteprocessbackendfactory.h \
   $$PWD/pipeprocessbackendfactory.h \
   $$PWD/socketprocessbackendfactory.h \
+  $$PWD/preforkprocessbackendfactory.h \
   $$PWD/unixprocessbackend.h \
   $$PWD/standardprocessbackend.h \
   $$PWD/prelaunchprocessbackend.h \
@@ -31,7 +32,8 @@ PUBLIC_HEADERS += \
   $$PWD/socketlauncher.h \
   $$PWD/procutils.h \
   $$PWD/remoteprotocol.h \
-  $$PWD/forklauncher.h
+  $$PWD/forklauncher.h \
+  $$PWD/prefork.h
 
 HEADERS += \
   $$PUBLIC_HEADERS \
@@ -60,8 +62,10 @@ SOURCES += \
   $$PWD/remoteprocessbackendfactory.cpp \
   $$PWD/pipeprocessbackendfactory.cpp \
   $$PWD/socketprocessbackendfactory.cpp \
+  $$PWD/preforkprocessbackendfactory.cpp \
   $$PWD/launcherclient.cpp \
   $$PWD/pipelauncher.cpp \
   $$PWD/socketlauncher.cpp \
   $$PWD/procutils.cpp \
-  $$PWD/forklauncher.cpp
+  $$PWD/forklauncher.cpp \
+  $$PWD/prefork.cpp

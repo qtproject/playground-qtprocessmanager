@@ -131,7 +131,7 @@ private:
     QByteArray       m_inbuf, m_outbuf;
 };
 
-int
+extern "C" Q_DECL_EXPORT int
 main(int argc, char **argv)
 {
     forklauncher(&argc, &argv);

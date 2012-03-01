@@ -814,6 +814,42 @@ static void forkLauncherTest( clientFunc func, infoFunc infoFixup=0  )
 #endif
 }
 
+static void preforkLauncherTest( clientFunc func, infoFunc infoFixup=0 )
+{
+#if defined(Q_OS_LINUX)
+    QProcess *remote = new QProcess;
+    QString socketName = QLatin1String("/tmp/preforklauncher");
+    remote->setProcessChannelMode(QProcess::ForwardedChannels);
+    QStringList args;
+    args << "--" << "testPreforkLauncher/testPreforkLauncher" << socketName
+         << "--" << "testForkLauncher/testForkLauncher";
+    qDebug() << "Trying to run: testPrefork/testPrefork" << args;
+    remote->start("testPrefork/testPrefork", args);
+    QVERIFY(remote->waitForStarted());
+    waitForSocket(socketName);
+
+    ProcessBackendManager *manager = new ProcessBackendManager;
+    SocketProcessBackendFactory *factory = new SocketProcessBackendFactory;
+    factory->setSocketName(socketName);
+    manager->addFactory(factory);
+
+    ProcessInfo info;
+    info.setValue("program", "testClient/testClient");
+    if (infoFixup)
+        infoFixup(info);
+    fixUidGid(info);
+    func(manager, info, writeLine);
+
+    delete manager;
+    delete remote;
+#else
+    Q_UNUSED(func);
+    Q_UNUSED(infoFixup);
+#endif
+}
+
+
+
 
 
 
@@ -904,6 +940,17 @@ private slots:
     void forkLauncherPriorityChangeAfter()  { forkLauncherTest(priorityChangeAfterClient); }
     void forkLauncherOomChangeBefore()      { forkLauncherTest(oomChangeBeforeClient); }
     void forkLauncherOomChangeAfter()       { forkLauncherTest(oomChangeAfterClient); }
+
+    void preforkLauncherStartAndStop()         { preforkLauncherTest(startAndStopClient); }
+    void preforkLauncherStartAndStopMultiple() { preforkLauncherTest(startAndStopMultiple); }
+    void preforkLauncherStartAndKill()         { preforkLauncherTest(startAndKillClient); }
+    void preforkLauncherStartAndKillTough()    { preforkLauncherTest(startAndKillClient, makeTough); }
+    void preforkLauncherStartAndCrash()        { preforkLauncherTest(startAndCrashClient); }
+    void preforkLauncherEcho()                 { preforkLauncherTest(echoClient); }
+    void preforkLauncherPriorityChangeBefore() { preforkLauncherTest(priorityChangeBeforeClient); }
+    void preforkLauncherPriorityChangeAfter()  { preforkLauncherTest(priorityChangeAfterClient); }
+    void preforkLauncherOomChangeBefore()      { preforkLauncherTest(oomChangeBeforeClient); }
+    void preforkLauncherOomChangeAfter()       { preforkLauncherTest(oomChangeAfterClient); }
 
     void prelaunchChildAbort();
 

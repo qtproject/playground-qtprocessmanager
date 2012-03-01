@@ -12,6 +12,9 @@ DEFINES += QT_ADDON_PROCESSMANAGER_LIB
 CONFIG += module create_prl
 MODULE_PRI = ../../modules/qt_processmanager.pri
 
+QMAKE_CXXFLAGS += -fPIC -fvisibility=hidden -fvisibility-inlines-hidden
+LIBS += -ldl
+
 include($$PWD/core-lib.pri)
 
 mac:QMAKE_FRAMEWORK_BUNDLE_NAME = $$QT.processmanager.name
