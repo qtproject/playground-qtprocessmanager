@@ -183,16 +183,15 @@ void PrelaunchProcessBackendFactory::setPrelaunchEnabled(bool value)
 
 /*!
     Returns whether there is a prelaunched process which is ready to be consumed.
- */
+*/
 bool PrelaunchProcessBackendFactory::hasPrelaunchedProcess() const
 {
     return (m_prelaunch && m_prelaunch->isReady());
 }
 
 /*!
-  Under memory restriction, terminate the prelaunch process.
- */
-
+    Under memory restriction, terminate the prelaunch process.
+*/
 void PrelaunchProcessBackendFactory::handleMemoryRestrictionChange()
 {
     if (m_memoryRestricted) {
@@ -205,6 +204,14 @@ void PrelaunchProcessBackendFactory::handleMemoryRestrictionChange()
         Q_ASSERT(m_prelaunch == NULL);
         startPrelaunchTimer();
     }
+}
+
+/*!
+    Returns the prelaunched process backend, or null if none is created.
+ */
+PrelaunchProcessBackend *PrelaunchProcessBackendFactory::prelaunchProcessBackend() const
+{
+    return m_prelaunch;
 }
 
 /*!
@@ -222,6 +229,7 @@ void PrelaunchProcessBackendFactory::timeout()
     connect(m_prelaunch, SIGNAL(finished(int,QProcess::ExitStatus)),
             SLOT(prelaunchFinished(int,QProcess::ExitStatus)));
     m_prelaunch->prestart();
+    emit processPrelaunched();
 }
 
 /*!

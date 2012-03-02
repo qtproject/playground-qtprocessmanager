@@ -80,9 +80,11 @@ signals:
     void launchIntervalChanged();
     void processInfoChanged();
     void prelaunchEnabledChanged();
+    void processPrelaunched();
 
 protected:
     virtual void handleMemoryRestrictionChange();
+    PrelaunchProcessBackend *prelaunchProcessBackend() const;
 
 private slots:
     void timeout();
