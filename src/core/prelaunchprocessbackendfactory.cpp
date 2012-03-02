@@ -41,6 +41,7 @@
 
 #include "prelaunchprocessbackendfactory.h"
 #include "prelaunchprocessbackend.h"
+#include "processinfo.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
@@ -61,20 +62,17 @@ const int kPrelaunchTimerInterval = 1000;
 
 /*!
   Construct a PrelaunchProcessBackendFactory with optional \a parent.
-  The \a info ProcessInfo is used to start the prelaunched process.  This is
-  different from the final ProcessInfo which will be passed to the prelaunched
-  process as a QBinaryJson document.
+  To be able to use the PrelaunchProcessBackendFactory, you also need to set
+  a ProcessInfo object to it that specifies which process is prelaunched.
 */
-
-PrelaunchProcessBackendFactory::PrelaunchProcessBackendFactory(const ProcessInfo& info, QObject *parent)
+PrelaunchProcessBackendFactory::PrelaunchProcessBackendFactory(QObject *parent)
     : ProcessBackendFactory(parent)
     , m_prelaunch(NULL)
-    , m_info(info)
+    , m_info(0)
 {
     connect(&m_timer, SIGNAL(timeout()), SLOT(timeout()));
     m_timer.setSingleShot(true);
     m_timer.setInterval(kPrelaunchTimerInterval);
-    m_timer.start();
 }
 
 /*!
@@ -85,12 +83,22 @@ PrelaunchProcessBackendFactory::~PrelaunchProcessBackendFactory()
 {
 }
 
+bool PrelaunchProcessBackendFactory::canCreate(const ProcessInfo &info) const
+{
+    if (!m_info)
+        return false;
+
+    return ProcessBackendFactory::canCreate(info);
+}
+
 /*!
   Construct a PrelaunchProcessBackend from a ProcessInfo \a info record with \a parent.
 */
 
-ProcessBackend * PrelaunchProcessBackendFactory::create(const ProcessInfo& info, QObject *parent)
+ProcessBackend * PrelaunchProcessBackendFactory::create(const ProcessInfo &info, QObject *parent)
 {
+    Q_ASSERT(m_info);
+
     PrelaunchProcessBackend *prelaunch = m_prelaunch;
 
     if ( prelaunch && prelaunch->isReady() ) {
@@ -100,10 +108,9 @@ ProcessBackend * PrelaunchProcessBackendFactory::create(const ProcessInfo& info,
         prelaunch->setInfo(info);
         prelaunch->setParent(parent);
         prelaunch->disconnect(this);
-    }
-    else {
+    } else {
         // qDebug() << "Creating prelaunch from scratch";
-        prelaunch = new PrelaunchProcessBackend(m_info, parent);
+        prelaunch = new PrelaunchProcessBackend(*m_info, parent);
         prelaunch->prestart();
         prelaunch->setInfo(info);
     }
@@ -120,6 +127,11 @@ QList<Q_PID> PrelaunchProcessBackendFactory::internalProcesses()
     if (m_prelaunch && m_prelaunch->isReady())
         list << m_prelaunch->pid();
     return list;
+}
+
+ProcessInfo *PrelaunchProcessBackendFactory::processInfo() const
+{
+    return m_info;
 }
 
 /*!
@@ -174,8 +186,9 @@ void PrelaunchProcessBackendFactory::timeout()
 {
     Q_ASSERT(m_prelaunch == NULL);
     Q_ASSERT(!m_memoryRestricted);
+    Q_ASSERT(m_info);
 
-    m_prelaunch = new PrelaunchProcessBackend(m_info, this);
+    m_prelaunch = new PrelaunchProcessBackend(*m_info, this);
     connect(m_prelaunch, SIGNAL(finished(int,QProcess::ExitStatus)),
             SLOT(prelaunchFinished(int,QProcess::ExitStatus)));
     m_prelaunch->prestart();
@@ -194,6 +207,26 @@ void PrelaunchProcessBackendFactory::prelaunchFinished(int exitCode, QProcess::E
         m_prelaunch = NULL;
     }
     m_timer.start();
+}
+
+/*!
+    Sets the ProcessInfo that is used to determine the prelaunched runtime to \a processInfo.
+    Takes ownership of the object. If the ProcessInfo object is changed, the old object is deleted.
+ */
+void PrelaunchProcessBackendFactory::setProcessInfo(ProcessInfo *processInfo)
+{
+    if (m_info != processInfo) {
+        delete m_info;
+        m_info = processInfo;
+
+        if (m_info) {
+            m_info->setParent(this);
+            m_timer.start();
+        } else {
+            m_timer.stop();
+        }
+        emit processInfoChanged();
+    }
 }
 
 /*!

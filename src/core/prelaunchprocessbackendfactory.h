@@ -41,31 +41,38 @@
 #define PRELAUNCH_PROCESS_BACKEND_FACTORY_H
 
 #include "processbackendfactory.h"
-#include "processinfo.h"
 #include "processmanager-global.h"
 #include <QTimer>
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
+class ProcessInfo;
 class PrelaunchProcessBackend;
 
 class Q_ADDON_PROCESSMANAGER_EXPORT PrelaunchProcessBackendFactory : public ProcessBackendFactory
 {
     Q_OBJECT
     Q_PROPERTY(int launchInterval READ launchInterval WRITE setLaunchInterval NOTIFY launchIntervalChanged)
+    Q_PROPERTY(ProcessInfo* processInfo READ processInfo WRITE setProcessInfo NOTIFY processInfoChanged)
 
 public:
-    PrelaunchProcessBackendFactory(const ProcessInfo& info, QObject *parent = 0);
+    PrelaunchProcessBackendFactory(QObject *parent = 0);
     virtual ~PrelaunchProcessBackendFactory();
+
+    virtual bool canCreate(const ProcessInfo &info) const;
     virtual ProcessBackend *create(const ProcessInfo& info, QObject *parent);
 
     virtual QList<Q_PID>    internalProcesses();
+
+    ProcessInfo *processInfo() const;
+    void setProcessInfo(ProcessInfo *processInfo);
 
     int  launchInterval() const;
     void setLaunchInterval(int interval);
 
 signals:
     void launchIntervalChanged();
+    void processInfoChanged();
 
 protected:
     virtual void handleMemoryRestrictionChange();
@@ -76,7 +83,7 @@ private slots:
 
 private:
     PrelaunchProcessBackend *m_prelaunch;
-    ProcessInfo              m_info;
+    ProcessInfo             *m_info;
     QTimer                   m_timer;
 };
 

@@ -696,18 +696,21 @@ static void prelaunchTest( clientFunc func, infoFunc infoFixup=0 )
 {
     ProcessBackendManager *manager = new ProcessBackendManager;
 
-    ProcessInfo info;
-    info.setValue("program", "testPrelaunch/testPrelaunch");
+    QScopedPointer<ProcessInfo> info(new ProcessInfo);
+    info->setValue("program", "testPrelaunch/testPrelaunch");
     if (infoFixup)
-        infoFixup(info);
-    manager->addFactory(new PrelaunchProcessBackendFactory(info));
+        infoFixup(*info);
+
+    PrelaunchProcessBackendFactory *factory = new PrelaunchProcessBackendFactory;
+    factory->setProcessInfo(info.data());
+    manager->addFactory(factory);
 
     // Verify that there is a prelaunched process
     QVERIFY(manager->memoryRestricted() == false);
     waitForInternalProcess(manager);
 
-    fixUidGid(info);
-    func(manager, info, writeJson);
+    fixUidGid(*info);
+    func(manager, *info, writeJson);
     delete manager;
 }
 
@@ -716,16 +719,18 @@ static void prelaunchRestrictedTest( clientFunc func, infoFunc infoFixup=0 )
     ProcessBackendManager *manager = new ProcessBackendManager;
     manager->setMemoryRestricted(true);
 
-    ProcessInfo info;
-    info.setValue("program", "testPrelaunch/testPrelaunch");
+    QScopedPointer<ProcessInfo> info(new ProcessInfo);
+    info->setValue("program", "testPrelaunch/testPrelaunch");
     if (infoFixup)
-        infoFixup(info);
-    manager->addFactory(new PrelaunchProcessBackendFactory(info));
+        infoFixup(*info);
+    PrelaunchProcessBackendFactory *factory = new PrelaunchProcessBackendFactory;
+    factory->setProcessInfo(info.data());
+    manager->addFactory(factory);
 
     QVERIFY(manager->memoryRestricted() == true);
 
-    fixUidGid(info);
-    func(manager, info, writeJson);
+    fixUidGid(*info);
+    func(manager, *info, writeJson);
     delete manager;
 }
 
@@ -920,9 +925,10 @@ void tst_ProcessManager::initTestCase()
 void tst_ProcessManager::prelaunchChildAbort()
 {
     ProcessBackendManager *manager = new ProcessBackendManager;
-    ProcessInfo info;
-    info.setValue("program", "testPrelaunch/testPrelaunch");
-    PrelaunchProcessBackendFactory *factory = new PrelaunchProcessBackendFactory(info);
+    QScopedPointer<ProcessInfo> info(new ProcessInfo);
+    info->setValue("program", "testPrelaunch/testPrelaunch");
+    PrelaunchProcessBackendFactory *factory = new PrelaunchProcessBackendFactory;
+    factory->setProcessInfo(info.data());
     manager->addFactory(factory);
 
     // The factory should not have launched
