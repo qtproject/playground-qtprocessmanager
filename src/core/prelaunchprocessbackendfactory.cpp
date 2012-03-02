@@ -69,6 +69,7 @@ PrelaunchProcessBackendFactory::PrelaunchProcessBackendFactory(QObject *parent)
     : ProcessBackendFactory(parent)
     , m_prelaunch(NULL)
     , m_info(0)
+    , m_prelaunchEnabled(true)
 {
     connect(&m_timer, SIGNAL(timeout()), SLOT(timeout()));
     m_timer.setSingleShot(true);
@@ -101,10 +102,10 @@ ProcessBackend * PrelaunchProcessBackendFactory::create(const ProcessInfo &info,
 
     PrelaunchProcessBackend *prelaunch = m_prelaunch;
 
-    if ( prelaunch && prelaunch->isReady() ) {
+    if (prelaunch && prelaunch->isReady()) {
         // qDebug() << "Using existing prelaunch";
         m_prelaunch = NULL;
-        m_timer.start();
+        startPrelaunchTimer();
         prelaunch->setInfo(info);
         prelaunch->setParent(parent);
         prelaunch->disconnect(this);
@@ -154,8 +155,29 @@ void PrelaunchProcessBackendFactory::setLaunchInterval(int interval)
         m_timer.stop();
         m_timer.setInterval(interval);
         if (active)
-            m_timer.start();
+            startPrelaunchTimer();
         emit launchIntervalChanged();
+    }
+}
+
+/*!
+    Returns whether prelaunching is enabled for this factory.
+*/
+bool PrelaunchProcessBackendFactory::prelaunchEnabled() const
+{
+    return m_prelaunchEnabled;
+}
+
+void PrelaunchProcessBackendFactory::setPrelaunchEnabled(bool value)
+{
+    if (m_prelaunchEnabled != value) {
+        m_prelaunchEnabled = value;
+        if (!m_prelaunchEnabled) {
+            m_timer.stop();
+        } else {
+            startPrelaunchTimer();
+        }
+        emit prelaunchEnabledChanged();
     }
 }
 
@@ -165,7 +187,7 @@ void PrelaunchProcessBackendFactory::setLaunchInterval(int interval)
 
 void PrelaunchProcessBackendFactory::handleMemoryRestrictionChange()
 {
-    if ( m_memoryRestricted ) {
+    if (m_memoryRestricted) {
         m_timer.stop();
         if (m_prelaunch) {
             delete m_prelaunch;   // This will kill the child process as well
@@ -173,7 +195,7 @@ void PrelaunchProcessBackendFactory::handleMemoryRestrictionChange()
         }
     } else {
         Q_ASSERT(m_prelaunch == NULL);
-        m_timer.start();
+        startPrelaunchTimer();
     }
 }
 
@@ -206,7 +228,16 @@ void PrelaunchProcessBackendFactory::prelaunchFinished(int exitCode, QProcess::E
         delete m_prelaunch;
         m_prelaunch = NULL;
     }
-    m_timer.start();
+    startPrelaunchTimer();
+}
+
+/*!
+    Starts the prelaunch timer only if prelaunching is enabled.
+*/
+void PrelaunchProcessBackendFactory::startPrelaunchTimer()
+{
+    if (m_prelaunchEnabled)
+        m_timer.start();
 }
 
 /*!
@@ -221,7 +252,7 @@ void PrelaunchProcessBackendFactory::setProcessInfo(ProcessInfo *processInfo)
 
         if (m_info) {
             m_info->setParent(this);
-            m_timer.start();
+            startPrelaunchTimer();
         } else {
             m_timer.stop();
         }

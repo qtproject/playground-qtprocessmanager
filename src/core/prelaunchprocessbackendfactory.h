@@ -54,6 +54,7 @@ class Q_ADDON_PROCESSMANAGER_EXPORT PrelaunchProcessBackendFactory : public Proc
     Q_OBJECT
     Q_PROPERTY(int launchInterval READ launchInterval WRITE setLaunchInterval NOTIFY launchIntervalChanged)
     Q_PROPERTY(ProcessInfo* processInfo READ processInfo WRITE setProcessInfo NOTIFY processInfoChanged)
+    Q_PROPERTY(bool prelaunchEnabled READ prelaunchEnabled WRITE setPrelaunchEnabled NOTIFY prelaunchEnabledChanged)
 
 public:
     PrelaunchProcessBackendFactory(QObject *parent = 0);
@@ -70,9 +71,13 @@ public:
     int  launchInterval() const;
     void setLaunchInterval(int interval);
 
+    bool prelaunchEnabled() const;
+    void setPrelaunchEnabled(bool value);
+
 signals:
     void launchIntervalChanged();
     void processInfoChanged();
+    void prelaunchEnabledChanged();
 
 protected:
     virtual void handleMemoryRestrictionChange();
@@ -82,9 +87,13 @@ private slots:
     void prelaunchFinished(int, QProcess::ExitStatus);
 
 private:
+    void startPrelaunchTimer();
+
+private:
     PrelaunchProcessBackend *m_prelaunch;
     ProcessInfo             *m_info;
     QTimer                   m_timer;
+    bool                     m_prelaunchEnabled;
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER
