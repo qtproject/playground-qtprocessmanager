@@ -74,6 +74,8 @@ public:
     bool prelaunchEnabled() const;
     void setPrelaunchEnabled(bool value);
 
+    bool hasPrelaunchedProcess() const;
+
 signals:
     void launchIntervalChanged();
     void processInfoChanged();

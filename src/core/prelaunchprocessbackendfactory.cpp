@@ -102,7 +102,7 @@ ProcessBackend * PrelaunchProcessBackendFactory::create(const ProcessInfo &info,
 
     PrelaunchProcessBackend *prelaunch = m_prelaunch;
 
-    if (prelaunch && prelaunch->isReady()) {
+    if (hasPrelaunchedProcess()) {
         // qDebug() << "Using existing prelaunch";
         m_prelaunch = NULL;
         startPrelaunchTimer();
@@ -179,6 +179,14 @@ void PrelaunchProcessBackendFactory::setPrelaunchEnabled(bool value)
         }
         emit prelaunchEnabledChanged();
     }
+}
+
+/*!
+    Returns whether there is a prelaunched process which is ready to be consumed.
+ */
+bool PrelaunchProcessBackendFactory::hasPrelaunchedProcess() const
+{
+    return (m_prelaunch && m_prelaunch->isReady());
 }
 
 /*!
