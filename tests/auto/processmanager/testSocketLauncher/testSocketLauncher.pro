@@ -5,7 +5,7 @@ QT -= gui
 include(../processmanager.pri)
 
 DESTDIR = ./
-SOURCES += main.cpp
+SOURCES += testSocketLauncher.cpp
 TARGET  = testSocketLauncher
 
 target.path = $$[QT_INSTALL_TESTS]/$$TESTCASE_NAME/testSocketLauncher

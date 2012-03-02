@@ -5,7 +5,7 @@ QT -= gui
 include(../processmanager.pri)
 
 DESTDIR = ./
-SOURCES += main.cpp
+SOURCES += testPreforkLauncher.cpp
 TARGET  = testPreforkLauncher
 
 # Position-independent code and export symbols

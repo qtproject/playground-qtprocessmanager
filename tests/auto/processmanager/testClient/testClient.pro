@@ -5,7 +5,7 @@ QT += processmanager
 QT -= gui
 
 DESTDIR = ./
-SOURCES = main.cpp
+SOURCES = testClient.cpp
 TARGET  = testClient
 
 #target.path = $$[QT_INSTALL_TESTS]/$$TESTCASE_NAME/testClient
