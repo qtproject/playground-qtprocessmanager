@@ -42,9 +42,9 @@
 
 #include <QObject>
 #include <QJsonObject>
-#include <QSocketNotifier>
 
 #include "processbackendmanager.h"
+#include "jsonpipe.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
@@ -57,16 +57,11 @@ public:
     PipeLauncher(QObject *parent=0);
 
 private slots:
-    void inReady(int fd);
-    void outReady(int fd);
-    void send(const QJsonObject& object);
+    void receive(const QJsonObject& object);
 
 private:
-    QSocketNotifier *m_in;
-    QSocketNotifier *m_out;
-    QByteArray       m_inbuf;
-    QByteArray       m_outbuf;
-    LauncherClient  *m_client;
+    QtAddOn::JsonStream::JsonPipe *m_pipe;
+    LauncherClient                *m_client;
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER

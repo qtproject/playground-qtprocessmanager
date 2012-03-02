@@ -44,9 +44,6 @@
 
 #include <QDebug>
 #include <QJsonDocument>
-#include <QSocketNotifier>
-//#include <QFileInfo>
-#include <QtEndian>
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
@@ -71,9 +68,10 @@ const int kPreforkTimerInterval = 1000;
 PreforkProcessBackendFactory::PreforkProcessBackendFactory(QObject *parent)
     : RemoteProcessBackendFactory(parent)
     , m_index(-1)
-    , m_in(NULL)
-    , m_out(NULL)
 {
+    m_pipe   = new QtAddOn::JsonStream::JsonPipe(this);
+    connect(m_pipe, SIGNAL(messageReceived(const QJsonObject&)),
+            SLOT(receive(const QJsonObject&)));
 }
 
 /*!
@@ -86,17 +84,8 @@ PreforkProcessBackendFactory::~PreforkProcessBackendFactory()
     if (data) {
         QJsonObject message;
         message.insert(RemoteProtocol::remote(), RemoteProtocol::stop());
-        m_outbuf.append(QJsonDocument(message).toBinaryData());
-
-        while (m_outbuf.size()) {
-            int n = ::write(data->stdin, m_outbuf.data(), m_outbuf.size());
-            if (n == -1)
-                qFatal("Failed to write to stdout");
-            if (n < m_outbuf.size())
-                m_outbuf = m_outbuf.mid(n);
-            else
-                m_outbuf.clear();
-        }
+        m_pipe->send(message);
+        m_pipe->waitForBytesWritten();
     }
 }
 
@@ -121,18 +110,7 @@ void PreforkProcessBackendFactory::setIndex(int index)
     if (index >= 0 && index < prefork->size()) {
         m_index = index;
         const PreforkChildData *data = prefork->at(index);
-
-        if (m_in)
-            delete m_in;
-        if (m_out)
-            delete m_out;
-
-        m_in = new QSocketNotifier(data->stdout, QSocketNotifier::Read, this);
-        m_out = new QSocketNotifier(data->stdin, QSocketNotifier::Write, this);
-        connect(m_in, SIGNAL(activated(int)), SLOT(inReady(int)));
-        connect(m_out, SIGNAL(activated(int)), SLOT(outReady(int)));
-        m_in->setEnabled(true);
-        m_out->setEnabled(false);
+        m_pipe->setFds(data->stdout, data->stdin);
         emit indexChanged();
     }
     else
@@ -142,53 +120,9 @@ void PreforkProcessBackendFactory::setIndex(int index)
 
 bool PreforkProcessBackendFactory::send(const QJsonObject& message)
 {
-    m_outbuf.append(QJsonDocument(message).toBinaryData());
-    m_out->setEnabled(true);
-    return true;
+    return m_pipe->send(message);
 }
 
-void PreforkProcessBackendFactory::inReady(int fd)
-{
-    m_in->setEnabled(false);
-    const int bufsize = 1024;
-    uint oldSize = m_inbuf.size();
-    m_inbuf.resize(oldSize + bufsize);
-    int n = ::read(fd, m_inbuf.data()+oldSize, bufsize);
-    if (n > 0)
-        m_inbuf.resize(oldSize+n);
-    else
-        m_inbuf.resize(oldSize);
-
-    while (m_inbuf.size() >= 12) {
-        if (QJsonDocument::BinaryFormatTag != *((uint *) m_inbuf.data()))
-            qFatal("ERROR in receive buffer: %s", m_inbuf.data());
-        qint32 message_size = qFromLittleEndian(((qint32 *)m_inbuf.data())[2]) + 8;
-        if (m_inbuf.size() < message_size)
-            break;
-        QByteArray msg = m_inbuf.left(message_size);
-        m_inbuf = m_inbuf.mid(message_size);
-        receive(QJsonDocument::fromBinaryData(msg).object());
-    }
-    m_in->setEnabled(true);
-}
-
-void PreforkProcessBackendFactory::outReady(int fd)
-{
-    m_out->setEnabled(false);
-    if (m_outbuf.size()) {
-        int n = ::write(fd, m_outbuf.data(), m_outbuf.size());
-        if (n == -1) {
-            qDebug() << "Failed to write to stdout";
-            exit(-1);
-        }
-        if (n < m_outbuf.size())
-            m_outbuf = m_outbuf.mid(n);
-        else
-            m_outbuf.clear();
-    }
-    if (m_outbuf.size())
-        m_out->setEnabled(true);
-}
 
 /*!
   Return the preforked process

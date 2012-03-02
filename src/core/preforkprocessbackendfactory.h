@@ -40,9 +40,8 @@
 #ifndef PREFORK_PROCESS_BACKEND_FACTORY_H
 #define PREFORK_PROCESS_BACKEND_FACTORY_H
 
+#include "jsonpipe.h"
 #include "remoteprocessbackendfactory.h"
-
-class QSocketNotifier;
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
@@ -66,16 +65,9 @@ signals:
 protected:
     virtual bool send(const QJsonObject&);
 
-private slots:
-    void inReady(int fd);
-    void outReady(int fd);
-
 private:
     int m_index;
-    QByteArray m_inbuf;
-    QByteArray m_outbuf;
-    QSocketNotifier *m_in;
-    QSocketNotifier *m_out;
+    QtAddOn::JsonStream::JsonPipe *m_pipe;
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER

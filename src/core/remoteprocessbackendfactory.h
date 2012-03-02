@@ -58,8 +58,8 @@ public:
     virtual ProcessBackend *create(const ProcessInfo& info, QObject *parent);
 
 protected:
-    virtual bool send(const QJsonObject&) = 0;
-    void receive(const QJsonObject&);
+    virtual     bool send(const QJsonObject&) = 0;
+    Q_INVOKABLE void receive(const QJsonObject&);
 
 private:
     void backendDestroyed(int);
