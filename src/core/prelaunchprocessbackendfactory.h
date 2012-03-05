@@ -67,6 +67,7 @@ public:
 
     ProcessInfo *processInfo() const;
     void setProcessInfo(ProcessInfo *processInfo);
+    void setProcessInfo(ProcessInfo& processInfo);
 
     int  launchInterval() const;
     void setLaunchInterval(int interval);
@@ -89,6 +90,7 @@ protected:
 private slots:
     void timeout();
     void prelaunchFinished(int, QProcess::ExitStatus);
+    void prelaunchError(QProcess::ProcessError);
 
 private:
     void startPrelaunchTimer();

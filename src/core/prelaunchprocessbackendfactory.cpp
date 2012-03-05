@@ -68,7 +68,7 @@ const int kPrelaunchTimerInterval = 1000;
 PrelaunchProcessBackendFactory::PrelaunchProcessBackendFactory(QObject *parent)
     : ProcessBackendFactory(parent)
     , m_prelaunch(NULL)
-    , m_info(0)
+    , m_info(NULL)
     , m_prelaunchEnabled(true)
 {
     connect(&m_timer, SIGNAL(timeout()), SLOT(timeout()));
@@ -228,6 +228,8 @@ void PrelaunchProcessBackendFactory::timeout()
     m_prelaunch = new PrelaunchProcessBackend(*m_info, this);
     connect(m_prelaunch, SIGNAL(finished(int,QProcess::ExitStatus)),
             SLOT(prelaunchFinished(int,QProcess::ExitStatus)));
+    connect(m_prelaunch, SIGNAL(error(QProcess::ProcessError)),
+            SLOT(prelaunchError(QProcess::ProcessError)));
     m_prelaunch->prestart();
     emit processPrelaunched();
 }
@@ -241,10 +243,33 @@ void PrelaunchProcessBackendFactory::prelaunchFinished(int exitCode, QProcess::E
 {
     qWarning() << Q_FUNC_INFO << "died unexpectedly" << exitCode << status;
     if (m_prelaunch) {
-        delete m_prelaunch;
+        m_prelaunch->deleteLater();
         m_prelaunch = NULL;
     }
     startPrelaunchTimer();
+}
+
+/*!
+  Handle surprise error conditions on the prelaunched process.
+ */
+
+void PrelaunchProcessBackendFactory::prelaunchError(QProcess::ProcessError err)
+{
+    qWarning() << Q_FUNC_INFO << "unexpected error" << err;
+    if (m_prelaunch) {
+        m_prelaunch->deleteLater();
+        m_prelaunch = NULL;
+    }
+
+    if (err == QProcess::FailedToStart) {
+        qWarning() << Q_FUNC_INFO << "disabling prelaunch because of process errors";
+        m_prelaunchEnabled = false;
+
+    }
+    else {
+        // ### TODO: This isn't optimal
+        startPrelaunchTimer();
+    }
 }
 
 /*!
@@ -258,15 +283,18 @@ void PrelaunchProcessBackendFactory::startPrelaunchTimer()
 
 /*!
     Sets the ProcessInfo that is used to determine the prelaunched runtime to \a processInfo.
-    Takes ownership of the object. If the ProcessInfo object is changed, the old object is deleted.
+    An internal copy is made of the \a processInfo object.
  */
 void PrelaunchProcessBackendFactory::setProcessInfo(ProcessInfo *processInfo)
 {
     if (m_info != processInfo) {
-        delete m_info;
-        m_info = processInfo;
-
         if (m_info) {
+            delete m_info;
+            m_info = NULL;
+        }
+
+        if (processInfo) {
+            m_info = new ProcessInfo(*processInfo);
             m_info->setParent(this);
             startPrelaunchTimer();
         } else {
@@ -275,6 +303,15 @@ void PrelaunchProcessBackendFactory::setProcessInfo(ProcessInfo *processInfo)
         emit processInfoChanged();
     }
 }
+
+/*!
+    Sets the ProcessInfo that is used to determine the prelaunched runtime to \a processInfo.
+ */
+void PrelaunchProcessBackendFactory::setProcessInfo(ProcessInfo& processInfo)
+{
+    setProcessInfo(&processInfo);
+}
+
 
 /*!
   \fn void PrelaunchProcessBackendFactory::launchIntervalChanged()

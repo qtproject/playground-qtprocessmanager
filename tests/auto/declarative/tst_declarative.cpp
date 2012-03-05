@@ -53,6 +53,7 @@
 #include "declarativematchdelegate.h"
 #include "declarativerewritedelegate.h"
 #include "standardprocessbackendfactory.h"
+#include "prelaunchprocessbackendfactory.h"
 #include "socketprocessbackendfactory.h"
 #include "processfrontend.h"
 #include "processbackend.h"
@@ -72,6 +73,7 @@ private slots:
     void initTestCase();
 
     void basic();
+    void prelaunch();
     void matchDelegate();
     void socketLauncher();
     void socketRangeLauncher();
@@ -92,6 +94,8 @@ void tst_DeclarativeProcessManager::initTestCase()
     qmlRegisterType<ProcessFrontend>();
 
     qmlRegisterType<StandardProcessBackendFactory>(uri, 1, 0, "StandardProcessBackendFactory");
+    qmlRegisterType<PrelaunchProcessBackendFactory>(uri, 1, 0, "PrelaunchProcessBackendFactory");
+    qmlRegisterType<ProcessInfo>(uri, 1, 0, "ProcessInfo");
     qmlRegisterType<SocketProcessBackendFactory>(uri, 1, 0, "SocketProcessBackendFactory");
     qmlRegisterType<DeclarativeProcessManager>(uri, 1, 0, "DeclarativeProcessManager");
     qmlRegisterType<DeclarativeMatchDelegate>(uri, 1, 0, "DeclarativeMatchDelegate");
@@ -244,6 +248,11 @@ static void _frontendTest(const QString& filename)
 void tst_DeclarativeProcessManager::basic()
 {
     _frontendTest("data/testfrontend.qml");
+}
+
+void tst_DeclarativeProcessManager::prelaunch()
+{
+    _frontendTest("data/testprelaunch.qml");
 }
 
 void tst_DeclarativeProcessManager::matchDelegate()
