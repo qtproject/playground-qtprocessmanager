@@ -72,8 +72,8 @@ class ValidateMessage : public QObject {
 public:
     ValidateMessage(QObject *parent=0) : QObject(parent) {}
 public slots:
-    void failed(const QJsonObject& message) {
-        qDebug() << Q_FUNC_INFO << "Message failed to validate" << message;
+    void failed(const QJsonObject& message, const QtAddOn::JsonStream::SchemaError& error) {
+        qDebug() << Q_FUNC_INFO << "Message failed to validate" << message << error;
     }
 };
 
@@ -157,10 +157,12 @@ int main(int argc, char **argv)
 
     ValidateMessage *vtrap = new ValidateMessage;
 
-    QObject::connect(launcher.server(), SIGNAL(inboundMessageValidationFailed(const QJsonObject&)),
-            vtrap, SLOT(failed(const QJsonObject&)));
-    QObject::connect(launcher.server(), SIGNAL(outboundMessageValidationFailed(const QJsonObject&)),
-            vtrap, SLOT(failed(const QJsonObject&)));
+    QObject::connect(launcher.server(),
+                     SIGNAL(inboundMessageValidationFailed(const QJsonObject&, const QtAddOn::JsonStream::SchemaError&)),
+                     vtrap, SLOT(failed(const QJsonObject&, const QtAddOn::JsonStream::SchemaError&)));
+    QObject::connect(launcher.server(),
+                     SIGNAL(outboundMessageValidationFailed(const QJsonObject&, const QtAddOn::JsonStream::SchemaError&)),
+                     vtrap, SLOT(failed(const QJsonObject&, const QtAddOn::JsonStream::SchemaError&)));
 
     launcher.listen(args[0]);
     return app.exec();
