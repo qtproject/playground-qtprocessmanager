@@ -44,6 +44,8 @@
 #include "processmanager-global.h"
 #include <QTimer>
 
+class CPULoad;
+
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 class ProcessInfo;
@@ -91,15 +93,24 @@ private slots:
     void timeout();
     void prelaunchFinished(int, QProcess::ExitStatus);
     void prelaunchError(QProcess::ProcessError);
+    void checkCPULoadUpdated();
 
 private:
     void startPrelaunchTimer();
+    void enableCPULoadPolling(bool enable);
+    void prelaunchWhenPossible();
+    void disablePrelaunch();
 
 private:
     PrelaunchProcessBackend *m_prelaunch;
     ProcessInfo             *m_info;
-    QTimer                   m_timer;
     bool                     m_prelaunchEnabled;
+    QTimer                   m_timer;
+    bool                     m_pollingCpu;
+    int                      m_accu;
+    int                      m_waitTime;
+    int                      m_prelaunchDelay;
+    CPULoad                 *m_cpuLoad;
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER

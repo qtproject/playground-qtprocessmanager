@@ -42,10 +42,21 @@
 #include "prelaunchprocessbackendfactory.h"
 #include "prelaunchprocessbackend.h"
 #include "processinfo.h"
+#include "cpuload.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-const int kPrelaunchTimerInterval = 1000;
+const int kPrelaunchCpuPollingInterval = 1000;
+const int kPrelaunchDefaultTimeout     = 20000;
+const int kPrelaunchCpuThreshold       = 50;
+const int kPrelaunchStablilityInterval = 2;
+
+#ifdef Q_OS_LINUX
+    const bool kCpuPollingEnabled = true;
+#else
+    const bool kCpuPollingEnabled = false;
+#endif
+
 
 /*!
   \class PrelaunchProcessBackendFactory
@@ -70,19 +81,28 @@ PrelaunchProcessBackendFactory::PrelaunchProcessBackendFactory(QObject *parent)
     , m_prelaunch(NULL)
     , m_info(NULL)
     , m_prelaunchEnabled(true)
+    , m_pollingCpu(false)
+    , m_prelaunchDelay(kPrelaunchDefaultTimeout)
+#ifdef Q_OS_LINUX
+    , m_cpuLoad(new CPULoad)
+#else
+    , m_cpuLoad(NULL)
+#endif
 {
-    connect(&m_timer, SIGNAL(timeout()), SLOT(timeout()));
-    m_timer.setSingleShot(true);
-    m_timer.setInterval(kPrelaunchTimerInterval);
 }
 
 /*!
-   Destroy this and child objects.
-*/
+ *  Destroy this and child objects.
+ */
 
 PrelaunchProcessBackendFactory::~PrelaunchProcessBackendFactory()
 {
+    delete m_cpuLoad;
 }
+
+/*!
+ * Returns true if corresponding prelaunch can be created
+ */
 
 bool PrelaunchProcessBackendFactory::canCreate(const ProcessInfo &info) const
 {
@@ -93,8 +113,8 @@ bool PrelaunchProcessBackendFactory::canCreate(const ProcessInfo &info) const
 }
 
 /*!
-  Construct a PrelaunchProcessBackend from a ProcessInfo \a info record with \a parent.
-*/
+ * Construct a PrelaunchProcessBackend from a ProcessInfo \a info record with \a parent.
+ */
 
 ProcessBackend * PrelaunchProcessBackendFactory::create(const ProcessInfo &info, QObject *parent)
 {
@@ -105,7 +125,7 @@ ProcessBackend * PrelaunchProcessBackendFactory::create(const ProcessInfo &info,
     if (hasPrelaunchedProcess()) {
         // qDebug() << "Using existing prelaunch";
         m_prelaunch = NULL;
-        startPrelaunchTimer();
+        prelaunchWhenPossible();
         prelaunch->setInfo(info);
         prelaunch->setParent(parent);
         prelaunch->disconnect(this);
@@ -119,7 +139,7 @@ ProcessBackend * PrelaunchProcessBackendFactory::create(const ProcessInfo &info,
 }
 
 /*!
-  If there is a prelaunched process running, it will be return here.
+ * If there is a prelaunched process running, it will be return here.
  */
 
 QList<Q_PID> PrelaunchProcessBackendFactory::internalProcesses()
@@ -130,93 +150,103 @@ QList<Q_PID> PrelaunchProcessBackendFactory::internalProcesses()
     return list;
 }
 
+/*!
+ * Returns ProcessInfo object
+ */
+
 ProcessInfo *PrelaunchProcessBackendFactory::processInfo() const
 {
     return m_info;
 }
 
 /*!
-  Return the current launch interval in milliseconds
+ * Return the current launch interval in milliseconds.
  */
 
 int PrelaunchProcessBackendFactory::launchInterval() const
 {
-    return m_timer.interval();
+    return m_prelaunchDelay;
 }
 
 /*!
-  Set the current launch interval to \a interval milliseconds
-*/
+ * Set the current launch interval to \a interval milliseconds.
+ * If the timer is ticking, the new value will affect the next round.
+ */
 
 void PrelaunchProcessBackendFactory::setLaunchInterval(int interval)
 {
-    if (m_timer.interval() != interval) {
-        bool active = m_timer.isActive();
-        m_timer.stop();
-        m_timer.setInterval(interval);
-        if (active)
-            startPrelaunchTimer();
+    if (m_prelaunchDelay != interval) {
+        m_prelaunchDelay = interval;
         emit launchIntervalChanged();
     }
 }
 
 /*!
-    Returns whether prelaunching is enabled for this factory.
-*/
+ *  Returns whether prelaunching is enabled for this factory.
+ */
+
 bool PrelaunchProcessBackendFactory::prelaunchEnabled() const
 {
     return m_prelaunchEnabled;
 }
 
+/*!
+ * Enables and disables prelaunch
+ */
+
 void PrelaunchProcessBackendFactory::setPrelaunchEnabled(bool value)
 {
     if (m_prelaunchEnabled != value) {
         m_prelaunchEnabled = value;
-        if (!m_prelaunchEnabled) {
-            m_timer.stop();
+
+        if (m_prelaunchEnabled) {
+            prelaunchWhenPossible();
         } else {
-            startPrelaunchTimer();
+            disablePrelaunch();
         }
         emit prelaunchEnabledChanged();
     }
 }
 
 /*!
-    Returns whether there is a prelaunched process which is ready to be consumed.
-*/
+ *   Returns whether there is a prelaunched process which is ready to be consumed.
+ */
+
 bool PrelaunchProcessBackendFactory::hasPrelaunchedProcess() const
 {
     return (m_prelaunch && m_prelaunch->isReady());
 }
 
 /*!
-    Under memory restriction, terminate the prelaunch process.
-*/
+ *  Under memory restriction, terminate the prelaunch process.
+ */
+
 void PrelaunchProcessBackendFactory::handleMemoryRestrictionChange()
 {
     if (m_memoryRestricted) {
-        m_timer.stop();
+        setPrelaunchEnabled(false);
         if (m_prelaunch) {
             delete m_prelaunch;   // This will kill the child process as well
             m_prelaunch = NULL;
         }
     } else {
         Q_ASSERT(m_prelaunch == NULL);
-        startPrelaunchTimer();
+        setPrelaunchEnabled(true);
     }
 }
 
 /*!
-    Returns the prelaunched process backend, or null if none is created.
+ *  Returns the prelaunched process backend, or null if none is created.
  */
+
 PrelaunchProcessBackend *PrelaunchProcessBackendFactory::prelaunchProcessBackend() const
 {
     return m_prelaunch;
 }
 
 /*!
-  Launch a new prelaunched process backend.
-  In the future, it would be useful if the launch didn't require a timeout.
+ * Launch a new prelaunched process backend.
+ * In the future, it would be useful if the launch didn't require a timeout.
  */
 
 void PrelaunchProcessBackendFactory::timeout()
@@ -235,8 +265,8 @@ void PrelaunchProcessBackendFactory::timeout()
 }
 
 /*!
-  Handle a surprise termination condition - the prelaunched process died
-  unexpectedly.
+ * Handle a surprise termination condition - the prelaunched process died
+ * unexpectedly.
  */
 
 void PrelaunchProcessBackendFactory::prelaunchFinished(int exitCode, QProcess::ExitStatus status)
@@ -246,11 +276,11 @@ void PrelaunchProcessBackendFactory::prelaunchFinished(int exitCode, QProcess::E
         m_prelaunch->deleteLater();
         m_prelaunch = NULL;
     }
-    startPrelaunchTimer();
+    prelaunchWhenPossible();
 }
 
 /*!
-  Handle surprise error conditions on the prelaunched process.
+ * Handle surprise error conditions on the prelaunched process.
  */
 
 void PrelaunchProcessBackendFactory::prelaunchError(QProcess::ProcessError err)
@@ -263,28 +293,19 @@ void PrelaunchProcessBackendFactory::prelaunchError(QProcess::ProcessError err)
 
     if (err == QProcess::FailedToStart) {
         qWarning() << Q_FUNC_INFO << "disabling prelaunch because of process errors";
-        m_prelaunchEnabled = false;
-
+        setPrelaunchEnabled(false);
     }
     else {
         // ### TODO: This isn't optimal
-        startPrelaunchTimer();
+        prelaunchWhenPossible();
     }
 }
 
 /*!
-    Starts the prelaunch timer only if prelaunching is enabled.
-*/
-void PrelaunchProcessBackendFactory::startPrelaunchTimer()
-{
-    if (m_prelaunchEnabled)
-        m_timer.start();
-}
-
-/*!
-    Sets the ProcessInfo that is used to determine the prelaunched runtime to \a processInfo.
-    An internal copy is made of the \a processInfo object.
+ *  Sets the ProcessInfo that is used to determine the prelaunched runtime to \a processInfo.
+ *  An internal copy is made of the \a processInfo object.
  */
+
 void PrelaunchProcessBackendFactory::setProcessInfo(ProcessInfo *processInfo)
 {
     if (m_info != processInfo) {
@@ -296,26 +317,113 @@ void PrelaunchProcessBackendFactory::setProcessInfo(ProcessInfo *processInfo)
         if (processInfo) {
             m_info = new ProcessInfo(*processInfo);
             m_info->setParent(this);
-            startPrelaunchTimer();
+            prelaunchWhenPossible();
         } else {
-            m_timer.stop();
+            disablePrelaunch();
         }
         emit processInfoChanged();
     }
 }
 
 /*!
-    Sets the ProcessInfo that is used to determine the prelaunched runtime to \a processInfo.
+ *  Sets the ProcessInfo that is used to determine the prelaunched runtime to \a processInfo.
  */
+
 void PrelaunchProcessBackendFactory::setProcessInfo(ProcessInfo& processInfo)
 {
     setProcessInfo(&processInfo);
 }
 
+/*!
+ * Prelaunch runtime when cpu load is low or by timer
+ */
+
+void PrelaunchProcessBackendFactory::prelaunchWhenPossible()
+{
+    if (m_prelaunchEnabled) {
+        if (kCpuPollingEnabled) {
+            m_accu = 0;
+            m_waitTime = 0;
+            enableCPULoadPolling(true);
+            // qDebug() << "(cpu) start cpu polling, max waiting time " << (m_prelaunchDelay/1000) << " seconds";
+        } else {
+            m_timer.singleShot(m_prelaunchDelay, this, SLOT(timeout()));
+        }
+    }
+}
 
 /*!
-  \fn void PrelaunchProcessBackendFactory::launchIntervalChanged()
-  This signal is emitted when the launchInterval is changed.
+ * disable prelaunch process and stops timers
+ */
+
+void PrelaunchProcessBackendFactory::disablePrelaunch()
+{
+    if (kCpuPollingEnabled) {
+        enableCPULoadPolling(false);
+    } else {
+        m_timer.stop();
+    }
+}
+
+/*!
+ * Update cpu load information, triggers prelaunch start
+ */
+
+void PrelaunchProcessBackendFactory::checkCPULoadUpdated()
+{
+    Q_ASSERT(kCpuPollingEnabled);
+
+    m_cpuLoad->update();
+    m_waitTime += kPrelaunchCpuPollingInterval;
+    int curLoad = m_cpuLoad->cpuLoad();
+
+    if (m_prelaunchDelay != 0 && m_waitTime >= (m_prelaunchDelay)) {
+        // qDebug() << "(cpu) can't wait low cpu load any longer";
+        m_accu = kPrelaunchStablilityInterval;
+    } else {
+        if (curLoad < kPrelaunchCpuThreshold)
+            m_accu++;
+        else
+            m_accu = 0;
+    }
+
+    // qDebug() << "(cpu) load is " << curLoad << " wait time " << m_waitTime/1000 << " seconds";
+
+    if (m_accu >= kPrelaunchStablilityInterval) {
+        // qDebug() << "(cpu) stop cpu polling, start runtimes prelaunching";
+        enableCPULoadPolling(false);
+        timeout();
+    }
+}
+
+/*!
+ * Enables or disables cpu load polling
+ */
+
+void PrelaunchProcessBackendFactory::enableCPULoadPolling(bool enable)
+{
+    Q_ASSERT(kCpuPollingEnabled);
+
+    if (enable) {
+        if (m_pollingCpu)
+            return;
+
+        connect(&m_timer, SIGNAL(timeout()), this, SLOT(checkCPULoadUpdated()));
+        m_cpuLoad->init();
+        m_timer.setInterval(kPrelaunchCpuPollingInterval);
+        m_timer.start();
+        m_pollingCpu = true;
+
+    } else {
+        disconnect(&m_timer, SIGNAL(timeout()), this, SLOT(checkCPULoadUpdated()));
+        m_timer.stop();
+        m_pollingCpu = false;
+    }
+}
+
+/*!
+ * \fn void PrelaunchProcessBackendFactory::launchIntervalChanged()
+ * This signal is emitted when the launchInterval is changed.
  */
 
 #include "moc_prelaunchprocessbackendfactory.cpp"
