@@ -41,6 +41,7 @@
 #define SOCKET_LAUNCHER_H
 
 #include <QObject>
+#include <QMap>
 #include <QJsonObject>
 #include <jsonserver.h>
 
