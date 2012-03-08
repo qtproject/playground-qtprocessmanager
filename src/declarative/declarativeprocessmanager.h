@@ -41,24 +41,24 @@
 #define DECLARATIVE_PROCESS_MANAGER_H
 
 #include "processmanager.h"
-#include <QDeclarativeListProperty>
-#include <QDeclarativeParserStatus>
-#include <qdeclarative.h>
+#include <QQmlListProperty>
+#include <QQmlParserStatus>
+#include <qqml.h>
 
 #include "processmanager-global.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 class Q_ADDON_PROCESSMANAGER_EXPORT DeclarativeProcessManager : public ProcessManager,
-                                                                public QDeclarativeParserStatus
+                                                                public QQmlParserStatus
 {
     Q_OBJECT
-    Q_INTERFACES(QDeclarativeParserStatus)
-    Q_PROPERTY(QDeclarativeListProperty<ProcessBackendFactory> factories READ factories)
+    Q_INTERFACES(QQmlParserStatus)
+    Q_PROPERTY(QQmlListProperty<ProcessBackendFactory> factories READ factories)
 
 public:
     DeclarativeProcessManager(QObject *parent=0);
-    QDeclarativeListProperty<ProcessBackendFactory> factories();
+    QQmlListProperty<ProcessBackendFactory> factories();
 
     void classBegin();
     void componentComplete();
@@ -82,7 +82,7 @@ protected slots:
     virtual void processFrontendDestroyed();
 
 private:
-    static void append_factory(QDeclarativeListProperty<ProcessBackendFactory>*,
+    static void append_factory(QQmlListProperty<ProcessBackendFactory>*,
                                ProcessBackendFactory*);
 };
 

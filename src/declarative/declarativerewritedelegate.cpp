@@ -93,19 +93,19 @@ void DeclarativeRewriteDelegate::rewrite(ProcessInfo& info)
 {
     if (!m_script.script().isEmpty()) {
         if (!m_modelContext)
-            m_modelContext = new QDeclarativeContext(m_script.context(), this);
+            m_modelContext = new QQmlContext(m_script.context(), this);
         m_modelContext->setContextProperty(QStringLiteral("model"), (QObject *) &info);
-        QDeclarativeExpression expr(m_modelContext, m_script.scopeObject(), m_script.script());
+        QQmlExpression expr(m_modelContext, m_script.scopeObject(), m_script.script());
         expr.evaluate();
     }
 }
 
-QDeclarativeScriptString DeclarativeRewriteDelegate::script() const
+QQmlScriptString DeclarativeRewriteDelegate::script() const
 {
     return m_script;
 }
 
-void DeclarativeRewriteDelegate::setScript(const QDeclarativeScriptString& script)
+void DeclarativeRewriteDelegate::setScript(const QQmlScriptString& script)
 {
     m_script = script;
     emit scriptChanged();

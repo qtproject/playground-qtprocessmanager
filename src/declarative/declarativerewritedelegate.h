@@ -40,24 +40,24 @@
 #ifndef DECLARATIVE_REWRITE_DELEGATE_H
 #define DECLARATIVE_REWRITE_DELEGATE_H
 
-#include <QtDeclarative>
+#include <QtQml>
 #include "rewritedelegate.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 class Q_ADDON_PROCESSMANAGER_EXPORT DeclarativeRewriteDelegate : public RewriteDelegate,
-                                                                 public QDeclarativeParserStatus
+                                                                 public QQmlParserStatus
 {
     Q_OBJECT
-    Q_INTERFACES(QDeclarativeParserStatus)
-    Q_PROPERTY(QDeclarativeScriptString script READ script WRITE setScript NOTIFY scriptChanged)
+    Q_INTERFACES(QQmlParserStatus)
+    Q_PROPERTY(QQmlScriptString script READ script WRITE setScript NOTIFY scriptChanged)
 
 public:
     DeclarativeRewriteDelegate(QObject *parent=0);
     virtual void rewrite(ProcessInfo& info);
 
-    QDeclarativeScriptString script() const;
-    void                     setScript(const QDeclarativeScriptString&);
+    QQmlScriptString script() const;
+    void                     setScript(const QQmlScriptString&);
 
     void classBegin();
     void componentComplete();
@@ -66,8 +66,8 @@ signals:
     void scriptChanged();
 
 private:
-    QDeclarativeScriptString m_script;
-    QDeclarativeContext     *m_modelContext;
+    QQmlScriptString m_script;
+    QQmlContext     *m_modelContext;
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER

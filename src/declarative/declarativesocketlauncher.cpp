@@ -44,7 +44,7 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 /*!
   \qmlclass Launcher DeclarativeSocketLauncher
   \brief The Launcher class encapsulates ways of creating and tracking processes
-         suitable for QtDeclarative programs.
+         suitable for QtQml programs.
 
    The Launcher class is used to create a standalone program for launching
    and tracking child processes.  Other programs can connect to the Launcher using
@@ -115,7 +115,7 @@ void DeclarativeSocketLauncher::componentComplete()
 {
 }
 
-void DeclarativeSocketLauncher::append_factory(QDeclarativeListProperty<ProcessBackendFactory> *list,
+void DeclarativeSocketLauncher::append_factory(QQmlListProperty<ProcessBackendFactory> *list,
                                                ProcessBackendFactory *factory)
 {
     DeclarativeSocketLauncher *launcher = static_cast<DeclarativeSocketLauncher *>(list->object);
@@ -123,14 +123,14 @@ void DeclarativeSocketLauncher::append_factory(QDeclarativeListProperty<ProcessB
         launcher->addFactory(factory);
 }
 
-QDeclarativeListProperty<ProcessBackendFactory> DeclarativeSocketLauncher::factories()
+QQmlListProperty<ProcessBackendFactory> DeclarativeSocketLauncher::factories()
 {
-    return QDeclarativeListProperty<ProcessBackendFactory>(this, NULL, append_factory);
+    return QQmlListProperty<ProcessBackendFactory>(this, NULL, append_factory);
 }
 
-QDeclarativeListProperty<QObject> DeclarativeSocketLauncher::children()
+QQmlListProperty<QObject> DeclarativeSocketLauncher::children()
 {
-    return QDeclarativeListProperty<QObject>(this, m_children);
+    return QQmlListProperty<QObject>(this, m_children);
 }
 
 #include "moc_declarativesocketlauncher.cpp"

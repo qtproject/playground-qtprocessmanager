@@ -40,24 +40,24 @@
 #ifndef DECLARATIVE_MATCH_DELEGATE_H
 #define DECLARATIVE_MATCH_DELEGATE_H
 
-#include <QtDeclarative>
+#include <QtQml>
 #include "matchdelegate.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 class Q_ADDON_PROCESSMANAGER_EXPORT DeclarativeMatchDelegate : public MatchDelegate,
-                                                               public QDeclarativeParserStatus
+                                                               public QQmlParserStatus
 {
     Q_OBJECT
-    Q_INTERFACES(QDeclarativeParserStatus)
-    Q_PROPERTY(QDeclarativeScriptString script READ script WRITE setScript NOTIFY scriptChanged)
+    Q_INTERFACES(QQmlParserStatus)
+    Q_PROPERTY(QQmlScriptString script READ script WRITE setScript NOTIFY scriptChanged)
 
 public:
     DeclarativeMatchDelegate(QObject *parent=0);
     virtual bool matches(const ProcessInfo& info);
 
-    QDeclarativeScriptString script() const;
-    void                     setScript(const QDeclarativeScriptString&);
+    QQmlScriptString script() const;
+    void                     setScript(const QQmlScriptString&);
 
     void classBegin();
     void componentComplete();
@@ -66,8 +66,8 @@ signals:
     void scriptChanged();
 
 private:
-    QDeclarativeScriptString m_script;
-    QDeclarativeContext     *m_modelContext;
+    QQmlScriptString m_script;
+    QQmlContext     *m_modelContext;
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER

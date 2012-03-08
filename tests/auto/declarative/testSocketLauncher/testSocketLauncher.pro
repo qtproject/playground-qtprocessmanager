@@ -1,5 +1,5 @@
 CONFIG -= app_bundle
-QT += processmanagerdeclarative jsonstream declarative
+QT += processmanagerdeclarative jsonstream qml
 
 include(../declarative.pri)
 

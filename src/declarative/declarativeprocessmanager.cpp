@@ -48,7 +48,7 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 /*!
   \class DeclarativeProcessManager DeclarativeProcessManager
   \brief The DeclarativeProcessManager class encapsulates ways of creating and tracking processes
-         suitable for QtDeclarative programs.
+         suitable for QtQml programs.
 */
 
 /*!
@@ -77,7 +77,7 @@ void DeclarativeProcessManager::componentComplete()
 /*!
   \internal
 */
-void DeclarativeProcessManager::append_factory(QDeclarativeListProperty<ProcessBackendFactory> *list,
+void DeclarativeProcessManager::append_factory(QQmlListProperty<ProcessBackendFactory> *list,
                                                ProcessBackendFactory *factory)
 {
     DeclarativeProcessManager *manager = static_cast<DeclarativeProcessManager *>(list->object);
@@ -89,9 +89,9 @@ void DeclarativeProcessManager::append_factory(QDeclarativeListProperty<ProcessB
     \internal
  */
 
-QDeclarativeListProperty<ProcessBackendFactory> DeclarativeProcessManager::factories()
+QQmlListProperty<ProcessBackendFactory> DeclarativeProcessManager::factories()
 {
-    return QDeclarativeListProperty<ProcessBackendFactory>(this, NULL, append_factory);
+    return QQmlListProperty<ProcessBackendFactory>(this, NULL, append_factory);
 }
 
 /*!

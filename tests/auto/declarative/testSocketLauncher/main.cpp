@@ -39,9 +39,9 @@
 
 #include <QDebug>
 #include <QGuiApplication>
-#include <QDeclarativeEngine>
-#include <QDeclarativeComponent>
-#include <QDeclarativeProperty>
+#include <QQmlEngine>
+#include <QQmlComponent>
+#include <QQmlProperty>
 
 #include <jsonuidauthority.h>
 #include <jsonuidrangeauthority.h>
@@ -105,8 +105,8 @@ int main(int argc, char **argv)
 
     registerQmlTypes();
 
-    QDeclarativeEngine    engine;
-    QDeclarativeComponent component(&engine, QUrl::fromLocalFile(args.takeFirst()));
+    QQmlEngine    engine;
+    QQmlComponent component(&engine, QUrl::fromLocalFile(args.takeFirst()));
     if (component.isError())
         qWarning() << component.errors();
     component.create();

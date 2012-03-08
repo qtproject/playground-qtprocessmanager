@@ -1,4 +1,4 @@
-QT += declarative processmanager
+QT += qml processmanager
 
 CONFIG += network
 

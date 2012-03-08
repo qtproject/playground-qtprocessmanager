@@ -40,7 +40,7 @@
 #include "processinfotemplate.h"
 #include "processinfo.h"
 
-#include <QtDeclarative/QDeclarativeExpression>
+#include <QtQml/QQmlExpression>
 
 #include <QFileInfo>
 #include <QDir>
@@ -160,7 +160,7 @@ QString ProcessInfoTemplate::identifier() const
     Return the template programName
 */
 
-QDeclarativeScriptString ProcessInfoTemplate::programName() const
+QQmlScriptString ProcessInfoTemplate::programName() const
 {
     return scriptString(ProcessInfoConstants::Program);
 }
@@ -169,7 +169,7 @@ QDeclarativeScriptString ProcessInfoTemplate::programName() const
     Return the template uid
 */
 
-QDeclarativeScriptString ProcessInfoTemplate::uid() const
+QQmlScriptString ProcessInfoTemplate::uid() const
 {
     return scriptString(ProcessInfoConstants::Uid);
 }
@@ -178,7 +178,7 @@ QDeclarativeScriptString ProcessInfoTemplate::uid() const
     Return the template gid
 */
 
-QDeclarativeScriptString ProcessInfoTemplate::gid() const
+QQmlScriptString ProcessInfoTemplate::gid() const
 {
     return scriptString(ProcessInfoConstants::Gid);
 }
@@ -187,7 +187,7 @@ QDeclarativeScriptString ProcessInfoTemplate::gid() const
     Return the template workingDirectory
 */
 
-QDeclarativeScriptString ProcessInfoTemplate::workingDirectory() const
+QQmlScriptString ProcessInfoTemplate::workingDirectory() const
 {
     return scriptString(ProcessInfoConstants::WorkingDirectory);
 }
@@ -196,7 +196,7 @@ QDeclarativeScriptString ProcessInfoTemplate::workingDirectory() const
     Return the template environment
 */
 
-QDeclarativeScriptString ProcessInfoTemplate::environment() const
+QQmlScriptString ProcessInfoTemplate::environment() const
 {
     return scriptString(ProcessInfoConstants::Environment);
 }
@@ -205,7 +205,7 @@ QDeclarativeScriptString ProcessInfoTemplate::environment() const
     Return the template arguments
 */
 
-QDeclarativeScriptString ProcessInfoTemplate::arguments() const
+QQmlScriptString ProcessInfoTemplate::arguments() const
 {
     return scriptString(ProcessInfoConstants::Arguments);
 }
@@ -214,7 +214,7 @@ QDeclarativeScriptString ProcessInfoTemplate::arguments() const
     Return the template startOutputPattern
 */
 
-QDeclarativeScriptString ProcessInfoTemplate::startOutputPattern() const
+QQmlScriptString ProcessInfoTemplate::startOutputPattern() const
 {
     return scriptString(ProcessInfoConstants::StartOutputPattern);
 }
@@ -223,7 +223,7 @@ QDeclarativeScriptString ProcessInfoTemplate::startOutputPattern() const
     Return the template priority
 */
 
-QDeclarativeScriptString ProcessInfoTemplate::priority() const
+QQmlScriptString ProcessInfoTemplate::priority() const
 {
     return scriptString(ProcessInfoConstants::Priority);
 }
@@ -232,7 +232,7 @@ QDeclarativeScriptString ProcessInfoTemplate::priority() const
     Return the template customValues
 */
 
-QDeclarativeScriptString ProcessInfoTemplate::customValues() const
+QQmlScriptString ProcessInfoTemplate::customValues() const
 {
     return scriptString(kCustomValuesStr);
 }
@@ -241,7 +241,7 @@ QDeclarativeScriptString ProcessInfoTemplate::customValues() const
     Return the template oomAdjustment
 */
 
-QDeclarativeScriptString ProcessInfoTemplate::oomAdjustment() const
+QQmlScriptString ProcessInfoTemplate::oomAdjustment() const
 {
     return scriptString(ProcessInfoConstants::OomAdjustment);
 }
@@ -260,7 +260,7 @@ void ProcessInfoTemplate::setIdentifier(const QString &identifier)
     Set the template \a programName
 */
 
-void ProcessInfoTemplate::setProgramName(const QDeclarativeScriptString &programName)
+void ProcessInfoTemplate::setProgramName(const QQmlScriptString &programName)
 {
     setScriptString(ProcessInfoConstants::Program, programName);
     emit programNameChanged();
@@ -270,7 +270,7 @@ void ProcessInfoTemplate::setProgramName(const QDeclarativeScriptString &program
     Set the template \a uid
 */
 
-void ProcessInfoTemplate::setUid(const QDeclarativeScriptString &uid)
+void ProcessInfoTemplate::setUid(const QQmlScriptString &uid)
 {
     setScriptString(ProcessInfoConstants::Uid, uid);
     emit uidChanged();
@@ -280,7 +280,7 @@ void ProcessInfoTemplate::setUid(const QDeclarativeScriptString &uid)
     Set the template \a gid
 */
 
-void ProcessInfoTemplate::setGid(const QDeclarativeScriptString &gid)
+void ProcessInfoTemplate::setGid(const QQmlScriptString &gid)
 {
     setScriptString(ProcessInfoConstants::Gid, gid);
     emit gidChanged();
@@ -290,7 +290,7 @@ void ProcessInfoTemplate::setGid(const QDeclarativeScriptString &gid)
     Set the template \a workingDirectory
 */
 
-void ProcessInfoTemplate::setWorkingDirectory(const QDeclarativeScriptString &workingDirectory)
+void ProcessInfoTemplate::setWorkingDirectory(const QQmlScriptString &workingDirectory)
 {
     setScriptString(ProcessInfoConstants::WorkingDirectory, workingDirectory);
     emit workingDirectoryChanged();
@@ -300,7 +300,7 @@ void ProcessInfoTemplate::setWorkingDirectory(const QDeclarativeScriptString &wo
     Set the template \a env environment
 */
 
-void ProcessInfoTemplate::setEnvironment(QDeclarativeScriptString environment)
+void ProcessInfoTemplate::setEnvironment(QQmlScriptString environment)
 {
     setScriptString(ProcessInfoConstants::Environment, environment);
     emit environmentChanged();
@@ -310,7 +310,7 @@ void ProcessInfoTemplate::setEnvironment(QDeclarativeScriptString environment)
     Set the template \a arguments
 */
 
-void ProcessInfoTemplate::setArguments(const QDeclarativeScriptString &arguments)
+void ProcessInfoTemplate::setArguments(const QQmlScriptString &arguments)
 {
     setScriptString(ProcessInfoConstants::Arguments, arguments);
     emit argumentsChanged();
@@ -320,7 +320,7 @@ void ProcessInfoTemplate::setArguments(const QDeclarativeScriptString &arguments
     Set the template \a startOutputPattern
 */
 
-void ProcessInfoTemplate::setStartOutputPattern(const QDeclarativeScriptString &startOutputPattern)
+void ProcessInfoTemplate::setStartOutputPattern(const QQmlScriptString &startOutputPattern)
 {
     setScriptString(ProcessInfoConstants::StartOutputPattern, startOutputPattern);
     emit startOutputPatternChanged();
@@ -330,7 +330,7 @@ void ProcessInfoTemplate::setStartOutputPattern(const QDeclarativeScriptString &
     Set the template \a priority
 */
 
-void ProcessInfoTemplate::setPriority(const QDeclarativeScriptString &priority)
+void ProcessInfoTemplate::setPriority(const QQmlScriptString &priority)
 {
     setScriptString(ProcessInfoConstants::Priority, priority);
     emit priorityChanged();
@@ -340,7 +340,7 @@ void ProcessInfoTemplate::setPriority(const QDeclarativeScriptString &priority)
     Set the template \a customValues
 */
 
-void ProcessInfoTemplate::setCustomValues(const QDeclarativeScriptString &customValues)
+void ProcessInfoTemplate::setCustomValues(const QQmlScriptString &customValues)
 {
     setScriptString(kCustomValuesStr, customValues);
     emit customValuesChanged();
@@ -350,7 +350,7 @@ void ProcessInfoTemplate::setCustomValues(const QDeclarativeScriptString &custom
     Set the template \a oomAdjustment
 */
 
-void ProcessInfoTemplate::setOomAdjustment(const QDeclarativeScriptString &oomAdjustment)
+void ProcessInfoTemplate::setOomAdjustment(const QQmlScriptString &oomAdjustment)
 {
     setScriptString(ProcessInfoConstants::OomAdjustment, oomAdjustment);
     emit oomAdjustmentChanged();
@@ -384,39 +384,39 @@ ProcessInfo *ProcessInfoTemplate::createProcessInfo(const QVariantMap &dict)
     Return the script string bound to \a name
  */
 
-QDeclarativeScriptString ProcessInfoTemplate::scriptString(const QString &name) const
+QQmlScriptString ProcessInfoTemplate::scriptString(const QString &name) const
 {
     QVariant var = m_templateData.value(name);
-    if (var.canConvert<QDeclarativeScriptString>())
-        return var.value<QDeclarativeScriptString>();
+    if (var.canConvert<QQmlScriptString>())
+        return var.value<QQmlScriptString>();
     else
-        return QDeclarativeScriptString();
+        return QQmlScriptString();
 }
 
 /*!
   Set the script string \a script to value \a name
  */
 
-void ProcessInfoTemplate::setScriptString(const QString &name, const QDeclarativeScriptString &script)
+void ProcessInfoTemplate::setScriptString(const QString &name, const QQmlScriptString &script)
 {
-    m_templateData.insert(name, QVariant::fromValue<QDeclarativeScriptString>(script));
+    m_templateData.insert(name, QVariant::fromValue<QQmlScriptString>(script));
 }
 
 /*!
   Returns the evaluated expression using \a script data.
  */
 
-QVariant ProcessInfoTemplate::bindScript(const QDeclarativeScriptString &script)
+QVariant ProcessInfoTemplate::bindScript(const QQmlScriptString &script)
 {
     if (script.context() && !script.script().isEmpty()) {
-        // This is necessary because QDeclarativeExpression tries to return any JS array script
+        // This is necessary because QQmlExpression tries to return any JS array script
         // as a QList<QObject *>, and that type is not useful to us (the returned JS array will
         // only contain null values.  So we wrap everything in a simple JSON object, and then pick
         // out the real value after evaluating it.
 
         QString scriptStr = QStringLiteral("script");
         QString jsonWrapper = QString::fromUtf8("{\"%1\": %2}").arg(scriptStr).arg(script.script());
-        QDeclarativeExpression expr(script.context(), this, jsonWrapper);
+        QQmlExpression expr(script.context(), this, jsonWrapper);
 
         return expr.evaluate().toMap().value(scriptStr);
     }
@@ -477,8 +477,8 @@ QVariantMap ProcessInfoTemplate::bindData(const QVariantMap &dict)
     while (it.hasNext()) {
         it.next();
         QVariant value = it.value();
-        if (value.canConvert<QDeclarativeScriptString>()) {
-            boundData.insert(it.key(), bindScript(value.value<QDeclarativeScriptString>()));
+        if (value.canConvert<QQmlScriptString>()) {
+            boundData.insert(it.key(), bindScript(value.value<QQmlScriptString>()));
         } else {
             boundData.insert(it.key(), value.toString());
         }

@@ -1,8 +1,8 @@
 #include "processinfotemplate.h"
 #include "declarativeprocessmanager.h"
 
-#include <QtDeclarative/qdeclarative.h>
-#include <QtDeclarative/QDeclarativeExtensionPlugin>
+#include <QtQml/qqml.h>
+#include <QtQml/QQmlExtensionPlugin>
 
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
@@ -39,7 +39,7 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 */
 
 
-class ProcessManagerPlugin : public QDeclarativeExtensionPlugin
+class ProcessManagerPlugin : public QQmlExtensionPlugin
 {
     Q_OBJECT
 public:
@@ -48,7 +48,7 @@ public:
         qmlRegisterType<DeclarativeProcessManager>(uri, 1, 0, "Manager");
     }
 
-    void initializeEngine(QDeclarativeEngine *engine, const char *uri) {
+    void initializeEngine(QQmlEngine *engine, const char *uri) {
         Q_UNUSED(engine);
         Q_UNUSED(uri);
     }

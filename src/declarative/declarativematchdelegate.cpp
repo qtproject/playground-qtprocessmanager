@@ -90,18 +90,18 @@ bool DeclarativeMatchDelegate::matches(const ProcessInfo& info)
         return false;
 
     if (!m_modelContext)
-        m_modelContext = new QDeclarativeContext(m_script.context(), this);
+        m_modelContext = new QQmlContext(m_script.context(), this);
     m_modelContext->setContextProperty(QStringLiteral("model"), (QObject *) &info);
-    QDeclarativeExpression expr(m_modelContext, m_script.scopeObject(), m_script.script());
+    QQmlExpression expr(m_modelContext, m_script.scopeObject(), m_script.script());
     return expr.evaluate().toBool();
 }
 
-QDeclarativeScriptString DeclarativeMatchDelegate::script() const
+QQmlScriptString DeclarativeMatchDelegate::script() const
 {
     return m_script;
 }
 
-void DeclarativeMatchDelegate::setScript(const QDeclarativeScriptString& script)
+void DeclarativeMatchDelegate::setScript(const QQmlScriptString& script)
 {
     m_script = script;
     emit scriptChanged();

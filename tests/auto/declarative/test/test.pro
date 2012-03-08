@@ -1,7 +1,7 @@
 CONFIG += testcase
 macx:CONFIG -= app_bundle
 
-QT += core network declarative testlib processmanager processmanagerdeclarative
+QT += core network qml testlib processmanager processmanagerdeclarative
 
 include(../declarative.pri)
 

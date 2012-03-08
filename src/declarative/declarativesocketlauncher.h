@@ -40,30 +40,30 @@
 #ifndef DECLARATIVE_SOCKET_LAUNCHER_H
 #define DECLARATIVE_SOCKET_LAUNCHER_H
 
-#include <QtDeclarative>
+#include <QtQml>
 #include "socketlauncher.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 class Q_ADDON_PROCESSMANAGER_EXPORT DeclarativeSocketLauncher : public SocketLauncher,
-                                                                public QDeclarativeParserStatus
+                                                                public QQmlParserStatus
 {
     Q_OBJECT
-    Q_INTERFACES(QDeclarativeParserStatus)
-    Q_PROPERTY(QDeclarativeListProperty<ProcessBackendFactory> factories READ factories)
-    Q_PROPERTY(QDeclarativeListProperty<QObject> children READ children)
+    Q_INTERFACES(QQmlParserStatus)
+    Q_PROPERTY(QQmlListProperty<ProcessBackendFactory> factories READ factories)
+    Q_PROPERTY(QQmlListProperty<QObject> children READ children)
     Q_CLASSINFO("DefaultProperty", "children")
 
 public:
     DeclarativeSocketLauncher(QObject *parent=0);
-    QDeclarativeListProperty<ProcessBackendFactory> factories();
-    QDeclarativeListProperty<QObject>               children();
+    QQmlListProperty<ProcessBackendFactory> factories();
+    QQmlListProperty<QObject>               children();
 
     void classBegin();
     void componentComplete();
 
 private:
-    static void append_factory(QDeclarativeListProperty<ProcessBackendFactory>*,
+    static void append_factory(QQmlListProperty<ProcessBackendFactory>*,
                                ProcessBackendFactory*);
     QList<QObject *> m_children;
 };

@@ -40,10 +40,10 @@
 #include <QtTest>
 #include <QtCore/QMetaType>
 #include <QFileInfo>
-#include <QDeclarativeEngine>
-#include <QDeclarativeComponent>
-#include <QDeclarativeProperty>
-#include <QDeclarativeContext>
+#include <QQmlEngine>
+#include <QQmlComponent>
+#include <QQmlProperty>
+#include <QQmlContext>
 #include <QProcess>
 #include <QLocalSocket>
 
@@ -218,8 +218,8 @@ public:
 
 static void _frontendTest(const QString& filename)
 {
-    QDeclarativeEngine    engine;
-    QDeclarativeComponent component(&engine, QUrl::fromLocalFile(filename));
+    QQmlEngine    engine;
+    QQmlComponent component(&engine, QUrl::fromLocalFile(filename));
     if (component.isError())
         qWarning() << component.errors();
 
@@ -295,11 +295,11 @@ const char *kMatchTest = "import QtQuick 2.0; import Test 1.0; \n"
 
 void tst_DeclarativeProcessManager::match()
 {
-    QDeclarativeEngine    engine;
-    QDeclarativeContext   context(&engine);
-    QDeclarativeComponent component(&engine);
+    QQmlEngine    engine;
+    QQmlContext   context(&engine);
+    QQmlComponent component(&engine);
     component.setData(kMatchTest, QUrl());
-    QCOMPARE(component.status(), QDeclarativeComponent::Ready);
+    QCOMPARE(component.status(), QQmlComponent::Ready);
     DeclarativeMatchDelegate *delegate = qobject_cast<DeclarativeMatchDelegate *>(component.create());
     QVERIFY(delegate);
 
@@ -339,11 +339,11 @@ const char *kRewriteTest = "import QtQuick 2.0; import Test 1.0; \n"
 
 void tst_DeclarativeProcessManager::rewrite()
 {
-    QDeclarativeEngine    engine;
-    QDeclarativeContext   context(&engine);
-    QDeclarativeComponent component(&engine);
+    QQmlEngine    engine;
+    QQmlContext   context(&engine);
+    QQmlComponent component(&engine);
     component.setData(kRewriteTest, QUrl());
-    QCOMPARE(component.status(), QDeclarativeComponent::Ready);
+    QCOMPARE(component.status(), QQmlComponent::Ready);
     DeclarativeRewriteDelegate *delegate = qobject_cast<DeclarativeRewriteDelegate *>(component.create());
     QVERIFY(delegate);
 
