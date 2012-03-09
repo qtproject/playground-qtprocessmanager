@@ -37,8 +37,7 @@ PUBLIC_HEADERS += \
 
 HEADERS += \
   $$PUBLIC_HEADERS \
-  $$PWD/unixsandboxprocess.h \
-  $$PWD/cpuload.h
+  $$PWD/unixsandboxprocess.h
 
 SOURCES += \
   $$PWD/process.cpp \
@@ -69,5 +68,4 @@ SOURCES += \
   $$PWD/socketlauncher.cpp \
   $$PWD/procutils.cpp \
   $$PWD/forklauncher.cpp \
-  $$PWD/prefork.cpp \
-  $$PWD/cpuload.cpp
+  $$PWD/prefork.cpp
