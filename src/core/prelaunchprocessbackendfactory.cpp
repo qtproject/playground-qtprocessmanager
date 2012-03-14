@@ -174,7 +174,12 @@ void PrelaunchProcessBackendFactory::setPrelaunchEnabled(bool value)
         m_prelaunchEnabled = value;
         if (!m_prelaunchEnabled) {
             m_timer.stop();
+            if (m_prelaunch) {
+                m_prelaunch->deleteLater();
+                m_prelaunch = NULL;
+            }
         } else {
+            Q_ASSERT(m_prelaunch == NULL);
             startPrelaunchTimer();
         }
         emit prelaunchEnabledChanged();
@@ -296,6 +301,10 @@ void PrelaunchProcessBackendFactory::setProcessInfo(ProcessInfo *processInfo)
         if (processInfo) {
             m_info = new ProcessInfo(*processInfo);
             m_info->setParent(this);
+            if (m_prelaunch) {
+                m_prelaunch->deleteLater();
+                m_prelaunch = NULL;
+            }
             startPrelaunchTimer();
         } else {
             m_timer.stop();
