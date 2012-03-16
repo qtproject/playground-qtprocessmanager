@@ -81,12 +81,75 @@ static void makePipe(int fd[])
 
 /**************************************************************************/
 
+/*!
+  \class Prefork
+
+  \brief The Prefork class forks into a series of pipe-connected
+         processes with dynamically loaded main functions
+
+  Many modern programs have complicated initialization routines that
+  preload tables of information into each process.  The Prefork class
+  allows you to initialize data just once, fork into multiple
+  processes, and use the dynamic linker to load and execute the
+  \c{main()} function from each desired child process.  By not
+  invoking the normal \c{fork(); exec();} method of launching a new
+  process, we ensure that the original initialized data does not have
+  to be reloaded for each child.
+
+  Using the Prefork class is as simple as:
+
+  \code
+  #include "prefork.h"
+
+  int main(int argc, char **argv)
+  {
+    // ... Initialize common data items here
+    Prefork::instance()->execute(&argc, &argv); // This function never returns
+  }
+  \endcode
+
+  The command line arguments for the various children are delineated
+  by "--" arguments.  For example:
+
+  \code
+    myprefork -a -foo -- program1 -arg1 -arg2 -- program2 -arg3 -arg4 -- program5
+  \endcode
+
+  The \c{-a} and \c{-foo} arguments are processed by your own
+  program.  The first, or "master" process will load
+  \c{program1} as a dynamic library and execute the main function
+  passing \c{-arg1} and \c{-arg2} as its arguments.  The second, or
+  "child 1" process will load \c{program2} as a dynamic library and
+  execute its main function passing the \c{-arg3} and \c{-arg4}
+  arguments.  The third, or "child 2" process will load \c{program5}
+  as a dynamic library and execute its main function with no
+  arguments.
+
+  After preforking, the master process needs a method of finding which
+  file descriptors are used to talk with which child process.  It uses
+  the \l{instance()} to retrieve the singleton
+  Prefork object and the Prefork::size() and Prefork::at() functions
+  to retrieve information about the child processes.
+
+  The PreforkProcessBackendFactory class is a wrapper around the
+  Prefork object to make it easy to write a program that uses
+  preforking to launch child processes.
+ */
+
+/*!
+  Return the singleton Prefork instance
+ */
+
 Prefork *Prefork::instance() {
     static Prefork *s_forkit;
     if (!s_forkit)
         s_forkit = new Prefork;
     return s_forkit;
 }
+
+/*!
+  \internal
+ */
 
 Prefork::Prefork()
   : m_argc(0)
@@ -97,6 +160,10 @@ Prefork::Prefork()
 {
 }
 
+/*!
+  \internal
+ */
+
 int Prefork::nextMarker(int index)
 {
     while (index < m_argc && ::strcmp(m_argv[index], "--") != 0)
@@ -104,14 +171,14 @@ int Prefork::nextMarker(int index)
     return index;
 }
 
+typedef int (*main_func_t)(int argc, char *argv[]);
+
+// ### TODO:  Remove the directory path from the program name
+
 /*!
   Open the application as a dll and jump to main
   This function never returns.
  */
-
-typedef int (*main_func_t)(int argc, char *argv[]);
-
-// ### TODO:  Remove the directory path from the program name
 
 void Prefork::launch(int start, int end)
 {
@@ -179,6 +246,13 @@ int Prefork::makeChild(int start)
     return end + 1;
 }
 
+/*!
+  Fork into the appropriate child processes which will be
+  pipe-connected.  You must pass \a argc_ptr and \a argv_ptr, which
+  are pointers to the standard \c{argc} and \c{argv} arguments.  Each
+  child process will have \c{argc} and \c{argv} correctly rewritten.
+ */
+
 void Prefork::execute(int *argc_ptr, char ***argv_ptr)
 {
     m_argc = *argc_ptr;
@@ -218,6 +292,12 @@ void Prefork::execute(int *argc_ptr, char ***argv_ptr)
     launch(start, end);  // This function never returns
 }
 
+/*!
+  Check to see if \a pid is one of our child processes.  This function
+  is called from the \c{SIGCHILD} signal handler.  When any of our
+  children die, the entire set of processes should shut down.
+ */
+
 void Prefork::checkChildDied(pid_t pid)
 {
     for (int i = 0 ; i < m_count ; i++) {
@@ -229,15 +309,44 @@ void Prefork::checkChildDied(pid_t pid)
     }
 }
 
+/*!
+  Return how many child processes exist.  There is one new child
+  process for each \c{fork()} call in the main process.
+ */
+
 int Prefork::size() const
 {
     return m_count;
 }
+
+/*!
+  Return information about the child at index \a i.
+ */
 
 const PreforkChildData *Prefork::at(int i) const
 {
     Q_ASSERT(i >= 0 && i < m_count);
     return &m_children[i];
 }
+
+/*!
+  \class PreforkChildData
+  \brief The PreforkChildData class provides information about a single preforked child
+ */
+
+/*!
+  \variable PreforkChildData::stdin
+  \brief The file descriptor of the child's stdin (write to this)
+*/
+
+/*!
+  \variable PreforkChildData::stdout
+  \brief The file descriptor of the child's stdout (read from this)
+*/
+
+/*!
+  \variable PreforkChildData::pid
+  \brief The child's process id
+*/
 
 QT_END_NAMESPACE_PROCESSMANAGER

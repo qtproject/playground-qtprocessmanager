@@ -1,5 +1,5 @@
 # Compatibility for older qdoc
-alias.i = e
+# alias.i = e
 
 # Name of the project.
 project = ProcessManager

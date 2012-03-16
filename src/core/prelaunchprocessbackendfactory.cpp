@@ -61,6 +61,20 @@ const int kPrelaunchTimerInterval = 1000;
  */
 
 /*!
+  \property PrelaunchProcessBackendFactory::processInfo
+  \brief ProcessInfo record used to create the prelaunched process
+ */
+
+/*!
+  \property PrelaunchProcessBackendFactory::prelaunchEnabled
+  \brief Controls whether or not a prelaunched process is created.
+
+  If this property is true, a prelaunched process will be created
+  after a suitable time interval.  If it is set to false and a
+  prelaunched process exists, that process will be terminated.
+ */
+
+/*!
   Construct a PrelaunchProcessBackendFactory with optional \a parent.
   To be able to use the PrelaunchProcessBackendFactory, you also need to set
   a ProcessInfo object to it that specifies which process is prelaunched.
@@ -83,6 +97,14 @@ PrelaunchProcessBackendFactory::PrelaunchProcessBackendFactory(QObject *parent)
 PrelaunchProcessBackendFactory::~PrelaunchProcessBackendFactory()
 {
 }
+
+/*!
+  Return true if the PrelaunchProcessBackendFactory can create
+  a process that matches \a info.  The default implementation only checks that
+  a valid info object has been previously set in the factory, and then
+  passes the decision on to the default implementation, which should probably
+  have some kind of MatchDelegate installed.
+*/
 
 bool PrelaunchProcessBackendFactory::canCreate(const ProcessInfo &info) const
 {
@@ -129,6 +151,10 @@ QList<Q_PID> PrelaunchProcessBackendFactory::internalProcesses()
         list << m_prelaunch->pid();
     return list;
 }
+
+/*!
+  Return the prelaunched process information
+ */
 
 ProcessInfo *PrelaunchProcessBackendFactory::processInfo() const
 {
@@ -325,6 +351,19 @@ void PrelaunchProcessBackendFactory::setProcessInfo(ProcessInfo& processInfo)
 /*!
   \fn void PrelaunchProcessBackendFactory::launchIntervalChanged()
   This signal is emitted when the launchInterval is changed.
+ */
+/*!
+  \fn void PrelaunchProcessBackendFactory::processInfoChanged()
+  This signal is emitted when the internal ProcessInfo record is
+  changed.
+ */
+/*!
+  \fn void PrelaunchProcessBackendFactory::prelaunchEnabledChanged()
+  This signal is emitted when the prelaunchEnabled property is changed.
+ */
+/*!
+  \fn void PrelaunchProcessBackendFactory::processPrelaunched()
+  This signal is emitted when the prelaunched process is first created.
  */
 
 #include "moc_prelaunchprocessbackendfactory.cpp"

@@ -44,11 +44,11 @@ to be subclassed, and a QML API.
 Table of contents:
 
 \list
-\o \l {Introduction}
-\o \l {Understanding ProcessInfo}
-\o \l {Backend Process Manager}
-\o \l {Standard Process Manager}
-\o \l {Declarative Process Manager}
+\li \l {Introduction}
+\li \l {Understanding ProcessInfo}
+\li \l {Backend Process Manager}
+\li \l {Standard Process Manager}
+\li \l {Declarative Process Manager}
 \endlist
 
 

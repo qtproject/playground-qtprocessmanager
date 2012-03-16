@@ -51,18 +51,28 @@ const int kPreforkTimerInterval = 1000;
 
 /*!
   \class PreforkProcessBackendFactory
-  \brief The PreforkProcessBackendFactory connects to a preforked client
+  \brief The PreforkProcessBackendFactory class connects to a preforked client
+
+  The PreforkProcessBackendFactory class can only be used in a process
+  that has been started by the \l{Prefork} class.  Each
+  PreforkProcessBackendFactory object must be associated with a single
+  child process started from the \l{Prefork} class.  The association is
+  done by setting the \l{index} property to match a valid index from
+  the \l{Prefork} singleton object.
+
+  The PreforkProcessBackendFactory communicates with the child process
+  using the same protocol as the \l{PipeProcessBackendFactory} (simple
+  JSON-formatted messages).
 */
 
 /*!
-  \property index
+  \property PreforkProcessBackendFactory::index
   Index into the prefork instance of which process this should be
   connected to.
 */
 
 /*!
   Construct a PreforkProcessBackendFactory with optional \a parent.
-  The \a info ProcessInfo is used to start the prefork process.
 */
 
 PreforkProcessBackendFactory::PreforkProcessBackendFactory(QObject *parent)
@@ -117,12 +127,14 @@ void PreforkProcessBackendFactory::setIndex(int index)
         qWarning() << Q_FUNC_INFO << "index out of range";
 }
 
+/*!
+  Send a \a message to the preforked process
+ */
 
 bool PreforkProcessBackendFactory::send(const QJsonObject& message)
 {
     return m_pipe->send(message);
 }
-
 
 /*!
   Return the preforked process
@@ -136,6 +148,11 @@ QList<Q_PID> PreforkProcessBackendFactory::internalProcesses()
         list << data->pid;
     return list;
 }
+
+/*!
+  \fn PreforkProcessBackendFactory::indexChanged()
+  This signal is emitted when the index is changed.
+ */
 
 #include "moc_preforkprocessbackendfactory.cpp"
 

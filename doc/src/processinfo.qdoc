@@ -39,22 +39,22 @@ set upon process creation.  The ProcessInfo object is a ligthweight wrapper
 for a QVariantMap containing the more common properties including:
 
 \list
-  \o Common name assigned to the object.  This name is used when creating
+  \li Common name assigned to the object.  This name is used when creating
      a process identifier.
-  \o Application to execute
-  \o Arguments to pass on the command line
-  \o Working directory
-  \o User ID (UID) and Group ID (GID)
-  \o Environment variables
-  \o Linux-specific \l {http://linux.die.net/man/7/capabilities} {capabilities}
-  \o Linux-specific \l
+  \li Application to execute
+  \li Arguments to pass on the command line
+  \li Working directory
+  \li User ID (UID) and Group ID (GID)
+  \li Environment variables
+  \li Linux-specific \l {http://linux.die.net/man/7/capabilities} {capabilities}
+  \li Linux-specific \l
      {http://www.kernel.org/doc/Documentation/cgroups/cgroups.txt}
      {cgroups}
-  \o The priority level of the process (agents run at lower priority levels)
-  \o The OOM killer adjustment score (ranges from -1000 to +1000)
+  \li The priority level of the process (agents run at lower priority levels)
+  \li The OOM killer adjustment score (ranges from -1000 to +1000)
      \l {http://www.kernel.org/doc/Documentation/filesystems/proc.txt} {[/proc/<pid>/oom_score_adj]}
-  \o Output text patterns to match to determing if the process has finished initializing.
-  \o Other machine-specific ways of limiting process
+  \li Output text patterns to match to determing if the process has finished initializing.
+  \li Other machine-specific ways of limiting process
      memory/CPU/resource use.
 \endlist
 

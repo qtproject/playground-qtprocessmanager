@@ -57,15 +57,15 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
     changing the API.  The predefined keys are:
 
     \list
-      \o Identifier
-      \o Program
-      \o Arguments
-      \o Environment
-      \o WorkingDirectory
-      \o UID
-      \o GID
-      \o Priority
-      \o OomAdjustment
+      \li Identifier
+      \li Program
+      \li Arguments
+      \li Environment
+      \li WorkingDirectory
+      \li UID
+      \li GID
+      \li Priority
+      \li OomAdjustment
     \endlist
 */
 

@@ -39,14 +39,14 @@
 There are four basic types of objects to work with in the process manager.
 
 \list
-  \o ProcessInfo objects specify what program to run, environment variables
+  \li ProcessInfo objects specify what program to run, environment variables
      to pass to the program, working directory, and permissions.
-  \o ProcessBackendFactory objects convert ProcessInfo objects into executing
+  \li ProcessBackendFactory objects convert ProcessInfo objects into executing
      processes.
-  \o ProcessFrontend / ProcessBackend objects wrap executing processes.  They
+  \li ProcessFrontend / ProcessBackend objects wrap executing processes.  They
      bear a strong resemblence to QProcess objects, but in fact may not
      contain a QProcess.
-  \o ProcessManager / ProcessBackendManager are singleton objects that
+  \li ProcessManager / ProcessBackendManager are singleton objects that
      hold a list of factories and provide convenience interfaces for interacting
      with ProcessFrontend/ProcessBackend objects.
 \endlist

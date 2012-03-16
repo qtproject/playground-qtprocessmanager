@@ -56,24 +56,24 @@ const int kRemoteTimerInterval = 1000;
 
   \table
   \header
-    \o Command
-    \o Action
+    \li Command
+    \li Action
   \row
-    \o \c{{ "command": "start", "id": NUM, "info": PROCESSINFO }}
-    \o Start a new process running.  The \bold{token} attribute will
+    \li \c{{ "command": "start", "id": NUM, "info": PROCESSINFO }}
+    \li Start a new process running.  The \b{token} attribute will
        be used to refer to this process in the future.
   \row
-    \o \c{{ "command": "stop", "id": NUM, "timeout": NUM }}
-    \o Stop the remote process with an optional timeout.
+    \li \c{{ "command": "stop", "id": NUM, "timeout": NUM }}
+    \li Stop the remote process with an optional timeout.
        The remote process should be sent a SIGTERM, followed by
        a SIGKILL after 'timeout' milliseconds
   \row
-    \o \c{{ "command": "set", "id": NUM, "key": STRING, "value": NUM }}
-    \o Set a process key/value pair.  Currently the \bold{key} can be
+    \li \c{{ "command": "set", "id": NUM, "key": STRING, "value": NUM }}
+    \li Set a process key/value pair.  Currently the \b{key} can be
        either "priority" or "oomAdjustment".
   \row
-    \o \c{{ "command": "write", "id": NUM, "data": STRING }}
-    \o Write a data string to the remote process.  We assume that the
+    \li \c{{ "command": "write", "id": NUM, "data": STRING }}
+    \li Write a data string to the remote process.  We assume that the
        data string is a valid local 8 bit string.
   \endtable
 
@@ -82,26 +82,26 @@ const int kRemoteTimerInterval = 1000;
 
   \table
   \header
-    \o Event
-    \o Description
+    \li Event
+    \li Description
   \row
-    \o \c{{ "event": "started", "id": NUM, "pid": NUM }}
-    \o This process has started.  This maps to the QProcess::started()
+    \li \c{{ "event": "started", "id": NUM, "pid": NUM }}
+    \li This process has started.  This maps to the QProcess::started()
        signal, but also includes the PID of the new process.  This should
-       be the first event returned after a \bold{start} command
+       be the first event returned after a \b{start} command
   \row
-    \o \c{{ "event": "finished", "id": NUM, "exitCode": NUM, "exitStatus": NUM }}
-    \o The process has exited.  This is the last event returned for a given
+    \li \c{{ "event": "finished", "id": NUM, "exitCode": NUM, "exitStatus": NUM }}
+    \li The process has exited.  This is the last event returned for a given
        process number.
   \row
-    \o \c{{ "event": "error", "id": NUM, "error": NUM }}
-    \o The process has an error that maps to QProcess::ProcessError
+    \li \c{{ "event": "error", "id": NUM, "error": NUM }}
+    \li The process has an error that maps to QProcess::ProcessError
   \row
-    \o \c{{ "event": "stateChanged", "id": NUM, "state": NUM }}
-    \o The process has an event that maps to a QProcess::ProcessState change.
+    \li \c{{ "event": "stateChanged", "id": NUM, "state": NUM }}
+    \li The process has an event that maps to a QProcess::ProcessState change.
   \row
-    \o \c{{ "event": "output", "id": NUM, "stdout": STRING, "stderr": STRING }}
-    \o The process has written data to stdout and/or stderr.
+    \li \c{{ "event": "output", "id": NUM, "stdout": STRING, "stderr": STRING }}
+    \li The process has written data to stdout and/or stderr.
   \endtable
 */
 
