@@ -4,6 +4,6 @@
   "properties": {
     "event": { "type": "string", "pattern": "stateChanged", "required": true },
     "id": { "type": "integer", "required": true },
-    "stateChanged": { "type": "integer", "required": true },
+    "stateChanged": { "type": "integer", "required": true }
   }
 }
