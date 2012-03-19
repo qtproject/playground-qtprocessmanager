@@ -26,7 +26,16 @@
 ****************************************************************************/
 
 /*!
+  \headerfile <processmanager-global.h>
+  \title Global ProcessManager declarations
+
+  \brief The <processmanager-global.h> file provides namespace declarations and
+         global enumerations for ProcessManager
+ */
+
+/*!
     \macro QT_USE_NAMESPACE_PROCESSMANAGER
+    \relates <processmanager-global.h>
     \inmodule ProcessManager
 
     This macro expands to using processmanager namespace and makes processmanager namespace
@@ -50,6 +59,7 @@
 
 /*!
     \macro QT_BEGIN_NAMESPACE_PROCESSMANAGER
+    \relates <processmanager-global.h>
     \inmodule ProcessManager
 
     This macro begins a ProcessManager namespace. All forward declarations of ProcessManager classes need to
@@ -60,6 +70,7 @@
 
 /*!
     \macro QT_END_NAMESPACE_PROCESSMANAGER
+    \relates <processmanager-global.h>
     \inmodule ProcessManager
 
     This macro ends a ProcessManager namespace. All forward declarations of ProcessManager classes need to

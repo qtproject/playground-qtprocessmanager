@@ -56,6 +56,10 @@ Table of contents:
 
 \generatelist annotatedclasses
 
+\section1 Header files
+
+\l{Global ProcessManager declarations}
+
 \section1 QML Elements
 
 \generatelist qmlclasses
