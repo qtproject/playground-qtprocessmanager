@@ -37,66 +37,28 @@
 **
 ****************************************************************************/
 
-#ifndef PRELAUNCH_PROCESS_BACKEND_FACTORY_H
-#define PRELAUNCH_PROCESS_BACKEND_FACTORY_H
+#ifndef IDLE_DELEGATE_H
+#define IDLE_DELEGATE_H
 
-#include "processbackendfactory.h"
+#include <QObject>
 #include "processmanager-global.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-class ProcessInfo;
-class PrelaunchProcessBackend;
-
-class Q_ADDON_PROCESSMANAGER_EXPORT PrelaunchProcessBackendFactory : public ProcessBackendFactory
+class Q_ADDON_PROCESSMANAGER_EXPORT IdleDelegate : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(ProcessInfo* processInfo READ processInfo WRITE setProcessInfo NOTIFY processInfoChanged)
-    Q_PROPERTY(bool prelaunchEnabled READ prelaunchEnabled WRITE setPrelaunchEnabled NOTIFY prelaunchEnabledChanged)
-
 public:
-    PrelaunchProcessBackendFactory(QObject *parent = 0);
-    virtual ~PrelaunchProcessBackendFactory();
-
-    virtual bool canCreate(const ProcessInfo &info) const;
-    virtual ProcessBackend *create(const ProcessInfo& info, QObject *parent);
-
-    virtual QList<Q_PID>    internalProcesses();
-
-    ProcessInfo *processInfo() const;
-    void setProcessInfo(ProcessInfo *processInfo);
-    void setProcessInfo(ProcessInfo& processInfo);
-
-    bool prelaunchEnabled() const;
-    void setPrelaunchEnabled(bool value);
-
-    bool hasPrelaunchedProcess() const;
+    explicit IdleDelegate(QObject *parent = 0);
+    virtual void requestIdleCpu(bool request) = 0;
 
 signals:
-    void processInfoChanged();
-    void prelaunchEnabledChanged();
-    void processPrelaunched();
-
-protected:
-    virtual void handleMemoryRestrictionChange();
-    PrelaunchProcessBackend *prelaunchProcessBackend() const;
-
-protected slots:
-    virtual void idleCpuAvailable();
-
-private slots:
-    void prelaunchFinished(int, QProcess::ExitStatus);
-    void prelaunchError(QProcess::ProcessError);
+    void idleCpuAvailable();
 
 private:
-    void startPrelaunchTimer();
-
-private:
-    PrelaunchProcessBackend *m_prelaunch;
-    ProcessInfo             *m_info;
-    bool                     m_prelaunchEnabled;
+    Q_DISABLE_COPY(IdleDelegate);
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER
 
-#endif // PRELAUNCH_PROCESS_BACKEND_FACTORY_H
+#endif // IDLE_DELEGATE_H

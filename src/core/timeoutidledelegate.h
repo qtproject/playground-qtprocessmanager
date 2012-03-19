@@ -37,66 +37,36 @@
 **
 ****************************************************************************/
 
-#ifndef PRELAUNCH_PROCESS_BACKEND_FACTORY_H
-#define PRELAUNCH_PROCESS_BACKEND_FACTORY_H
+#ifndef TIMEOUT_IDLE_DELEGATE_H
+#define TIMEOUT_IDLE_DELEGATE_H
 
-#include "processbackendfactory.h"
-#include "processmanager-global.h"
+#include <QTimer>
+#include "idledelegate.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 class ProcessInfo;
-class PrelaunchProcessBackend;
 
-class Q_ADDON_PROCESSMANAGER_EXPORT PrelaunchProcessBackendFactory : public ProcessBackendFactory
+class Q_ADDON_PROCESSMANAGER_EXPORT TimeoutIdleDelegate : public IdleDelegate
 {
     Q_OBJECT
-    Q_PROPERTY(ProcessInfo* processInfo READ processInfo WRITE setProcessInfo NOTIFY processInfoChanged)
-    Q_PROPERTY(bool prelaunchEnabled READ prelaunchEnabled WRITE setPrelaunchEnabled NOTIFY prelaunchEnabledChanged)
+    Q_PROPERTY(int idleInterval READ idleInterval WRITE setIdleInterval NOTIFY idleIntervalChanged)
 
 public:
-    PrelaunchProcessBackendFactory(QObject *parent = 0);
-    virtual ~PrelaunchProcessBackendFactory();
+    explicit TimeoutIdleDelegate(QObject *parent = 0);
+    virtual void requestIdleCpu(bool request);
 
-    virtual bool canCreate(const ProcessInfo &info) const;
-    virtual ProcessBackend *create(const ProcessInfo& info, QObject *parent);
-
-    virtual QList<Q_PID>    internalProcesses();
-
-    ProcessInfo *processInfo() const;
-    void setProcessInfo(ProcessInfo *processInfo);
-    void setProcessInfo(ProcessInfo& processInfo);
-
-    bool prelaunchEnabled() const;
-    void setPrelaunchEnabled(bool value);
-
-    bool hasPrelaunchedProcess() const;
+    int  idleInterval() const;
+    void setIdleInterval(int interval);
 
 signals:
-    void processInfoChanged();
-    void prelaunchEnabledChanged();
-    void processPrelaunched();
-
-protected:
-    virtual void handleMemoryRestrictionChange();
-    PrelaunchProcessBackend *prelaunchProcessBackend() const;
-
-protected slots:
-    virtual void idleCpuAvailable();
-
-private slots:
-    void prelaunchFinished(int, QProcess::ExitStatus);
-    void prelaunchError(QProcess::ProcessError);
+    void idleIntervalChanged();
 
 private:
-    void startPrelaunchTimer();
-
-private:
-    PrelaunchProcessBackend *m_prelaunch;
-    ProcessInfo             *m_info;
-    bool                     m_prelaunchEnabled;
+    Q_DISABLE_COPY(TimeoutIdleDelegate);
+    QTimer m_timer;
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER
 
-#endif // PRELAUNCH_PROCESS_BACKEND_FACTORY_H
+#endif // TIMEOUT_IDLE_DELEGATE_H

@@ -41,6 +41,8 @@
 #include "matchdelegate.h"
 #include "rewritedelegate.h"
 
+#include <QDebug>
+
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 /*!
@@ -61,6 +63,11 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 */
 
 /*!
+    \property ProcessBackendFactory::idleCpuRequest
+    \brief A boolean value indicating that this factory would like idle CPU cycles
+*/
+
+/*!
     Construct a ProcessBackendFactory with an optional \a parent.
 */
 
@@ -69,6 +76,7 @@ ProcessBackendFactory::ProcessBackendFactory(QObject *parent)
     , m_matchDelegate(NULL)
     , m_rewriteDelegate(NULL)
     , m_memoryRestricted(false)
+    , m_idleCpuRequest(false)
 {
 }
 
@@ -87,9 +95,9 @@ ProcessBackendFactory::~ProcessBackendFactory()
 
 void ProcessBackendFactory::setMemoryRestricted(bool memoryRestricted)
 {
-    if (memoryRestricted != m_memoryRestricted) {
-    m_memoryRestricted = memoryRestricted;
-    handleMemoryRestrictionChange();
+    if (m_memoryRestricted != memoryRestricted) {
+        m_memoryRestricted = memoryRestricted;
+        handleMemoryRestrictionChange();
     }
 }
 
@@ -132,7 +140,8 @@ void ProcessBackendFactory::setMatchDelegate(MatchDelegate *matchDelegate)
         if (m_matchDelegate)
             delete m_matchDelegate;
         m_matchDelegate = matchDelegate;
-        m_matchDelegate->setParent(this);
+        if (m_matchDelegate)
+            m_matchDelegate->setParent(this);
         emit matchDelegateChanged();
     }
 }
@@ -157,9 +166,41 @@ void ProcessBackendFactory::setRewriteDelegate(RewriteDelegate *rewriteDelegate)
         if (m_rewriteDelegate)
             delete m_rewriteDelegate;
         m_rewriteDelegate = rewriteDelegate;
-        m_rewriteDelegate->setParent(this);
+        if (m_rewriteDelegate)
+            m_rewriteDelegate->setParent(this);
         emit rewriteDelegateChanged();
     }
+}
+
+/*!
+   Return true if the factory is requesting idle CPU cycles
+ */
+
+bool ProcessBackendFactory::idleCpuRequest() const
+{
+    return m_idleCpuRequest;
+}
+
+/*!
+   Set the current idle CPU request value to \a value
+ */
+
+void ProcessBackendFactory::setIdleCpuRequest(bool value)
+{
+    if (value != m_idleCpuRequest) {
+        m_idleCpuRequest = value;
+        emit idleCpuRequestChanged();
+    }
+}
+
+/*!
+  This virtual function gets called when idle CPU is available.
+  Subclasses should override this function.
+ */
+
+void ProcessBackendFactory::idleCpuAvailable()
+{
+    qDebug() << Q_FUNC_INFO;
 }
 
 /*!
@@ -205,6 +246,12 @@ void ProcessBackendFactory::rewrite(ProcessInfo& info)
   \fn void ProcessBackendFactory::rewriteDelegateChanged()
 
   Signal emitted whenever the RewriteDelegate is changed.
+*/
+
+/*!
+  \fn void ProcessBackendFactory::idleCpuRequestChanged()
+
+  Signal emitted whenever the idle CPU request is changed
 */
 
 /*!

@@ -40,6 +40,7 @@
 #include "processbackendmanager.h"
 #include "processbackendfactory.h"
 #include "processbackend.h"
+#include "timeoutidledelegate.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
@@ -69,16 +70,65 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
   The backend manager does not get involved in starting or tracking
   the lifetime of a process.  In general, you should use the
   ProcessManager class for processes, which contains a backend manager object.
+
+  You may assign an IdleDelegate to the process manager.  Certain factory
+  objects required processing time to launch prelaunched runtime processes.
+  An IdleDelegate is a class that lets the process manager know when the
+  system load is low so that the prelaunch programs can be started.  If
+  you do not assign an IdleDelegate, you may subclass the ProcessBackendManager
+  to override the default idle calculations.
+
+  If you do not assign an IdleDelegate, the TimeoutIdleDelegate will be
+  used by default.
+
+  If you prefer to not use delegates, you can subclass ProcessBackendManager
+  and override the \l{handleIdleCpuRequest()} function.  If you do this,
+  you must shut off the default IdleDelegate.  For example:
+
+  \code
+  class MyManager : public ProcessBackendManager {
+  public
+    MyManager(QObject *parent=0) : ProcessBackendManager(parent) {
+      setIdleDelegate(0);
+      connect(&timer, SIGNAL(timeout()), SLOT(checkCpuLoad()));
+      timer.setInterval(1000);
+    }
+
+  protected:
+    virtual void handleIdleCputRequest(bool request) {
+      if (request) timer.start();
+      else         timer.stop();
+    }
+
+  protected slots:
+    void checkCpuLoad() {
+       if (calcCpuLoad() < 50)
+          idleCpuAvailable();   // Call the Idle CPU function
+    }
+
+  private:
+    QTimer timer;
+  }
+  \endcode
+*/
+
+/*!
+    \property ProcessBackendManager::idleDelegate
+    \brief The IdleDelegate object assigned to this factory.
 */
 
 /*!
   Construct a ProcessBackendManager with an optional \a parent
+  By default, a TimeoutIdleDelegate is assigned to the idleDelegate.
 */
 
 ProcessBackendManager::ProcessBackendManager(QObject *parent)
     : QObject(parent)
     , m_memoryRestricted(false)
+    , m_idleCpuRequest(false)
 {
+    m_idleDelegate = new TimeoutIdleDelegate(this);
+    connect(m_idleDelegate, SIGNAL(idleCpuAvailable()), SLOT(idleCpuAvailable()));
 }
 
 /*!
@@ -115,6 +165,8 @@ void ProcessBackendManager::addFactory(ProcessBackendFactory *factory)
     m_factories.append(factory);
     factory->setParent(this);
     factory->setMemoryRestricted(m_memoryRestricted);
+    connect(factory, SIGNAL(idleCpuRequestChanged()), SLOT(updateIdleCpuRequest()));
+    updateIdleCpuRequest();
 }
 
 /*!
@@ -123,10 +175,10 @@ void ProcessBackendManager::addFactory(ProcessBackendFactory *factory)
 
 QList<Q_PID> ProcessBackendManager::internalProcesses()
 {
-    QList<Q_PID> list;
+    QList<Q_PID> plist;
     foreach (ProcessBackendFactory *factory, m_factories)
-    list.append(factory->internalProcesses());
-    return list;
+        plist.append(factory->internalProcesses());
+    return plist;
 }
 
 /*!
@@ -137,9 +189,10 @@ QList<Q_PID> ProcessBackendManager::internalProcesses()
 void ProcessBackendManager::setMemoryRestricted(bool memoryRestricted)
 {
     if (m_memoryRestricted != memoryRestricted) {
-    m_memoryRestricted = memoryRestricted;
-    foreach (ProcessBackendFactory *factory, m_factories)
-        factory->setMemoryRestricted(memoryRestricted);
+        m_memoryRestricted = memoryRestricted;
+        foreach (ProcessBackendFactory *factory, m_factories) {
+            factory->setMemoryRestricted(memoryRestricted);
+        }
     }
 }
 
@@ -151,6 +204,90 @@ bool ProcessBackendManager::memoryRestricted() const
 {
     return m_memoryRestricted;
 }
+
+/*!
+   Return the current IdleDelegate object
+ */
+
+IdleDelegate *ProcessBackendManager::idleDelegate() const
+{
+    return m_idleDelegate;
+}
+
+/*!
+   Set a new process IdleDelegate object \a idleDelegate.
+   The ProcessBackendManager takes over parentage of the IdleDelegate.
+ */
+
+void ProcessBackendManager::setIdleDelegate(IdleDelegate *idleDelegate)
+{
+    if (idleDelegate != m_idleDelegate) {
+        if (m_idleDelegate)
+            delete m_idleDelegate;
+        m_idleDelegate = idleDelegate;
+        if (m_idleDelegate) {
+            m_idleDelegate->setParent(this);
+            connect(m_idleDelegate, SIGNAL(idleCpuAvailable()), SLOT(idleCpuAvailable()));
+        }
+        emit idleDelegateChanged();
+        m_idleCpuRequest = false;  // Force this to be recalculated
+        updateIdleCpuRequest();
+    }
+}
+
+/*!
+   \fn bool ProcessBackendManager::idleCpuRequest() const
+   Return \c{true} if we need idle CPU cycles.
+ */
+
+/*!
+  Idle CPU processing is available.  This function distributes
+  the idle CPU to the first factory that has requested it.
+ */
+
+void ProcessBackendManager::idleCpuAvailable()
+{
+    foreach (ProcessBackendFactory *factory, m_factories) {
+        if (factory->idleCpuRequest()) {
+            factory->idleCpuAvailable();
+            return;
+        }
+    }
+}
+
+/*!
+  Update the current idle cpu request status by polling
+  the factories.
+ */
+
+void ProcessBackendManager::updateIdleCpuRequest()
+{
+    bool request = false;
+    foreach (ProcessBackendFactory *factory, m_factories)
+        request |= factory->idleCpuRequest();
+
+    if (request != m_idleCpuRequest) {
+        m_idleCpuRequest = request;
+        if (m_idleDelegate)
+            m_idleDelegate->requestIdleCpu(m_idleCpuRequest);
+        handleIdleCpuRequest(m_idleCpuRequest);
+    }
+}
+
+/*!
+  Override this function to customize your handling of Idle CPU requests.
+  The \a request variable will be \c{true} if Idle CPU events are needed.
+ */
+
+void ProcessBackendManager::handleIdleCpuRequest(bool request)
+{
+    Q_UNUSED(request);
+}
+
+/*!
+  \fn void ProcessBackendManager::idleDelegateChanged()
+  Signal emitted whenever the IdleDelegate is changed.
+*/
 
 #include "moc_processbackendmanager.cpp"
 

@@ -45,8 +45,6 @@
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-const int kPrelaunchTimerInterval = 1000;
-
 /*!
   \class PrelaunchProcessBackendFactory
   \brief The PrelaunchProcessBackendFactory class creates PrelaunchProcessBackend objects
@@ -54,11 +52,6 @@ const int kPrelaunchTimerInterval = 1000;
   The PrelaunchProcessBackendFactory starts up a PrelaunchProcessBackend using
   information passed in the constructor.
 */
-
-/*!
-  \property PrelaunchProcessBackendFactory::launchInterval
-  \brief Time in milliseconds before a new prelaunch backend will be started
- */
 
 /*!
   \property PrelaunchProcessBackendFactory::processInfo
@@ -85,9 +78,6 @@ PrelaunchProcessBackendFactory::PrelaunchProcessBackendFactory(QObject *parent)
     , m_info(NULL)
     , m_prelaunchEnabled(true)
 {
-    connect(&m_timer, SIGNAL(timeout()), SLOT(timeout()));
-    m_timer.setSingleShot(true);
-    m_timer.setInterval(kPrelaunchTimerInterval);
 }
 
 /*!
@@ -162,31 +152,6 @@ ProcessInfo *PrelaunchProcessBackendFactory::processInfo() const
 }
 
 /*!
-  Return the current launch interval in milliseconds
- */
-
-int PrelaunchProcessBackendFactory::launchInterval() const
-{
-    return m_timer.interval();
-}
-
-/*!
-  Set the current launch interval to \a interval milliseconds
-*/
-
-void PrelaunchProcessBackendFactory::setLaunchInterval(int interval)
-{
-    if (m_timer.interval() != interval) {
-        bool active = m_timer.isActive();
-        m_timer.stop();
-        m_timer.setInterval(interval);
-        if (active)
-            startPrelaunchTimer();
-        emit launchIntervalChanged();
-    }
-}
-
-/*!
     Returns whether prelaunching is enabled for this factory.
 */
 bool PrelaunchProcessBackendFactory::prelaunchEnabled() const
@@ -199,7 +164,7 @@ void PrelaunchProcessBackendFactory::setPrelaunchEnabled(bool value)
     if (m_prelaunchEnabled != value) {
         m_prelaunchEnabled = value;
         if (!m_prelaunchEnabled) {
-            m_timer.stop();
+            setIdleCpuRequest(false);
             if (m_prelaunch) {
                 m_prelaunch->deleteLater();
                 m_prelaunch = NULL;
@@ -226,7 +191,7 @@ bool PrelaunchProcessBackendFactory::hasPrelaunchedProcess() const
 void PrelaunchProcessBackendFactory::handleMemoryRestrictionChange()
 {
     if (m_memoryRestricted) {
-        m_timer.stop();
+        setIdleCpuRequest(false);
         if (m_prelaunch) {
             delete m_prelaunch;   // This will kill the child process as well
             m_prelaunch = NULL;
@@ -247,22 +212,21 @@ PrelaunchProcessBackend *PrelaunchProcessBackendFactory::prelaunchProcessBackend
 
 /*!
   Launch a new prelaunched process backend.
-  In the future, it would be useful if the launch didn't require a timeout.
  */
 
-void PrelaunchProcessBackendFactory::timeout()
+void PrelaunchProcessBackendFactory::idleCpuAvailable()
 {
-    Q_ASSERT(m_prelaunch == NULL);
-    Q_ASSERT(!m_memoryRestricted);
-    Q_ASSERT(m_info);
+    if (!m_prelaunch && !m_memoryRestricted && m_info) {
+        setIdleCpuRequest(false);   // Might delay this until the prelaunch is done....
 
-    m_prelaunch = new PrelaunchProcessBackend(*m_info, this);
-    connect(m_prelaunch, SIGNAL(finished(int,QProcess::ExitStatus)),
-            SLOT(prelaunchFinished(int,QProcess::ExitStatus)));
-    connect(m_prelaunch, SIGNAL(error(QProcess::ProcessError)),
-            SLOT(prelaunchError(QProcess::ProcessError)));
-    m_prelaunch->prestart();
-    emit processPrelaunched();
+        m_prelaunch = new PrelaunchProcessBackend(*m_info, this);
+        connect(m_prelaunch, SIGNAL(finished(int,QProcess::ExitStatus)),
+                SLOT(prelaunchFinished(int,QProcess::ExitStatus)));
+        connect(m_prelaunch, SIGNAL(error(QProcess::ProcessError)),
+                SLOT(prelaunchError(QProcess::ProcessError)));
+        m_prelaunch->prestart();
+        emit processPrelaunched();
+    }
 }
 
 /*!
@@ -309,7 +273,7 @@ void PrelaunchProcessBackendFactory::prelaunchError(QProcess::ProcessError err)
 void PrelaunchProcessBackendFactory::startPrelaunchTimer()
 {
     if (m_prelaunchEnabled)
-        m_timer.start();
+        setIdleCpuRequest(true);
 }
 
 /*!
@@ -333,7 +297,7 @@ void PrelaunchProcessBackendFactory::setProcessInfo(ProcessInfo *processInfo)
             }
             startPrelaunchTimer();
         } else {
-            m_timer.stop();
+            setIdleCpuRequest(false);
         }
         emit processInfoChanged();
     }
@@ -348,10 +312,6 @@ void PrelaunchProcessBackendFactory::setProcessInfo(ProcessInfo& processInfo)
 }
 
 
-/*!
-  \fn void PrelaunchProcessBackendFactory::launchIntervalChanged()
-  This signal is emitted when the launchInterval is changed.
- */
 /*!
   \fn void PrelaunchProcessBackendFactory::processInfoChanged()
   This signal is emitted when the internal ProcessInfo record is

@@ -53,6 +53,7 @@
 #include "qjsondocument.h"
 #include "pipeprocessbackendfactory.h"
 #include "socketprocessbackendfactory.h"
+#include "timeoutidledelegate.h"
 
 #include <signal.h>
 
@@ -979,13 +980,15 @@ void tst_ProcessManager::prelaunchChildAbort()
 
     // The factory should not have launched
     QVERIFY(manager->internalProcesses().count() == 0);
+    TimeoutIdleDelegate *delegate = qobject_cast<TimeoutIdleDelegate *>(manager->idleDelegate());
+    QVERIFY(delegate);
 
-    waitForInternalProcess(manager, 1, factory->launchInterval() + 2000);
+    waitForInternalProcess(manager, 1, delegate->idleInterval() + 2000);
     Q_PID pid = manager->internalProcesses().at(0);
     // Kill the prelaunched process and verify that it is restarted
     ::kill(pid, SIGKILL);
     waitForInternalProcess(manager, 0);
-    waitForInternalProcess(manager, 1, factory->launchInterval() + 2000);
+    waitForInternalProcess(manager, 1, delegate->idleInterval() + 2000);
     delete manager;
 }
 

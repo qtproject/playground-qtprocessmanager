@@ -57,6 +57,7 @@ class Q_ADDON_PROCESSMANAGER_EXPORT ProcessBackendFactory : public QObject
     Q_OBJECT
     Q_PROPERTY(MatchDelegate* matchDelegate READ matchDelegate WRITE setMatchDelegate NOTIFY matchDelegateChanged);
     Q_PROPERTY(RewriteDelegate* rewriteDelegate READ rewriteDelegate WRITE setRewriteDelegate NOTIFY rewriteDelegateChanged);
+    Q_PROPERTY(bool idleCpuRequest READ idleCpuRequest NOTIFY idleCpuRequestChanged)
 
 public:
     ProcessBackendFactory(QObject *parent = 0);
@@ -70,20 +71,27 @@ public:
 
     MatchDelegate *   matchDelegate() const;
     void              setMatchDelegate(MatchDelegate *);
+
     RewriteDelegate * rewriteDelegate() const;
     void              setRewriteDelegate(RewriteDelegate *);
+
+    bool              idleCpuRequest() const;
+    virtual void      idleCpuAvailable();
 
 signals:
     void matchDelegateChanged();
     void rewriteDelegateChanged();
+    void idleCpuRequestChanged();
 
 protected:
     virtual void handleMemoryRestrictionChange();
+    virtual void setIdleCpuRequest(bool);
 
 protected:
     MatchDelegate   *m_matchDelegate;
     RewriteDelegate *m_rewriteDelegate;
     bool             m_memoryRestricted;
+    bool             m_idleCpuRequest;
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER

@@ -37,64 +37,43 @@
 **
 ****************************************************************************/
 
-#ifndef PROCESS_BACKEND_MANAGER_H
-#define PROCESS_BACKEND_MANAGER_H
-
-#include <QObject>
-#include <QHash>
-#include <QProcessEnvironment>
-
-#include "processmanager-global.h"
+#include "idledelegate.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-class ProcessFrontend;
-class ProcessInfo;
-class ProcessBackendFactory;
-class ProcessBackend;
-class IdleDelegate;
+/*!
+  \class IdleDelegate
+  \brief The IdleDelegate class is a virtual class for gathering idle CPU cycles
 
-class Q_ADDON_PROCESSMANAGER_EXPORT ProcessBackendManager : public QObject
+  You must subclass this class to do anything useful.
+
+  The IdleDelegate is turned on and off by the \l{requestIdleCpu()} function.
+  The IdleDelegate should emit the \l{idleCpuAvailable()} signal approximately
+  once per second when it is turned on.
+*/
+
+/*!
+    Construct a IdleDelegate with an optional \a parent.
+*/
+
+IdleDelegate::IdleDelegate(QObject *parent)
+    : QObject(parent)
 {
-    Q_OBJECT
-    Q_PROPERTY(IdleDelegate* idleDelegate READ idleDelegate WRITE setIdleDelegate NOTIFY idleDelegateChanged);
+}
 
-public:
-    explicit ProcessBackendManager(QObject *parent = 0);
-    virtual ~ProcessBackendManager();
+/*!
+    \fn void IdleDelegate::requestIdleCpu(bool request)
 
-    ProcessBackend *create(const ProcessInfo& info, QObject *parent=0);
-    void            addFactory(ProcessBackendFactory *factory);
-    QList<Q_PID>    internalProcesses();
+    Turn on or off idle requests based on \a request
+    You must override this function in a subclass.
+*/
 
-    void setMemoryRestricted(bool);
-    bool memoryRestricted() const;
+/*!
+    \fn void IdleDelegate::idleCpuAvailable()
 
-    IdleDelegate * idleDelegate() const;
-    void           setIdleDelegate(IdleDelegate *);
-    bool           idleCpuRequest() const { return m_idleCpuRequest; }
+    Signal emitted periodically when idle CPU resources are available.
+*/
 
-protected:
-    virtual void handleIdleCpuRequest(bool request);
-
-signals:
-    void idleDelegateChanged();
-
-protected slots:
-    void idleCpuAvailable();
-
-private slots:
-    void updateIdleCpuRequest();
-
-private:
-    QList<ProcessBackendFactory*> m_factories;
-    IdleDelegate                 *m_idleDelegate;
-    bool                          m_memoryRestricted;
-    bool                          m_idleCpuRequest;
-};
+#include "moc_idledelegate.cpp"
 
 QT_END_NAMESPACE_PROCESSMANAGER
-
-QT_PROCESSMANAGER_DECLARE_METATYPE_PTR(ProcessBackendManager)
-
-#endif // PROCESS_BACKEND_MANAGER_H

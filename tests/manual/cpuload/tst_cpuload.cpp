@@ -37,64 +37,60 @@
 **
 ****************************************************************************/
 
-#ifndef PROCESS_BACKEND_MANAGER_H
-#define PROCESS_BACKEND_MANAGER_H
+#include <QCoreApplication>
+#include <QStringList>
+#include <QDebug>
 
-#include <QObject>
-#include <QHash>
-#include <QProcessEnvironment>
+#include <cpuidledelegate.h>
+#include <iostream>
 
-#include "processmanager-global.h"
+QT_USE_NAMESPACE_PROCESSMANAGER
 
-QT_BEGIN_NAMESPACE_PROCESSMANAGER
+QString progname;
 
-class ProcessFrontend;
-class ProcessInfo;
-class ProcessBackendFactory;
-class ProcessBackend;
-class IdleDelegate;
-
-class Q_ADDON_PROCESSMANAGER_EXPORT ProcessBackendManager : public QObject
-{
+class Target : public QObject {
     Q_OBJECT
-    Q_PROPERTY(IdleDelegate* idleDelegate READ idleDelegate WRITE setIdleDelegate NOTIFY idleDelegateChanged);
 
-public:
-    explicit ProcessBackendManager(QObject *parent = 0);
-    virtual ~ProcessBackendManager();
-
-    ProcessBackend *create(const ProcessInfo& info, QObject *parent=0);
-    void            addFactory(ProcessBackendFactory *factory);
-    QList<Q_PID>    internalProcesses();
-
-    void setMemoryRestricted(bool);
-    bool memoryRestricted() const;
-
-    IdleDelegate * idleDelegate() const;
-    void           setIdleDelegate(IdleDelegate *);
-    bool           idleCpuRequest() const { return m_idleCpuRequest; }
-
-protected:
-    virtual void handleIdleCpuRequest(bool request);
-
-signals:
-    void idleDelegateChanged();
-
-protected slots:
-    void idleCpuAvailable();
-
-private slots:
-    void updateIdleCpuRequest();
-
-private:
-    QList<ProcessBackendFactory*> m_factories;
-    IdleDelegate                 *m_idleDelegate;
-    bool                          m_memoryRestricted;
-    bool                          m_idleCpuRequest;
+public slots:
+    void loadUpdate(double value) {
+        std::cout << value << std::endl;
+    }
+    void idleCpuAvailable() {
+        std::cout << "idle ";
+    }
 };
 
-QT_END_NAMESPACE_PROCESSMANAGER
+static void usage()
+{
+    qWarning("Usage: %s [ARGS]\n", qPrintable(progname));
+    exit(1);
+}
 
-QT_PROCESSMANAGER_DECLARE_METATYPE_PTR(ProcessBackendManager)
+int
+main(int argc, char **argv)
+{
+    QCoreApplication app(argc, argv);
+    QStringList args = QCoreApplication::arguments();
+    progname = args.takeFirst();
+    while (args.size()) {
+        QString arg = args.at(0);
+        if (!arg.startsWith('-'))
+            break;
+        args.removeFirst();
+        if (arg == QLatin1String("-help"))
+            usage();
+    }
 
-#endif // PROCESS_BACKEND_MANAGER_H
+    if (args.size())
+        usage();
+
+    CpuIdleDelegate cpu;
+    Target t;
+    QObject::connect(&cpu, SIGNAL(loadUpdate(double)), &t, SLOT(loadUpdate(double)));
+    QObject::connect(&cpu, SIGNAL(idleCpuAvailable()), &t, SLOT(idleCpuAvailable()));
+
+    cpu.requestIdleCpu(true);
+    return app.exec();
+}
+
+#include "tst_cpuload.moc"

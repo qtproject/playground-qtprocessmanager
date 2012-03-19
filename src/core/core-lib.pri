@@ -12,6 +12,9 @@ PUBLIC_HEADERS += \
   $$PWD/matchdelegate.h \
   $$PWD/rewritedelegate.h \
   $$PWD/gdbrewritedelegate.h \
+  $$PWD/idledelegate.h \
+  $$PWD/timeoutidledelegate.h \
+  $$PWD/cpuidledelegate.h \
   $$PWD/infomatchdelegate.h \
   $$PWD/keymatchdelegate.h \
   $$PWD/processinfo.h \
@@ -48,6 +51,9 @@ SOURCES += \
   $$PWD/matchdelegate.cpp \
   $$PWD/rewritedelegate.cpp \
   $$PWD/gdbrewritedelegate.cpp \
+  $$PWD/idledelegate.cpp \
+  $$PWD/timeoutidledelegate.cpp \
+  $$PWD/cpuidledelegate.cpp \
   $$PWD/infomatchdelegate.cpp \
   $$PWD/keymatchdelegate.cpp \
   $$PWD/processinfo.cpp \
