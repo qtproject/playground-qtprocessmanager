@@ -40,7 +40,7 @@
 #include "processbackendmanager.h"
 #include "processbackendfactory.h"
 #include "processbackend.h"
-#include "timeoutidledelegate.h"
+#include "cpuidledelegate.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
@@ -78,7 +78,7 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
   you do not assign an IdleDelegate, you may subclass the ProcessBackendManager
   to override the default idle calculations.
 
-  If you do not assign an IdleDelegate, the TimeoutIdleDelegate will be
+  If you do not assign an IdleDelegate, the CpuIdleDelegate will be
   used by default.
 
   If you prefer to not use delegates, you can subclass ProcessBackendManager
@@ -119,7 +119,7 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 /*!
   Construct a ProcessBackendManager with an optional \a parent
-  By default, a TimeoutIdleDelegate is assigned to the idleDelegate.
+  By default, a CpuIdleDelegate is assigned to the idleDelegate.
 */
 
 ProcessBackendManager::ProcessBackendManager(QObject *parent)
@@ -127,7 +127,7 @@ ProcessBackendManager::ProcessBackendManager(QObject *parent)
     , m_memoryRestricted(false)
     , m_idleCpuRequest(false)
 {
-    m_idleDelegate = new TimeoutIdleDelegate(this);
+    m_idleDelegate = new CpuIdleDelegate(this);
     connect(m_idleDelegate, SIGNAL(idleCpuAvailable()), SLOT(idleCpuAvailable()));
 }
 

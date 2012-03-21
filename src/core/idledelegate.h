@@ -48,15 +48,28 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 class Q_ADDON_PROCESSMANAGER_EXPORT IdleDelegate : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged)
+
 public:
     explicit IdleDelegate(QObject *parent = 0);
-    virtual void requestIdleCpu(bool request) = 0;
+    virtual void requestIdleCpu(bool request);
+
+    bool enabled() const { return m_enabled; }
+    void setEnabled(bool);
+
+    bool requested() const { return m_requested; }
 
 signals:
     void idleCpuAvailable();
+    void enabledChanged();
+
+protected:
+    virtual void handleStateChange(bool state) = 0;
 
 private:
     Q_DISABLE_COPY(IdleDelegate);
+    bool   m_enabled;
+    bool   m_requested;
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER

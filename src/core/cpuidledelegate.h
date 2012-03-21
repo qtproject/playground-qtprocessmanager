@@ -55,7 +55,6 @@ class Q_ADDON_PROCESSMANAGER_EXPORT CpuIdleDelegate : public IdleDelegate
 
 public:
     explicit CpuIdleDelegate(QObject *parent = 0);
-    virtual void requestIdleCpu(bool request);
 
     int     idleInterval() const;
     void    setIdleInterval(int interval);
@@ -68,6 +67,9 @@ signals:
     void idleIntervalChanged();
     void loadThresholdChanged();
     void loadUpdate(double);
+
+protected:
+    virtual void handleStateChange(bool state);
 
 private slots:
     void timeout();

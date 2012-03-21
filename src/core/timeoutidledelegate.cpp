@@ -71,20 +71,15 @@ TimeoutIdleDelegate::TimeoutIdleDelegate(QObject *parent)
 }
 
 /*!
-    \fn void TimeoutIdleDelegate::requestIdleCpu(bool request)
-
-    Turn on or off idle requests based on \a request
-    You must override this function in a subclass.
+    Turn on or off idle requests based on \a state
 */
 
-void TimeoutIdleDelegate::requestIdleCpu(bool request)
+void TimeoutIdleDelegate::handleStateChange(bool state)
 {
-    if (request != m_timer.isActive()) {
-        if (request)
-            m_timer.start();
-        else
-            m_timer.stop();
-    }
+    if (state)
+        m_timer.start();
+    else
+        m_timer.stop();
 }
 
 /*!
@@ -103,10 +98,9 @@ int TimeoutIdleDelegate::idleInterval() const
 void TimeoutIdleDelegate::setIdleInterval(int interval)
 {
     if (m_timer.interval() != interval) {
-        bool active = m_timer.isActive();
         m_timer.stop();
         m_timer.setInterval(interval);
-        if (active)
+        if (requested() && enabled())
             m_timer.start();
         emit idleIntervalChanged();
     }

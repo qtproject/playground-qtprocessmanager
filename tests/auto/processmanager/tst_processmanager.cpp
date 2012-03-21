@@ -152,6 +152,17 @@ bool isProcessStopped(Q_PID pid)
     return false;
 }
 
+static void waitForTimeout(int timeout=5000)
+{
+    QTime stopWatch;
+    stopWatch.start();
+    forever {
+        if (stopWatch.elapsed() >= timeout)
+            break;
+        QTestEventLoop::instance().enterLoop(1);
+    }
+}
+
 static void waitForInternalProcess(ProcessBackendManager *manager, int num=1, int timeout=5000)
 {
     QTime stopWatch;
@@ -696,6 +707,8 @@ static void standardTest( clientFunc func, infoFunc infoFixup=0 )
 static void prelaunchTest( clientFunc func, infoFunc infoFixup=0 )
 {
     ProcessBackendManager *manager = new ProcessBackendManager;
+    manager->setIdleDelegate(new TimeoutIdleDelegate);
+
     ProcessInfo info;
     info.setValue("program", "testPrelaunch/testPrelaunch");
     if (infoFixup)
@@ -718,11 +731,13 @@ static void prelaunchRestrictedTest( clientFunc func, infoFunc infoFixup=0 )
 {
     ProcessBackendManager *manager = new ProcessBackendManager;
     manager->setMemoryRestricted(true);
+    manager->setIdleDelegate(new TimeoutIdleDelegate);
 
     ProcessInfo info;
     info.setValue("program", "testPrelaunch/testPrelaunch");
     if (infoFixup)
         infoFixup(info);
+
     PrelaunchProcessBackendFactory *factory = new PrelaunchProcessBackendFactory;
     factory->setProcessInfo(info);
     manager->addFactory(factory);
@@ -954,6 +969,7 @@ private slots:
     void preforkLauncherOomChangeAfter()       { preforkLauncherTest(oomChangeAfterClient); }
 
     void prelaunchChildAbort();
+    void prelaunchWaitIdleTest();
 
     void frontend();
     void subclassFrontend();
@@ -972,6 +988,9 @@ void tst_ProcessManager::initTestCase()
 void tst_ProcessManager::prelaunchChildAbort()
 {
     ProcessBackendManager *manager = new ProcessBackendManager;
+    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    manager->setIdleDelegate(delegate);
+
     ProcessInfo info;
     info.setValue("program", "testPrelaunch/testPrelaunch");
     PrelaunchProcessBackendFactory *factory = new PrelaunchProcessBackendFactory;
@@ -979,12 +998,42 @@ void tst_ProcessManager::prelaunchChildAbort()
     manager->addFactory(factory);
 
     // The factory should not have launched
-    QVERIFY(manager->internalProcesses().count() == 0);
-    TimeoutIdleDelegate *delegate = qobject_cast<TimeoutIdleDelegate *>(manager->idleDelegate());
-    QVERIFY(delegate);
-
+    QCOMPARE(manager->internalProcesses().count(), 0);
     waitForInternalProcess(manager, 1, delegate->idleInterval() + 2000);
+    QCOMPARE(manager->internalProcesses().count(), 1);
     Q_PID pid = manager->internalProcesses().at(0);
+
+    // Kill the prelaunched process and verify that it is restarted
+    ::kill(pid, SIGKILL);
+    waitForInternalProcess(manager, 0);
+    waitForInternalProcess(manager, 1, delegate->idleInterval() + 2000);
+    delete manager;
+}
+
+void tst_ProcessManager::prelaunchWaitIdleTest()
+{
+    ProcessBackendManager *manager = new ProcessBackendManager;
+    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    delegate->setEnabled(false);
+    manager->setIdleDelegate(delegate);
+
+    ProcessInfo info;
+    info.setValue("program", "testPrelaunch/testPrelaunch");
+    PrelaunchProcessBackendFactory *factory = new PrelaunchProcessBackendFactory;
+    factory->setProcessInfo(info);
+    manager->addFactory(factory);
+
+    // The prelaunch process should not launch, even after a timeout
+    QCOMPARE(manager->internalProcesses().count(), 0);
+    waitForTimeout(delegate->idleInterval() + 2000);
+    QCOMPARE(manager->internalProcesses().count(), 0);
+
+    // Now the prelaunch process should launch
+    delegate->setEnabled(true);
+    waitForInternalProcess(manager, 1, delegate->idleInterval() + 2000);
+    QCOMPARE(manager->internalProcesses().count(), 1);
+    Q_PID pid = manager->internalProcesses().at(0);
+
     // Kill the prelaunched process and verify that it is restarted
     ::kill(pid, SIGKILL);
     waitForInternalProcess(manager, 0);

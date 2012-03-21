@@ -54,13 +54,15 @@ class Q_ADDON_PROCESSMANAGER_EXPORT TimeoutIdleDelegate : public IdleDelegate
 
 public:
     explicit TimeoutIdleDelegate(QObject *parent = 0);
-    virtual void requestIdleCpu(bool request);
 
     int  idleInterval() const;
     void setIdleInterval(int interval);
 
 signals:
     void idleIntervalChanged();
+
+protected:
+    virtual void handleStateChange(bool state);
 
 private:
     Q_DISABLE_COPY(TimeoutIdleDelegate);

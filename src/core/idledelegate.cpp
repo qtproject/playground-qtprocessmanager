@@ -50,7 +50,15 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
   The IdleDelegate is turned on and off by the \l{requestIdleCpu()} function.
   The IdleDelegate should emit the \l{idleCpuAvailable()} signal approximately
   once per second when it is turned on.
+
+  Subclasses should respect the \l{enabled} property by not generating signals
+  if the IdleDelegate is not enabled.
 */
+
+/*!
+  \property IdleDelegate::enabled
+  \brief Boolean value of whether or not this IdleDelegate should generate signals.
+ */
 
 /*!
     Construct a IdleDelegate with an optional \a parent.
@@ -58,20 +66,63 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 IdleDelegate::IdleDelegate(QObject *parent)
     : QObject(parent)
+    , m_enabled(true)
+    , m_requested(false)
 {
 }
 
 /*!
-    \fn void IdleDelegate::requestIdleCpu(bool request)
+  Set the \a enabled property.
+ */
 
-    Turn on or off idle requests based on \a request
-    You must override this function in a subclass.
+void IdleDelegate::setEnabled(bool value)
+{
+    if (m_enabled != value) {
+        m_enabled = value;
+        emit enabledChanged();
+        if (m_requested)
+            handleStateChange(m_requested && m_enabled);
+    }
+}
+
+/*!
+    \fn void IdleDelegate::requestIdleCpu(bool request)
+    Turn on or off idle requests based on \a request.
+*/
+
+void IdleDelegate::requestIdleCpu(bool request)
+{
+    if (m_requested != request) {
+        m_requested = request;
+        if (m_enabled)
+            handleStateChange(m_requested && m_enabled);
+    }
+}
+
+/*!
+    \fn void IdleDelegate::handleStateChange(bool state)
+    Override this in subclasses to turn on and off your Idle delegate
+    based on \a state (which is just the logical OR of \l{requested()} and \l{enabled()}
+*/
+
+/*!
+    \fn bool IdleDelegate::enabled() const
+    Return true if this delegate is enabled
+*/
+
+/*!
+    \fn bool IdleDelegate::requested() const
+    Return true if this delegate has been requested
 */
 
 /*!
     \fn void IdleDelegate::idleCpuAvailable()
-
     Signal emitted periodically when idle CPU resources are available.
+*/
+
+/*!
+    \fn void IdleDelegate::enabledChanged()
+    Signal emitted when enabled value is changed
 */
 
 #include "moc_idledelegate.cpp"
