@@ -54,12 +54,15 @@ class ProcessInfo;
 class ProcessBackendFactory;
 class ProcessBackendManager;
 class ProcessBackend;
+class IdleDelegate;
 
 class Q_ADDON_PROCESSMANAGER_EXPORT ProcessManager : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(bool memoryRestricted READ memoryRestricted
                WRITE setMemoryRestricted NOTIFY memoryRestrictedChanged)
+    Q_PROPERTY(IdleDelegate* idleDelegate READ idleDelegate WRITE setIdleDelegate NOTIFY idleDelegateChanged);
+
 public:
     explicit ProcessManager(QObject *parent = 0);
     virtual ~ProcessManager();
@@ -79,8 +82,12 @@ public:
     void setMemoryRestricted(bool);
     bool memoryRestricted() const;
 
+    IdleDelegate * idleDelegate() const;
+    void           setIdleDelegate(IdleDelegate *);
+
 signals:
     void memoryRestrictedChanged();
+    void idleDelegateChanged();
 
 protected slots:
     virtual void processFrontendAboutToStart();

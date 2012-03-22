@@ -58,6 +58,7 @@
 #include "processfrontend.h"
 #include "processbackend.h"
 #include "process.h"
+#include "timeoutidledelegate.h"
 
 QT_USE_NAMESPACE_PROCESSMANAGER
 
@@ -80,6 +81,7 @@ private slots:
 
     void match();
     void rewrite();
+    void timeoutIdleDelegate();
 };
 
 
@@ -101,6 +103,9 @@ void tst_DeclarativeProcessManager::initTestCase()
     qmlRegisterType<DeclarativeMatchDelegate>(uri, 1, 0, "DeclarativeMatchDelegate");
     qmlRegisterType<DeclarativeRewriteDelegate>(uri, 1, 0, "DeclarativeRewriteDelegate");
     qmlRegisterUncreatableType<Process>(uri, 1, 0, "Process", "Don't try to make this");
+
+    qmlRegisterUncreatableType<IdleDelegate>(uri, 1, 0, "IdleDelegate", "Don't try to make this");
+    qmlRegisterType<TimeoutIdleDelegate>(uri, 1, 0, "TimeoutIdleDelegate");
 
     qRegisterMetaType<QProcess::ProcessState>();
     qRegisterMetaType<QProcess::ExitStatus>();
@@ -126,6 +131,30 @@ static void waitForSocket(const QString& socketname, int timeout=5000)
             if (socket.waitForConnected(timeout))
                 break;
         }
+        QTestEventLoop::instance().enterLoop(1);
+    }
+}
+
+static void waitForChange(QSignalSpy& spy, int count, int timeout=4000)
+{
+    QTime stopWatch;
+    stopWatch.start();
+    forever {
+        if (spy.count() >= count)
+            break;
+        if (stopWatch.elapsed() >= timeout)
+            QFAIL("Timed out");
+        QTestEventLoop::instance().enterLoop(1);
+    }
+}
+
+static void waitForTimeout(int timeout=5000)
+{
+    QTime stopWatch;
+    stopWatch.start();
+    forever {
+        if (stopWatch.elapsed() >= timeout)
+            break;
         QTestEventLoop::instance().enterLoop(1);
     }
 }
@@ -368,6 +397,43 @@ void tst_DeclarativeProcessManager::rewrite()
     QVERIFY(info.environment().contains(QStringLiteral("noiselevel")));
     QCOMPARE(info.environment().value(QStringLiteral("noiselevel")).toInt(), 85);
 }
+
+
+const char *kTimeoutIdleDelegateTest = "import QtQuick 2.0; import Test 1.0; \n"
+"TimeoutIdleDelegate { \n"
+"     id: idled\n"
+"     idleInterval: 1000\n"
+"     enabled: false\n"
+"}\n";
+
+void tst_DeclarativeProcessManager::timeoutIdleDelegate()
+{
+    QQmlEngine    engine;
+    QQmlContext   context(&engine);
+    QQmlComponent component(&engine);
+    component.setData(kTimeoutIdleDelegateTest, QUrl());
+    QCOMPARE(component.status(), QQmlComponent::Ready);
+    TimeoutIdleDelegate *delegate = qobject_cast<TimeoutIdleDelegate *>(component.create());
+    QVERIFY(delegate);
+
+    QSignalSpy spyIdleInterval(delegate, SIGNAL(idleIntervalChanged()));
+    QSignalSpy spyIdleCpu(delegate, SIGNAL(idleCpuAvailable()));
+    QSignalSpy spyEnabled(delegate, SIGNAL(enabledChanged()));
+
+    waitForTimeout(2000);
+    QCOMPARE(spyIdleCpu.count(), 0);
+
+    delegate->requestIdleCpu(true);
+    waitForTimeout(2000);
+    QCOMPARE(spyIdleCpu.count(), 0);
+
+    delegate->setEnabled(true);
+    waitForChange(spyIdleCpu, 1);
+    waitForChange(spyIdleCpu, 2);
+
+    delete delegate;
+}
+
 
 QTEST_MAIN(tst_DeclarativeProcessManager)
 

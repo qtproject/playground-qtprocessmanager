@@ -176,6 +176,19 @@ static void waitForInternalProcess(ProcessBackendManager *manager, int num=1, in
     }
 }
 
+static void waitForInternalProcess(ProcessManager *manager, int num=1, int timeout=5000)
+{
+    QTime stopWatch;
+    stopWatch.start();
+    forever {
+        if (stopWatch.elapsed() >= timeout)
+            QFAIL("Timed out");
+        if (manager->internalProcesses().count() == num)
+            break;
+        QTestEventLoop::instance().enterLoop(1);
+    }
+}
+
 static void waitForSocket(const QString& socketname, int timeout=5000)
 {
     QTime stopWatch;
@@ -972,6 +985,7 @@ private slots:
     void prelaunchWaitIdleTest();
 
     void frontend();
+    void frontendWaitIdleTest();
     void subclassFrontend();
 };
 
@@ -1066,6 +1080,31 @@ void tst_ProcessManager::frontend()
     QCOMPARE(manager->size(), 1);
     delete process;
     QCOMPARE(manager->size(), 0);
+    delete manager;
+}
+
+void tst_ProcessManager::frontendWaitIdleTest()
+{
+    ProcessManager *manager = new ProcessManager;
+    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    manager->setIdleDelegate(delegate);
+
+    ProcessInfo info;
+    info.setValue("program", "testPrelaunch/testPrelaunch");
+    PrelaunchProcessBackendFactory *factory = new PrelaunchProcessBackendFactory;
+    factory->setProcessInfo(info);
+    manager->addBackendFactory(factory);
+
+    // The factory should not have launched
+    QCOMPARE(manager->internalProcesses().count(), 0);
+    waitForInternalProcess(manager, 1, delegate->idleInterval() + 2000);
+    QCOMPARE(manager->internalProcesses().count(), 1);
+    Q_PID pid = manager->internalProcesses().at(0);
+
+    // Kill the prelaunched process and verify that it is restarted
+    ::kill(pid, SIGKILL);
+    waitForInternalProcess(manager, 0);
+    waitForInternalProcess(manager, 1, delegate->idleInterval() + 2000);
     delete manager;
 }
 

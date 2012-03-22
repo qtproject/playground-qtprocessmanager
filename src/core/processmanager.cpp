@@ -58,6 +58,11 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 */
 
 /*!
+    \property ProcessManager::idleDelegate
+    \brief The IdleDelegate object assigned to this factory.
+*/
+
+/*!
   Construct a ProcessManager with an optional \a parent
 */
 
@@ -214,6 +219,25 @@ bool ProcessManager::memoryRestricted() const
 }
 
 /*!
+  Set the backend idle delegate.
+*/
+
+void ProcessManager::setIdleDelegate(IdleDelegate *idleDelegate)
+{
+    m_backend->setIdleDelegate(idleDelegate);
+    emit idleDelegateChanged();
+}
+
+/*!
+  Return current idle restriction setting
+*/
+
+IdleDelegate * ProcessManager::idleDelegate() const
+{
+    return m_backend->idleDelegate();
+}
+
+/*!
   Raise the processAboutToStart() signal.
 */
 
@@ -285,6 +309,11 @@ void ProcessManager::processFrontendDestroyed()
 /*!
     \fn void ProcessManager::memoryRestrictedChanged()
     This signal is emitted when the memory restriction is changed
+*/
+
+/*!
+    \fn void ProcessManager::idleDelegateChanged()
+    This signal is emitted when the idle delegate is changed
 */
 
 #include "moc_processmanager.cpp"
