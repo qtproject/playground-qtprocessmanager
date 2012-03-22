@@ -40,6 +40,7 @@
 #include "pipeprocessbackendfactory.h"
 #include "remoteprocessbackend.h"
 #include "remoteprotocol.h"
+#include "processinfo.h"
 
 #include <QDebug>
 #include <QJsonDocument>
@@ -60,38 +61,20 @@ const int kPipeTimerInterval = 1000;
 */
 
 /*!
+  \property PipeProcessBackendFactory::processInfo
+  \brief ProcessInfo record used to create the pipe process
+ */
+
+/*!
   Construct a PipeProcessBackendFactory with optional \a parent.
-  The \a info ProcessInfo is used to start the pipe process.
+  You must set a ProcessInfo object before this factory will be activated.
 */
 
-PipeProcessBackendFactory::PipeProcessBackendFactory(const ProcessInfo& info,
-                                                     QObject *parent)
+PipeProcessBackendFactory::PipeProcessBackendFactory(QObject *parent)
     : RemoteProcessBackendFactory(parent)
     , m_process(NULL)
+    , m_info(NULL)
 {
-    m_process = new QProcess;  // Note that we do NOT own the pipe process
-    m_process->setReadChannel(QProcess::StandardOutput);
-    connect(m_process, SIGNAL(readyReadStandardOutput()),
-            this, SLOT(pipeReadyReadStandardOutput()));
-    connect(m_process, SIGNAL(readyReadStandardError()),
-            this, SLOT(pipeReadyReadStandardError()));
-    connect(m_process, SIGNAL(started()), this, SLOT(pipeStarted()));
-    connect(m_process,SIGNAL(error(QProcess::ProcessError)),
-            this,SLOT(pipeError(QProcess::ProcessError)));
-    connect(m_process,SIGNAL(finished(int, QProcess::ExitStatus)),
-            this,SLOT(pipeFinished(int, QProcess::ExitStatus)));
-    connect(m_process, SIGNAL(stateChanged(QProcess::ProcessState)),
-            this,SLOT(pipeStateChanged(QProcess::ProcessState)));
-
-    QProcessEnvironment env;
-    QMapIterator<QString, QVariant> it(info.environment());
-    while (it.hasNext()) {
-        it.next();
-        env.insert(it.key(), it.value().toString());
-    }
-    m_process->setProcessEnvironment(env);
-    m_process->setWorkingDirectory(info.workingDirectory());
-    m_process->start(info.program(), info.arguments());
 }
 
 /*!
@@ -100,16 +83,43 @@ PipeProcessBackendFactory::PipeProcessBackendFactory(const ProcessInfo& info,
 
 PipeProcessBackendFactory::~PipeProcessBackendFactory()
 {
-    // ### Note: The m_process process is NOT a child of the
-    //           factory to avoid stranding grandchildren
-    //           However, we do send it a "stop" message before we exit
-    if (m_process) {
+    stopRemoteProcess();
+}
+
+/*!
+  \internal
+
+  The m_process process is NOT a child of the factory to avoid
+  stranding grandchildren (which would happen if we summarily
+  kill it).  Instead, we send it a "stop" message and count on
+  the remote process to kill itself.
+ */
+
+void PipeProcessBackendFactory::stopRemoteProcess()
+{
+    if (m_process && m_process->state() == QProcess::Running) {
         QJsonObject object;
         object.insert(RemoteProtocol::remote(), RemoteProtocol::stop());
         m_process->write(QJsonDocument(object).toBinaryData());
         m_process->waitForBytesWritten();  // Block until they have been written
         m_process = NULL;
     }
+}
+
+/*!
+  Return true if the PipeProcessBackendFactory can create a process
+  that matches \a info.  The default implementation only checks that a
+  valid info object has been previously set in the factory, and then
+  passes the decision on to the default implementation, which should
+  probably have some kind of MatchDelegate installed.
+*/
+
+bool PipeProcessBackendFactory::canCreate(const ProcessInfo &info) const
+{
+    if (!m_info || !m_process || m_process->state() != QProcess::Running)
+        return false;
+
+    return RemoteProcessBackendFactory::canCreate(info);
 }
 
 /*!
@@ -122,6 +132,75 @@ QList<Q_PID> PipeProcessBackendFactory::internalProcesses()
     if (m_process && m_process->state() == QProcess::Running)
         list << m_process->pid();
     return list;
+}
+
+/*!
+    Sets the ProcessInfo that is used to create the pipe process to \a processInfo.
+    An internal copy is made of the \a processInfo object.
+    This routine will start the pipe process.
+
+    TODO:  If you set the process info twice, you may end up with local
+    process backend objects that are invalid and refer to children that
+    don't exist.
+ */
+
+void PipeProcessBackendFactory::setProcessInfo(ProcessInfo *processInfo)
+{
+    if (m_info != processInfo) {
+        if (m_info) {
+            delete m_info;
+            m_info = NULL;
+        }
+
+        stopRemoteProcess();
+
+        if (processInfo) {
+            m_info = new ProcessInfo(*processInfo);
+            m_info->setParent(this);
+
+            m_process = new QProcess;  // Note that we do NOT own the pipe process
+            m_process->setReadChannel(QProcess::StandardOutput);
+            connect(m_process, SIGNAL(readyReadStandardOutput()),
+                    this, SLOT(pipeReadyReadStandardOutput()));
+            connect(m_process, SIGNAL(readyReadStandardError()),
+                    this, SLOT(pipeReadyReadStandardError()));
+            connect(m_process, SIGNAL(started()), this, SLOT(pipeStarted()));
+            connect(m_process,SIGNAL(error(QProcess::ProcessError)),
+                    this,SLOT(pipeError(QProcess::ProcessError)));
+            connect(m_process,SIGNAL(finished(int, QProcess::ExitStatus)),
+                    this,SLOT(pipeFinished(int, QProcess::ExitStatus)));
+            connect(m_process, SIGNAL(stateChanged(QProcess::ProcessState)),
+                    this,SLOT(pipeStateChanged(QProcess::ProcessState)));
+
+            QProcessEnvironment env;
+            QMapIterator<QString, QVariant> it(m_info->environment());
+            while (it.hasNext()) {
+                it.next();
+                env.insert(it.key(), it.value().toString());
+            }
+            m_process->setProcessEnvironment(env);
+            m_process->setWorkingDirectory(m_info->workingDirectory());
+            m_process->start(m_info->program(), m_info->arguments());
+        }
+        emit processInfoChanged();
+    }
+}
+
+/*!
+    Sets the ProcessInfo that is used to determine the prelaunched runtime to \a processInfo.
+ */
+void PipeProcessBackendFactory::setProcessInfo(ProcessInfo& processInfo)
+{
+    setProcessInfo(&processInfo);
+}
+
+/*!
+  Return the pipe process information
+ */
+
+ProcessInfo *PipeProcessBackendFactory::processInfo() const
+{
+    return m_info;
 }
 
 /*!
@@ -186,6 +265,13 @@ void PipeProcessBackendFactory::pipeStateChanged(QProcess::ProcessState state)
 {
     Q_UNUSED(state);
 }
+
+
+/*!
+  \fn void PipeProcessBackendFactory::processInfoChanged()
+  This signal is emitted when the internal ProcessInfo record is
+  changed.
+ */
 
 #include "moc_pipeprocessbackendfactory.cpp"
 

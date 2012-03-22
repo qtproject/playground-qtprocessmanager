@@ -44,15 +44,15 @@
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 /*!
-  \qmlclass ScriptRewrite DeclarativeRewriteDelegate
-  \brief The ScriptRewrite class allows a factory to use a Javascript function for rewriting
+  \qmlclass PmScriptRewrite DeclarativeRewriteDelegate
+  \brief The PmScriptRewrite class allows a factory to use a Javascript function for rewriting
   ProcessInfo objects.
 
   \qml
-  DeclarativeProcessManager {
+  PmManager {
       factories: [
           StandardProcessBackendFactory {
-              rewriteDelegate: ScriptRewrite {
+              rewriteDelegate: PmScriptRewrite {
                   script: {
                       var oldprog = model.program;
                       model.program = "gdb";
@@ -69,10 +69,22 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 */
 
 /*!
-  \qmlproperty script ScriptRewrite::script
+  \qmlproperty script PmScriptRewrite::script
 
   This property holds the script to run.  The ProcessInfo object will be passed
   in as a global "model" variable.
+ */
+
+/*!
+  \class DeclarativeRewriteDelegate
+  \brief The DeclarativeRewriteDelegate class is a lightweight wrapper around a RewriteDelegate.
+
+  The DeclarativeRewriteDelegate class rewrites ProcessInfo objects by
+  passing them to a script object containing Javascript code.
+ */
+
+/*!
+  Construct a DeclarativeRewriteDelegate object with optional \a parent.
  */
 
 DeclarativeRewriteDelegate::DeclarativeRewriteDelegate(QObject *parent)
@@ -81,13 +93,27 @@ DeclarativeRewriteDelegate::DeclarativeRewriteDelegate(QObject *parent)
 {
 }
 
+/*!
+  \internal
+*/
+
 void DeclarativeRewriteDelegate::classBegin()
 {
 }
 
+/*!
+  \internal
+*/
+
 void DeclarativeRewriteDelegate::componentComplete()
 {
 }
+
+/*!
+  Rewrite the \a info object by passing it to the stored Javascript.
+  The \a info object is bound to the \c{model} property in the
+  stored Javascript.
+*/
 
 void DeclarativeRewriteDelegate::rewrite(ProcessInfo& info)
 {
@@ -100,16 +126,29 @@ void DeclarativeRewriteDelegate::rewrite(ProcessInfo& info)
     }
 }
 
+/*!
+  Return a copy of the Javascript.
+*/
+
 QQmlScriptString DeclarativeRewriteDelegate::script() const
 {
     return m_script;
 }
+
+/*!
+  Set the Javascript object to \a script.
+*/
 
 void DeclarativeRewriteDelegate::setScript(const QQmlScriptString& script)
 {
     m_script = script;
     emit scriptChanged();
 }
+
+/*!
+  \fn void DeclarativeRewriteDelegate::scriptChanged()
+  This signal is emitted when the internal script object is changed.
+*/
 
 #include "moc_declarativerewritedelegate.cpp"
 

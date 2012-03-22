@@ -57,6 +57,8 @@ class Q_ADDON_PROCESSMANAGER_EXPORT DeclarativeProcessManager : public ProcessMa
     Q_PROPERTY(QQmlListProperty<ProcessBackendFactory> factories READ factories)
 
 public:
+    static void registerTypes(const char *uri);
+
     DeclarativeProcessManager(QObject *parent=0);
     QQmlListProperty<ProcessBackendFactory> factories();
 

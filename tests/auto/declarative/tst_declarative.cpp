@@ -87,34 +87,12 @@ private slots:
 
 void tst_DeclarativeProcessManager::initTestCase()
 {
-    qDebug() << "Registering types";
     const char *uri = "Test";
-
-    qmlRegisterType<MatchDelegate>();
-    qmlRegisterType<RewriteDelegate>();
-    qmlRegisterType<ProcessBackendFactory>();
-    qmlRegisterType<ProcessFrontend>();
-
-    qmlRegisterType<StandardProcessBackendFactory>(uri, 1, 0, "StandardProcessBackendFactory");
-    qmlRegisterType<PrelaunchProcessBackendFactory>(uri, 1, 0, "PrelaunchProcessBackendFactory");
-    qmlRegisterType<ProcessInfo>(uri, 1, 0, "ProcessInfo");
-    qmlRegisterType<SocketProcessBackendFactory>(uri, 1, 0, "SocketProcessBackendFactory");
-    qmlRegisterType<DeclarativeProcessManager>(uri, 1, 0, "DeclarativeProcessManager");
-    qmlRegisterType<DeclarativeMatchDelegate>(uri, 1, 0, "DeclarativeMatchDelegate");
-    qmlRegisterType<DeclarativeRewriteDelegate>(uri, 1, 0, "DeclarativeRewriteDelegate");
-    qmlRegisterUncreatableType<Process>(uri, 1, 0, "Process", "Don't try to make this");
-
-    qmlRegisterUncreatableType<IdleDelegate>(uri, 1, 0, "IdleDelegate", "Don't try to make this");
-    qmlRegisterType<TimeoutIdleDelegate>(uri, 1, 0, "TimeoutIdleDelegate");
+    DeclarativeProcessManager::registerTypes(uri);
 
     qRegisterMetaType<QProcess::ProcessState>();
     qRegisterMetaType<QProcess::ExitStatus>();
     qRegisterMetaType<QProcess::ProcessError>();
-
-    qRegisterMetaType<ProcessFrontend*>("ProcessFrontend*");
-    qRegisterMetaType<const ProcessFrontend*>("const ProcessFrontend*");
-    qRegisterMetaType<ProcessBackend*>("ProcessBackend*");
-    qRegisterMetaType<ProcessInfo*>("ProcessInfo*");
 }
 
 
@@ -312,7 +290,7 @@ void tst_DeclarativeProcessManager::socketRangeLauncher()
 }
 
 const char *kMatchTest = "import QtQuick 2.0; import Test 1.0; \n"
-"DeclarativeMatchDelegate { \n"
+"PmScriptMatch { \n"
 "  script: { \n"
 "     if ( model.program == \"goodprogram\" ) return true; \n"
 "     if ( model.program == \"badprogram\" ) return false; \n"
@@ -353,7 +331,7 @@ void tst_DeclarativeProcessManager::match()
 }
 
 const char *kRewriteTest = "import QtQuick 2.0; import Test 1.0; \n"
-"DeclarativeRewriteDelegate { \n"
+"PmScriptRewrite { \n"
 "  script: { \n"
 "     model.program = \"foo-\"+model.program; \n"
 "     var oldargs = model.arguments; \n"

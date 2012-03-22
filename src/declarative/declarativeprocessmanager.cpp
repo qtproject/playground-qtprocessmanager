@@ -41,15 +41,122 @@
 #include "processbackendfactory.h"
 #include "processfrontend.h"
 
+#include "prelaunchprocessbackend.h"
+#include "remoteprocessbackend.h"
+#include "standardprocessbackend.h"
+
+#include "cpuidledelegate.h"
+#include "timeoutidledelegate.h"
+#include "gdbrewritedelegate.h"
+#include "infomatchdelegate.h"
+#include "keymatchdelegate.h"
+#include "pipelauncher.h"
+#include "pipeprocessbackendfactory.h"
+#include "preforkprocessbackendfactory.h"
+#include "prelaunchprocessbackendfactory.h"
+#include "processinfotemplate.h"
+#include "socketlauncher.h"
+#include "standardprocessbackendfactory.h"
+#include "socketprocessbackendfactory.h"
+
+#include "declarativematchdelegate.h"
+#include "declarativesocketlauncher.h"
+#include "declarativerewritedelegate.h"
+
 #include <QDebug>
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 /*!
-  \class DeclarativeProcessManager DeclarativeProcessManager
-  \brief The DeclarativeProcessManager class encapsulates ways of creating and tracking processes
+  \qmlclass PmManager DeclarativeProcessManager
+  \brief The PmManager class encapsulates ways of creating and tracking processes
          suitable for QtQml programs.
+
+  Only a single PmManager object should be loaded at one time.
+
+  Typical use of the PmManager class is as follows:
+
+  \code
+  import QtQuick 2.0
+  import ProcessManager 1.0
+
+  PmManager {
+     id: myProcessManager
+
+     factories: [
+        GdbProcessBackendFactory {},
+        StandardProcessBackendFactory {}
+     ]
+  }
+  \endcode
 */
+
+/*!
+  \qmlproperty list<ProcessBackendFactory> PmManager::factories
+  List of ProcessBackendFactory objects.
+
+  The order of the list is important.  When launching a new
+  process, each factory will be consulted in order to select
+  the factory that will launch the process.
+ */
+
+/*!
+  \class DeclarativeProcessManager
+  \brief The DeclarativeProcessManager class is a ProcessManager designed to be embedded
+         in a QML context.
+ */
+
+/*!
+  \fn DeclarativeProcessManager::registerTypes(const char *uri)
+  \brief Register all QML data types for the process manager
+
+  Register all types with the QML object system.  Pass the name the
+  library to register as \a uri.
+ */
+
+void DeclarativeProcessManager::registerTypes(const char *uri)
+{
+    // Non-creatable types
+    qmlRegisterType<IdleDelegate>();
+    qmlRegisterType<MatchDelegate>();
+    qmlRegisterType<PrelaunchProcessBackend>();
+    qmlRegisterType<ProcessBackend>();
+    qmlRegisterType<ProcessFrontend>();
+    qmlRegisterType<ProcessBackendFactory>();
+    qmlRegisterType<RemoteProcessBackend>();
+    qmlRegisterType<RemoteProcessBackendFactory>();
+    qmlRegisterType<RewriteDelegate>();
+    qmlRegisterType<StandardProcessBackend>();
+    qmlRegisterType<UnixProcessBackend>();
+
+    // Non-creatable, with enum values
+    qmlRegisterUncreatableType<Process>(uri, 1, 0, "Process", "Don't try to make this");
+
+    // Types registered from the Core library
+    qmlRegisterType<CpuIdleDelegate>(uri, 1, 0, "CpuIdleDelegate");
+    qmlRegisterType<GdbRewriteDelegate>(uri, 1, 0, "GdbRewriteDelegate");
+    qmlRegisterType<InfoMatchDelegate>(uri, 1, 0, "InfoMatchDelegate");
+    qmlRegisterType<KeyMatchDelegate>(uri, 1, 0, "KeyMatchDelegate");
+    qmlRegisterType<PipeLauncher>(uri, 1, 0, "PipeLauncher");
+    qmlRegisterType<PipeProcessBackendFactory>(uri, 1, 0, "PipeProcessBackendFactory");
+    qmlRegisterType<PreforkProcessBackendFactory>(uri, 1, 0, "PreforkProcessBackendFactory");
+    qmlRegisterType<PrelaunchProcessBackendFactory>(uri, 1, 0, "PrelaunchProcessBackendFactory");
+    qmlRegisterType<ProcessBackendManager>(uri, 1, 0, "ProcessBackendManager");
+    qmlRegisterType<ProcessInfo>(uri, 1, 0, "ProcessInfo");
+    qmlRegisterType<ProcessInfoTemplate>(uri, 1, 0, "ProcessInfoTemplate");
+    qmlRegisterType<ProcessManager>(uri, 1, 0, "ProcessManager");
+    qmlRegisterType<SocketLauncher>(uri, 1, 0, "SocketLauncher");
+    qmlRegisterType<SocketProcessBackendFactory>(uri, 1, 0, "SocketProcessBackendFactory");
+    qmlRegisterType<StandardProcessBackendFactory>(uri, 1, 0, "StandardProcessBackendFactory");
+    qmlRegisterType<TimeoutIdleDelegate>(uri, 1, 0, "TimeoutIdleDelegate");
+
+    // Types registered from the Declarative library
+    qmlRegisterType<DeclarativeMatchDelegate>(uri, 1, 0, "PmScriptMatch");
+    qmlRegisterType<DeclarativeProcessManager>(uri, 1, 0, "PmManager");
+    qmlRegisterType<DeclarativeSocketLauncher>(uri, 1, 0, "PmLauncher");
+    qmlRegisterType<DeclarativeRewriteDelegate>(uri, 1, 0, "PmScriptRewrite");
+    qmlRegisterType<ProcessInfoTemplate>(uri, 1, 0, "ProcessInfoTemplate");
+}
 
 /*!
   Construct a DeclarativeProcessManager with an optional \a parent

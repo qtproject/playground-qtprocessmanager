@@ -47,11 +47,21 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 class Q_ADDON_PROCESSMANAGER_EXPORT PipeProcessBackendFactory : public RemoteProcessBackendFactory
 {
     Q_OBJECT
+    Q_PROPERTY(ProcessInfo* processInfo READ processInfo WRITE setProcessInfo NOTIFY processInfoChanged)
+
 public:
-    PipeProcessBackendFactory(const ProcessInfo& info, QObject *parent = 0);
+    PipeProcessBackendFactory(QObject *parent = 0);
     virtual ~PipeProcessBackendFactory();
 
+    virtual bool canCreate(const ProcessInfo &info) const;
     virtual QList<Q_PID> internalProcesses();
+
+    ProcessInfo *processInfo() const;
+    void setProcessInfo(ProcessInfo *processInfo);
+    void setProcessInfo(ProcessInfo& processInfo);
+
+signals:
+    void processInfoChanged();
 
 protected:
     virtual bool send(const QJsonObject&);
@@ -65,8 +75,12 @@ private slots:
     void pipeStateChanged(QProcess::ProcessState state);
 
 private:
-    QProcess  *m_process;
-    QByteArray m_buffer;
+    void stopRemoteProcess();
+
+private:
+    QProcess    *m_process;
+    ProcessInfo *m_info;
+    QByteArray   m_buffer;
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER

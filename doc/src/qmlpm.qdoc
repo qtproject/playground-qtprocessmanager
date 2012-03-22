@@ -41,7 +41,7 @@ use:
   import QtQuick 2.0
   import ProcessManager 1.0
 
-  DeclarativeProcessManager {
+  PmManager {
     id: myManager
 
     factories: [

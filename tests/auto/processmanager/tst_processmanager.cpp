@@ -767,7 +767,9 @@ static void pipeLauncherTest( clientFunc func, infoFunc infoFixup=0 )
     ProcessBackendManager *manager = new ProcessBackendManager;
     ProcessInfo info;
     info.setValue("program", "testPipeLauncher/testPipeLauncher");
-    manager->addFactory(new PipeProcessBackendFactory(info));
+    PipeProcessBackendFactory *factory = new PipeProcessBackendFactory;
+    factory->setProcessInfo(info);
+    manager->addFactory(factory);
 
     // Wait for the factory to have launched a pipe
     waitForInternalProcess(manager);
@@ -825,7 +827,9 @@ static void forkLauncherTest( clientFunc func, infoFunc infoFixup=0  )
     ProcessBackendManager *manager = new ProcessBackendManager;
     ProcessInfo info;
     info.setValue("program", "testForkLauncher/testForkLauncher");
-    manager->addFactory(new PipeProcessBackendFactory(info));
+    PipeProcessBackendFactory *factory = new PipeProcessBackendFactory;
+    factory->setProcessInfo(info);
+    manager->addFactory(factory);
 
     // Wait for the factory to have launched a pipe
     waitForInternalProcess(manager);

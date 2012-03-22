@@ -43,17 +43,17 @@
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 /*!
-  \qmlclass ScriptMatch DeclarativeMatchDelegate
-  \brief The ScriptMatch class allows a factory to use a Javascript function for matching
+  \qmlclass PmScriptMatch DeclarativeMatchDelegate
+  \brief The PmScriptMatch class allows a factory to use a Javascript function for matching
 
-  The ScriptMatch element can be used in factory
-  objects to specify match conditions.
+  The PmScriptMatch object can be used in factory objects
+  to specify match conditions.
 
   \qml
-  DeclarativeProcessManager {
+  PmManager {
       factories: [
           StandardProcessBackendFactory {
-              matchDelegate: ScriptMatch {
+              matchDelegate: PmScriptMatch {
                   script: { return (model.program == "ls"); }
               }
           }
@@ -63,11 +63,24 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 */
 
 /*!
-  \qmlproperty script ScriptMatch::script
+  \qmlproperty QQmlScriptString PmScriptMatch::script
+  \brief Script to execute to see if there is a match
 
   This property holds the script to run.  The ProcessInfo object will be passed
   in as a global "model" variable.  The script should return "true" if the
   factory can create this object.
+ */
+
+/*!
+  \class DeclarativeMatchDelegate
+  \brief The DeclarativeMatchDelegate class allows a factory to use Javascript functions for matching.
+
+  The DeclarativeMatchDelegate class can be used in factory objects to
+  specify match conditions.
+*/
+
+/*!
+  Construct a DeclarativeMatchDelegate with optional \a parent.
  */
 
 DeclarativeMatchDelegate::DeclarativeMatchDelegate(QObject *parent)
@@ -76,13 +89,27 @@ DeclarativeMatchDelegate::DeclarativeMatchDelegate(QObject *parent)
 {
 }
 
+/*!
+  \internal
+ */
+
 void DeclarativeMatchDelegate::classBegin()
 {
 }
 
+/*!
+  \internal
+ */
+
 void DeclarativeMatchDelegate::componentComplete()
 {
 }
+
+/*!
+  Return true if the script object evaluates to \c{true} for this
+  ProcessInfo object \a info.  The ProcessInfo object is internally
+  bound to the \c{model} object property.
+ */
 
 bool DeclarativeMatchDelegate::matches(const ProcessInfo& info)
 {
@@ -96,16 +123,31 @@ bool DeclarativeMatchDelegate::matches(const ProcessInfo& info)
     return expr.evaluate().toBool();
 }
 
+/*!
+  Return the script object.
+ */
+
 QQmlScriptString DeclarativeMatchDelegate::script() const
 {
     return m_script;
 }
+
+/*!
+  Set the script object to \a script
+ */
 
 void DeclarativeMatchDelegate::setScript(const QQmlScriptString& script)
 {
     m_script = script;
     emit scriptChanged();
 }
+
+/*!
+  \fn void DeclarativeMatchDelegate::scriptChanged()
+  This signal is emitted when the script object is changed.
+
+  \sa setScript()
+ */
 
 #include "moc_declarativematchdelegate.cpp"
 

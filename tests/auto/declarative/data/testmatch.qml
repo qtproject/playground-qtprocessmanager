@@ -1,12 +1,12 @@
 import QtQuick 2.0
 import Test 1.0
 
-DeclarativeProcessManager {
+PmManager {
     id: foo
 
     factories: [
         StandardProcessBackendFactory {
-            matchDelegate: DeclarativeMatchDelegate {
+            matchDelegate: PmScriptMatch {
                 script: {
                     console.log("Model "+model);
                     console.log("Model type "+typeof(model));

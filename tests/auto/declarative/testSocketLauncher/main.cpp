@@ -47,6 +47,7 @@
 #include <jsonuidrangeauthority.h>
 
 #include "declarativesocketlauncher.h"
+#include "declarativeprocessmanager.h"
 #include "standardprocessbackendfactory.h"
 #include "keymatchdelegate.h"
 #include "gdbrewritedelegate.h"
@@ -67,16 +68,7 @@ static void usage()
 static void registerQmlTypes()
 {
     const char *uri = "Test";
-    qmlRegisterType<ProcessBackendFactory>();
-    qmlRegisterType<MatchDelegate>();
-    qmlRegisterType<RewriteDelegate>();
-    qmlRegisterType<SocketLauncher>();
-
-    qmlRegisterType<DeclarativeSocketLauncher>(uri, 1, 0, "DeclarativeSocketLauncher");
-    qmlRegisterType<StandardProcessBackendFactory>(uri, 1, 0, "StandardProcessBackendFactory");
-    qmlRegisterType<KeyMatchDelegate>(uri, 1, 0, "KeyMatchDelegate");
-    qmlRegisterType<GdbRewriteDelegate>(uri, 1, 0, "GdbRewriteDelegate");
-
+    DeclarativeProcessManager::registerTypes(uri);
     qmlRegisterUncreatableType<QtAddOn::JsonStream::JsonAuthority>(uri, 1, 0, "JsonAuthority", "Abstract class");
     qmlRegisterType<QtAddOn::JsonStream::JsonUIDRangeAuthority>(uri, 1, 0, "JsonUIDRangeAuthority");
     qmlRegisterType<QtAddOn::JsonStream::JsonUIDAuthority>(uri, 1, 0, "JsonUIDAuthority");
