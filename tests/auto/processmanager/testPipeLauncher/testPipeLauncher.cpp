@@ -38,15 +38,66 @@
 ****************************************************************************/
 
 #include <QCoreApplication>
+#include <QDebug>
 #include "pipelauncher.h"
 #include "standardprocessbackendfactory.h"
+#include "prelaunchprocessbackendfactory.h"
+#include "processinfo.h"
 
 QT_USE_NAMESPACE_PROCESSMANAGER
+
+QString progname;
+
+void usage()
+{
+    qWarning("Usage: %s [ARGS] [OPTS]\n"
+             "\n"
+             "Accepts JSON-formatted commands over STDIN and sends results over STDOUT.\n"
+             "\n"
+             "Valid arguments:\n"
+             "   -prelaunch PROGRAM    Create prelaunch launcher instead of standard\n"
+             , qPrintable(progname));
+    exit(1);
+}
+
 
 int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
+    QStringList args = QCoreApplication::arguments();
+    progname = args.takeFirst();
+    QString prelaunch_program;
+
+    while (args.size()) {
+        QString arg = args.at(0);
+        if (!arg.startsWith('-'))
+            break;
+        args.removeFirst();
+        if (arg == QStringLiteral("-help"))
+            usage();
+        else if (arg == QStringLiteral("-prelaunch")) {
+            if (!args.size())
+                usage();
+            prelaunch_program = args.takeFirst();
+        }
+        else {
+            qWarning("Unexpected argument '%s'", qPrintable(arg));
+            usage();
+        }
+    }
+
+    if (args.size())
+        usage();
+
     PipeLauncher launcher;
-    launcher.addFactory(new StandardProcessBackendFactory);
+    if (!prelaunch_program.isEmpty()) {
+        ProcessInfo info;
+        info.setValue("program", prelaunch_program);
+        PrelaunchProcessBackendFactory *factory = new PrelaunchProcessBackendFactory;
+        factory->setProcessInfo(info);
+        launcher.addFactory(factory);
+    }
+    else
+        launcher.addFactory(new StandardProcessBackendFactory);
     return app.exec();
 }

@@ -56,10 +56,16 @@ public:
     virtual ~RemoteProcessBackendFactory();
 
     virtual ProcessBackend *create(const ProcessInfo& info, QObject *parent);
+    virtual void idleCpuAvailable();
+
+protected slots:
+    void handleConnected();
+    void receive(const QJsonObject&);
 
 protected:
-    virtual     bool send(const QJsonObject&) = 0;
-    Q_INVOKABLE void receive(const QJsonObject&);
+    virtual void    handleMemoryRestrictionChange();
+    virtual PidList localInternalProcesses() const;
+    virtual bool    send(const QJsonObject&) = 0;
 
 private:
     void backendDestroyed(int);

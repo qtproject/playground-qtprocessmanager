@@ -99,7 +99,7 @@ void PipeProcessBackendFactory::stopRemoteProcess()
 {
     if (m_process && m_process->state() == QProcess::Running) {
         QJsonObject object;
-        object.insert(RemoteProtocol::remote(), RemoteProtocol::stop());
+        object.insert(RemoteProtocol::remote(), RemoteProtocol::halt());
         m_process->write(QJsonDocument(object).toBinaryData());
         m_process->waitForBytesWritten();  // Block until they have been written
         m_process = NULL;
@@ -120,18 +120,6 @@ bool PipeProcessBackendFactory::canCreate(const ProcessInfo &info) const
         return false;
 
     return RemoteProcessBackendFactory::canCreate(info);
-}
-
-/*!
-  If there is a pipe process running, it will be returned here.
- */
-
-QList<Q_PID> PipeProcessBackendFactory::internalProcesses()
-{
-    QList<Q_PID> list;
-    if (m_process && m_process->state() == QProcess::Running)
-        list << m_process->pid();
-    return list;
 }
 
 /*!
@@ -204,19 +192,25 @@ ProcessInfo *PipeProcessBackendFactory::processInfo() const
 }
 
 /*!
+  Return the local process if it is running
+ */
+
+PidList PipeProcessBackendFactory::localInternalProcesses() const
+{
+    PidList result;
+    if (m_process && m_process->state() == QProcess::Running)
+        result << m_process->pid();
+    return result;
+}
+
+/*!
   Send \a message to a pipe process.
  */
 bool PipeProcessBackendFactory::send(const QJsonObject& message)
 {
-    if (m_process->state() != QProcess::Running) {
-        qCritical("Pipe process not running");
-        return false;
-    }
-    if (m_process->write(QJsonDocument(message).toBinaryData()) == -1)  {
-        qCritical("Unable to write to pipe process");
-        return false;
-    }
-    return true;
+    // qDebug() << Q_FUNC_INFO << message;
+    return (m_process->state() == QProcess::Running &&
+            m_process->write(QJsonDocument(message).toBinaryData()) != -1);
 }
 
 
@@ -247,6 +241,7 @@ void PipeProcessBackendFactory::pipeReadyReadStandardError()
 
 void PipeProcessBackendFactory::pipeStarted()
 {
+    handleConnected();
 }
 
 void PipeProcessBackendFactory::pipeError(QProcess::ProcessError error)
@@ -261,9 +256,11 @@ void PipeProcessBackendFactory::pipeFinished(int exitCode, QProcess::ExitStatus 
     m_process = NULL;
 }
 
-void PipeProcessBackendFactory::pipeStateChanged(QProcess::ProcessState state)
+void PipeProcessBackendFactory::pipeStateChanged(QProcess::ProcessState)
 {
-    Q_UNUSED(state);
+    // This may result in a small amount of extra because not all transitions
+    // result in a change in the number of internal processes.
+    setInternalProcesses(localInternalProcesses());
 }
 
 

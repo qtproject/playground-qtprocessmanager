@@ -37,10 +37,12 @@
 **
 ****************************************************************************/
 
+#include <QDebug>
 #include <signal.h>
 
 #include "socketlauncher.h"
 #include "launcherclient.h"
+#include "remoteprotocol.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
@@ -69,6 +71,8 @@ SocketLauncher::SocketLauncher(QObject *parent)
             SLOT(connectionAdded(const QString&)));
     connect(m_server, SIGNAL(connectionRemoved(const QString&)),
             SLOT(connectionRemoved(const QString&)));
+
+    setIdleDelegate(0);  // Clear the idle delegate and get this from the master
 }
 
 /*!
@@ -109,6 +113,19 @@ void SocketLauncher::connectionAdded(const QString& identifier)
     connect(client, SIGNAL(send(const QJsonObject&)), SLOT(send(const QJsonObject&)));
     m_idToClient.insert(identifier, client);
     m_clientToId.insert(client, identifier);
+
+    // Send our current idle request and internal process list
+    if (!idleDelegate()) {
+        QJsonObject object;
+        object.insert(RemoteProtocol::remote(), RemoteProtocol::idlecpurequested());
+        object.insert(RemoteProtocol::request(), idleCpuRequest());
+        sendToClient(object, client);
+    }
+
+    QJsonObject object;
+    object.insert(RemoteProtocol::remote(), RemoteProtocol::internalprocesses());
+    object.insert(RemoteProtocol::processes(), pidListToArray(internalProcesses()));
+    sendToClient(object, client);
 }
 
 /*!
@@ -124,25 +141,84 @@ void SocketLauncher::connectionRemoved(const QString& identifier)
 }
 
 /*!
- \internal
-*/
-void SocketLauncher::messageReceived(const QString& identifier, const QJsonObject& message)
+  \internal
+
+  We override this function to send our idle cpu request back to the
+  originator.  This is a little odd, in that we send the idle cpu
+  request back to all connected clients.  Hopefully only one will
+  respond.
+
+  We only send the idlecpurequest message if we don't have an idle delegate
+ */
+
+void SocketLauncher::handleIdleCpuRequest()
 {
-    LauncherClient *client = m_idToClient.value(identifier);
-    if (client)
-        client->receive(message);
+    if (!idleDelegate()) {
+        QJsonObject object;
+        object.insert(RemoteProtocol::remote(), RemoteProtocol::idlecpurequested());
+        object.insert(RemoteProtocol::request(), idleCpuRequest());
+        m_server->broadcast(object);
+    }
+}
+
+/*!
+  \internal
+
+  We override this function to send our updated list of internal
+  processes to all clients
+*/
+
+void SocketLauncher::handleInternalProcessChange()
+{
+    QJsonObject object;
+    object.insert(RemoteProtocol::remote(), RemoteProtocol::internalprocesses());
+    object.insert(RemoteProtocol::processes(), pidListToArray(internalProcesses()));
+    m_server->broadcast(object);
 }
 
 /*!
  \internal
 */
+
+void SocketLauncher::messageReceived(const QString& identifier, const QJsonObject& message)
+{
+    QString remote = message.value(RemoteProtocol::remote()).toString();
+    if (remote == RemoteProtocol::halt())
+        qDebug() << Q_FUNC_INFO << "Received halt request; ignoring";
+    else if ( remote == RemoteProtocol::memory() )
+        setMemoryRestricted(message.value(RemoteProtocol::restricted()).toBool());
+    else if ( remote == RemoteProtocol::idlecpuavailable() ) {
+        if (!idleDelegate())
+            idleCpuAvailable();
+    }
+    else {
+        LauncherClient *client = m_idToClient.value(identifier);
+        if (client)
+            client->receive(message);
+    }
+}
+
+/*!
+ \internal
+
+ This function should only be called from a signal raised in LauncherClient
+*/
 void SocketLauncher::send(const QJsonObject& message)
 {
-    LauncherClient *client = qobject_cast<LauncherClient *>(sender());
+    sendToClient(message, qobject_cast<LauncherClient *>(sender()));
+}
+
+/*!
+  \internal
+ */
+
+void SocketLauncher::sendToClient(const QJsonObject& message, LauncherClient *client)
+{
     Q_ASSERT(client);
     Q_ASSERT(m_server);
     m_server->send(m_clientToId.value(client), message);
 }
+
 
 #include "moc_socketlauncher.cpp"
 

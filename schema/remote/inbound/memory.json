@@ -1,0 +1,8 @@
+{
+    "title": "Memory schema",
+    "description": "Tell the remote factory that memory is restricted",
+    "properties": {
+        "remote": { "type": "string", "pattern": "memory", "required": true },
+        "restricted": { "type": "boolean", "required": true }
+  }
+}

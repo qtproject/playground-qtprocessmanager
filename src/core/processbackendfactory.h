@@ -44,6 +44,7 @@
 #include <QProcessEnvironment>
 
 #include "processmanager-global.h"
+#include "processlist.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
@@ -55,8 +56,9 @@ class RewriteDelegate;
 class Q_ADDON_PROCESSMANAGER_EXPORT ProcessBackendFactory : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(MatchDelegate* matchDelegate READ matchDelegate WRITE setMatchDelegate NOTIFY matchDelegateChanged);
-    Q_PROPERTY(RewriteDelegate* rewriteDelegate READ rewriteDelegate WRITE setRewriteDelegate NOTIFY rewriteDelegateChanged);
+    Q_PROPERTY(PidList internalProcesses READ internalProcesses NOTIFY internalProcessesChanged)
+    Q_PROPERTY(MatchDelegate* matchDelegate READ matchDelegate WRITE setMatchDelegate NOTIFY matchDelegateChanged)
+    Q_PROPERTY(RewriteDelegate* rewriteDelegate READ rewriteDelegate WRITE setRewriteDelegate NOTIFY rewriteDelegateChanged)
     Q_PROPERTY(bool idleCpuRequest READ idleCpuRequest NOTIFY idleCpuRequestChanged)
 
 public:
@@ -66,8 +68,9 @@ public:
     virtual void            rewrite(ProcessInfo& info);
     virtual ProcessBackend *create(const ProcessInfo& info, QObject *parent) = 0;
 
-    void                    setMemoryRestricted(bool);
-    virtual QList<Q_PID>    internalProcesses();
+    void              setMemoryRestricted(bool);
+
+    PidList           internalProcesses() const;
 
     MatchDelegate *   matchDelegate() const;
     void              setMatchDelegate(MatchDelegate *);
@@ -79,15 +82,18 @@ public:
     virtual void      idleCpuAvailable();
 
 signals:
+    void internalProcessesChanged();
     void matchDelegateChanged();
     void rewriteDelegateChanged();
     void idleCpuRequestChanged();
 
 protected:
+    void         setIdleCpuRequest(bool);
+    virtual void setInternalProcesses(const PidList&);
     virtual void handleMemoryRestrictionChange();
-    virtual void setIdleCpuRequest(bool);
 
 protected:
+    PidList          m_internalProcesses;
     MatchDelegate   *m_matchDelegate;
     RewriteDelegate *m_rewriteDelegate;
     bool             m_memoryRestricted;

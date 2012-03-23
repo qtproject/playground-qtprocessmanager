@@ -56,14 +56,22 @@ public:
     static inline const QString exitCode() { return QStringLiteral("exitCode"); }
     static inline const QString exitStatus() { return QStringLiteral("exitStatus"); }
     static inline const QString finished() { return QStringLiteral("finished"); }
+    static inline const QString halt() { return QStringLiteral("halt"); }
     static inline const QString id() { return QStringLiteral("id"); }
+    static inline const QString idlecpurequested() { return QStringLiteral("idlecpurequested"); }
+    static inline const QString idlecpuavailable() { return QStringLiteral("idlecpuavailable"); }
     static inline const QString info() { return QStringLiteral("info"); }
+    static inline const QString internalprocesses() { return QStringLiteral("internalprocesses"); }
     static inline const QString key() { return QStringLiteral("key"); }
+    static inline const QString memory() { return QStringLiteral("memory"); }
     static inline const QString oomAdjustment() { return QStringLiteral("oomAdjustment"); }
     static inline const QString output() { return QStringLiteral("output"); }
     static inline const QString pid() { return QStringLiteral("pid"); }
     static inline const QString priority() { return QStringLiteral("priority"); }
+    static inline const QString processes() { return QStringLiteral("processes"); }
     static inline const QString remote() { return QStringLiteral("remote"); }
+    static inline const QString restricted() { return QStringLiteral("restricted"); }
+    static inline const QString request() { return QStringLiteral("request"); }
     static inline const QString set() { return QStringLiteral("set"); }
     static inline const QString signal() { return QStringLiteral("signal"); }
     static inline const QString start() { return QStringLiteral("start"); }

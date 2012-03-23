@@ -53,6 +53,10 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 /*!
   \class PipeLauncher
   \brief The PipeLauncher class accepts input from STDIN and writes data to STDOUT
+
+  The PipeLauncher class is a ProcessBackendManager controlled over Unix
+  pipes.  It accepts JSON-formatted commands over STDIN and returns
+  JSON-formatted messages over STDOUT.
  */
 
 /*!
@@ -73,6 +77,47 @@ PipeLauncher::PipeLauncher(QObject *parent)
             m_pipe, SLOT(send(const QJsonObject&)));
 
     m_pipe->setFds(STDIN_FILENO, STDOUT_FILENO);
+
+    // Clear the idle delegate - we'll get this from the master
+    setIdleDelegate(0);
+}
+
+/*!
+  \internal
+
+  We override this function to send our idle cpu request back to the
+  originator.  The \a request variable will be \c{true} if Idle CPU events are needed.
+  We only forward the request if we don't have an idle delegate.
+ */
+
+void PipeLauncher::handleIdleCpuRequest()
+{
+    Q_ASSERT(m_client);
+
+    if (!idleDelegate()) {
+        QJsonObject object;
+        object.insert(RemoteProtocol::remote(), RemoteProtocol::idlecpurequested());
+        object.insert(RemoteProtocol::request(), idleCpuRequest());
+        m_client->send(object);
+    }
+}
+
+/*!
+  \internal
+
+  We override this function to send our updated list of internal
+  processes back.  Please note that we do not include our own process -
+  if that should be on the list, it's up to the controlling side to add it.
+*/
+
+void PipeLauncher::handleInternalProcessChange()
+{
+    Q_ASSERT(m_client);
+
+    QJsonObject object;
+    object.insert(RemoteProtocol::remote(), RemoteProtocol::internalprocesses());
+    object.insert(RemoteProtocol::processes(), pidListToArray(internalProcesses()));
+    m_client->send(object);
 }
 
 /*!
@@ -81,9 +126,17 @@ PipeLauncher::PipeLauncher(QObject *parent)
 
 void PipeLauncher::receive(const QJsonObject& message)
 {
-    if (message.value(RemoteProtocol::remote()).toString() == RemoteProtocol::stop())
+    QString remote = message.value(RemoteProtocol::remote()).toString();
+    if (remote == RemoteProtocol::halt())  // ### TODO: Should halt children
         exit(0);
-    m_client->receive(message);
+    else if ( remote == RemoteProtocol::memory() )
+        setMemoryRestricted(message.value(RemoteProtocol::restricted()).toBool());
+    else if ( remote == RemoteProtocol::idlecpuavailable() ) {
+        if (!idleDelegate())
+            idleCpuAvailable();  // Only accept idlecpuavailable if we have no idleDelegate
+    }
+    else
+        m_client->receive(message);
 }
 
 #include "moc_pipelauncher.cpp"

@@ -1,0 +1,16 @@
+{
+    "title": "Internal processes schema",
+    "description": "Give the controller a list of internal processes",
+    "properties": {
+        "remote": { "type": "string", "pattern": "internalprocesses", "required": true },
+        "processes": {
+            "type": "array",
+            "items": {
+                "type": "integer"
+            },
+            "additionalItems": false,
+            "uniqueItems": true,
+            "required": true
+        }
+  }
+}

@@ -56,6 +56,10 @@ class Q_ADDON_PROCESSMANAGER_EXPORT PipeLauncher : public ProcessBackendManager 
 public:
     PipeLauncher(QObject *parent=0);
 
+protected:
+    virtual void handleIdleCpuRequest();
+    virtual void handleInternalProcessChange();
+
 private slots:
     void receive(const QJsonObject& object);
 

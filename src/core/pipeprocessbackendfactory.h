@@ -54,7 +54,6 @@ public:
     virtual ~PipeProcessBackendFactory();
 
     virtual bool canCreate(const ProcessInfo &info) const;
-    virtual QList<Q_PID> internalProcesses();
 
     ProcessInfo *processInfo() const;
     void setProcessInfo(ProcessInfo *processInfo);
@@ -64,6 +63,7 @@ signals:
     void processInfoChanged();
 
 protected:
+    virtual PidList localInternalProcesses() const;
     virtual bool send(const QJsonObject&);
 
 private slots:

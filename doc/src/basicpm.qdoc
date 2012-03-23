@@ -110,7 +110,7 @@ StandardProcessBackendFactory will match anything, so it must go last.
 \section1 Inheritence Hierarchy
 
 \image processbackend_hierarchy.png {Process Backend Hierarchy}
-\caption \e{Process Backend Hierarchy}
+\caption \e{ProcessBackend Inheritence Hierarchy}
 
 The virtual ProcessBackend object hierarchy is divided into two
 sections: the UnixProcessBackend objects contain a QProcess internally
@@ -120,12 +120,35 @@ launch its own processes, but this mechanism allows the process
 manager to not run with setuid privileges.
 
 \image processbackendfactory_hierarchy.png
-\caption \e{Process Backend Factory Hierarchy}
+\caption \e{ProcessBackendFactory Inheritence Hierarchy}
 
 The ProcessBackendFactory hierarchy closely matches the ProcessBackend
 hierarchy.  The standard and prelaunch subclasses create standard and
 prelaunch process backend objects.  The remote subclass is divided
 by how it connects to the remote "launcher" program; either over a
 pipe connection or a socket connection.
+
+\image processbackendmanager_hierarchy.png
+\caption \e{ProcessBackendManager Inheritence Hierarchy}
+
+The ProcessBackendManager hierachy is relatively simple.  The standard
+ProcessBackendManager is designed to be embedded in an application and
+take commands directly from the application or from a ProcessManager.
+
+The PipeLauncher is a subclass that takes JSON-formatted commands over
+a pipe connection.  It is designed to be embedded into a separate
+application that is launched from your main process, and then
+connected to via a PipeProcessBackendFactory or a
+PreforkProcessBackendFactory (depending on how it is launched).
+
+The SocketLauncher is a subclass that takes JSON-formatted commands
+over Unix local socket connections.  It is designed to be used in a
+separate application that may be started at any time in the system
+launch (in many cases, by \c{upstart} or \c{/etc/init.d} scripts.  It
+uses the \l{JsonStream::JsonServer} class to accept socket
+connections.  You connect to a SocketLauncher application using the
+SocketProcessBackendFactory object.
+
+
 
 */

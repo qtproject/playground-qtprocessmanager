@@ -46,6 +46,7 @@
 
 #include "processmanager-global.h"
 #include "process.h"
+#include "processlist.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
@@ -77,7 +78,7 @@ public:
     Q_INVOKABLE int              size() const;
 
     Q_INVOKABLE void             addBackendFactory(ProcessBackendFactory *factory);
-    Q_INVOKABLE QList<Q_PID>     internalProcesses();
+    Q_INVOKABLE PidList          internalProcesses() const;
 
     void setMemoryRestricted(bool);
     bool memoryRestricted() const;

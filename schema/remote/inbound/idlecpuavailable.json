@@ -1,0 +1,7 @@
+{
+    "title": "Idle CPU available schema",
+    "description": "Tell the remote factory that an idle request is granted",
+    "properties": {
+        "remote": { "type": "string", "pattern": "idlecpuavailable", "required": true }
+  }
+}

@@ -67,6 +67,7 @@ SocketProcessBackendFactory::SocketProcessBackendFactory(QObject *parent)
     : RemoteProcessBackendFactory(parent)
 {
     m_socket = new QLocalSocket(this);
+    connect(m_socket, SIGNAL(connected()), SLOT(connected()));
     connect(m_socket, SIGNAL(disconnected()), SLOT(disconnected()));
     connect(m_socket, SIGNAL(readyRead()), SLOT(readyRead()));
 }
@@ -128,6 +129,15 @@ void SocketProcessBackendFactory::readyRead()
         m_buffer = m_buffer.mid(message_size);
         receive(QJsonDocument::fromBinaryData(msg).object());
     }
+}
+
+/*!
+  \internal
+ */
+
+void SocketProcessBackendFactory::connected()
+{
+    handleConnected();
 }
 
 /*!

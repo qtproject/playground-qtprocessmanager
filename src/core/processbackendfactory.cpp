@@ -41,8 +41,6 @@
 #include "matchdelegate.h"
 #include "rewritedelegate.h"
 
-#include <QDebug>
-
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 /*!
@@ -50,6 +48,11 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
   \brief The ProcessBackendFactory class is a virtual class for creating processes.
 
   Subclass this class to create particular types of processes.
+*/
+
+/*!
+    \property ProcessBackendFactory::internalProcesses
+    \brief A list of the internal processes.
 */
 
 /*!
@@ -102,14 +105,25 @@ void ProcessBackendFactory::setMemoryRestricted(bool memoryRestricted)
 }
 
 /*!
-  Override this is subclasses to return a list of internal
-  processes that are contained in this factory.  The default
-  class returns an empty list.
+  Return a list of internal processes that are in use by this factory
  */
 
-QList<Q_PID> ProcessBackendFactory::internalProcesses()
+PidList ProcessBackendFactory::internalProcesses() const
 {
-    return QList<Q_PID>();
+    return m_internalProcesses;
+}
+
+/*!
+  Set the list of internal processes.  This should be a sorted
+  list.  The \a plist argument is a list of processes.
+ */
+
+void ProcessBackendFactory::setInternalProcesses(const PidList& plist)
+{
+    if (!compareSortedLists(plist, m_internalProcesses)) {
+        m_internalProcesses = plist;
+        emit internalProcessesChanged();
+    }
 }
 
 /*!
@@ -200,7 +214,6 @@ void ProcessBackendFactory::setIdleCpuRequest(bool value)
 
 void ProcessBackendFactory::idleCpuAvailable()
 {
-    qDebug() << Q_FUNC_INFO;
 }
 
 /*!
@@ -235,6 +248,12 @@ void ProcessBackendFactory::rewrite(ProcessInfo& info)
     if (m_rewriteDelegate)
         m_rewriteDelegate->rewrite(info);
 }
+
+/*!
+  \fn void ProcessBackendFactory::internalProcessesChanged()
+
+  Signal emitted whenever the list of internal processes has changed.
+*/
 
 /*!
   \fn void ProcessBackendFactory::matchDelegateChanged()

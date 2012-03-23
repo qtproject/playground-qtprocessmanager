@@ -37,6 +37,8 @@
 **
 ****************************************************************************/
 
+#include <QDebug>
+
 #include "processbackendmanager.h"
 #include "processbackendfactory.h"
 #include "processbackend.h"
@@ -165,6 +167,7 @@ void ProcessBackendManager::addFactory(ProcessBackendFactory *factory)
     m_factories.append(factory);
     factory->setParent(this);
     factory->setMemoryRestricted(m_memoryRestricted);
+    connect(factory, SIGNAL(internalProcessesChanged()), SLOT(updateInternalProcesses()));
     connect(factory, SIGNAL(idleCpuRequestChanged()), SLOT(updateIdleCpuRequest()));
     updateIdleCpuRequest();
 }
@@ -173,12 +176,9 @@ void ProcessBackendManager::addFactory(ProcessBackendFactory *factory)
   Return a list of all internal processes being used by factories
 */
 
-QList<Q_PID> ProcessBackendManager::internalProcesses()
+PidList ProcessBackendManager::internalProcesses() const
 {
-    QList<Q_PID> plist;
-    foreach (ProcessBackendFactory *factory, m_factories)
-        plist.append(factory->internalProcesses());
-    return plist;
+    return m_internalProcesses;
 }
 
 /*!
@@ -270,19 +270,48 @@ void ProcessBackendManager::updateIdleCpuRequest()
         m_idleCpuRequest = request;
         if (m_idleDelegate)
             m_idleDelegate->requestIdleCpu(m_idleCpuRequest);
-        handleIdleCpuRequest(m_idleCpuRequest);
+        handleIdleCpuRequest();
+    }
+}
+
+/*!
+  Update the list of internal processes
+ */
+
+void ProcessBackendManager::updateInternalProcesses()
+{
+    QList<Q_PID> plist;
+    foreach (ProcessBackendFactory *factory, m_factories)
+        plist.append(factory->internalProcesses());
+    qSort(plist);
+    if (!compareSortedLists(plist, m_internalProcesses)) {
+        m_internalProcesses = plist;
+        handleInternalProcessChange();
+        emit internalProcessesChanged();
     }
 }
 
 /*!
   Override this function to customize your handling of Idle CPU requests.
-  The \a request variable will be \c{true} if Idle CPU events are needed.
  */
 
-void ProcessBackendManager::handleIdleCpuRequest(bool request)
+void ProcessBackendManager::handleIdleCpuRequest()
 {
-    Q_UNUSED(request);
 }
+
+/*!
+  Override this function to customize your handling of changes in the
+  list of internal processes.
+ */
+
+void ProcessBackendManager::handleInternalProcessChange()
+{
+}
+
+/*!
+  \fn void ProcessBackendManager::internalProcessesChanged()
+  Signal emitted whenever the list of internal processes has changed.
+*/
 
 /*!
   \fn void ProcessBackendManager::idleDelegateChanged()

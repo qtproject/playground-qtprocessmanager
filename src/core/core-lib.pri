@@ -5,6 +5,7 @@ INCLUDEPATH += $$PWD
 
 PUBLIC_HEADERS += \
   $$PWD/process.h \
+  $$PWD/processlist.h \
   $$PWD/processfrontend.h \
   $$PWD/processbackend.h \
   $$PWD/processbackendfactory.h \

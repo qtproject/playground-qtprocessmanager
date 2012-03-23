@@ -1,0 +1,8 @@
+{
+    "title": "Idle CPU request schema",
+    "description": "Tell the controller that idle cpu is requested",
+    "properties": {
+        "remote": { "type": "string", "pattern": "idlecpurequested", "required": true },
+        "request": { "type": "boolean", "required": true }
+  }
+}

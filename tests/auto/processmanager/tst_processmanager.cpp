@@ -63,6 +63,8 @@ Q_DECLARE_METATYPE(QProcess::ExitStatus);
 Q_DECLARE_METATYPE(QProcess::ProcessState);
 Q_DECLARE_METATYPE(QProcess::ProcessError);
 
+const int kProcessCount = 10;
+
 /******************************************************************************/
 
 const char *exitStatusToString[] = {
@@ -165,6 +167,8 @@ static void waitForTimeout(int timeout=5000)
 
 static void waitForInternalProcess(ProcessBackendManager *manager, int num=1, int timeout=5000)
 {
+    QObject::connect(manager, SIGNAL(internalProcessesChanged()),
+                     &QTestEventLoop::instance(), SLOT(exitLoop()));
     QTime stopWatch;
     stopWatch.start();
     forever {
@@ -174,6 +178,8 @@ static void waitForInternalProcess(ProcessBackendManager *manager, int num=1, in
             break;
         QTestEventLoop::instance().enterLoop(1);
     }
+    QObject::disconnect(manager, SIGNAL(internalProcessesChanged()),
+                     &QTestEventLoop::instance(), SLOT(exitLoop()));
 }
 
 static void waitForInternalProcess(ProcessManager *manager, int num=1, int timeout=5000)
@@ -422,8 +428,6 @@ static void startAndStopClient(ProcessBackendManager *manager, ProcessInfo info,
     cleanupProcess(process);
 }
 
-const int kProcessCount = 20;
-
 static void startAndStopMultiple(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
 {
     ProcessBackend *plist[kProcessCount];
@@ -486,16 +490,6 @@ static void startAndKillClient(ProcessBackendManager *manager, ProcessInfo info,
 
     cleanupProcess(process);
 }
-/*
-static void startAndKillTough(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
-{
-    Q_UNUSED(func);
-    QStringList args = info.arguments();
-    args << "-noterm";
-    info.setArguments(args);
-    startAndKillClient(manager, info, func);
-}
-*/
 
 static void startAndCrashClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
 {
@@ -789,9 +783,8 @@ static void pipeLauncherTest( clientFunc func, infoFunc infoFixup=0 )
 static void socketLauncherTest( clientFunc func, QStringList args=QStringList(), infoFunc infoFixup=0  )
 {
     QProcess *remote = new QProcess;
-    QString socketName = QLatin1String("/tmp/socketlauncher");
+    QString socketName = QStringLiteral("/tmp/socketlauncher");
     remote->setProcessChannelMode(QProcess::ForwardedChannels);
-    qDebug() << "USING ARGS" << args;
     remote->start("testSocketLauncher/testSocketLauncher", args << socketName);
     QVERIFY(remote->waitForStarted());
     waitForSocket(socketName);
@@ -851,12 +844,11 @@ static void preforkLauncherTest( clientFunc func, infoFunc infoFixup=0 )
 {
 #if defined(Q_OS_LINUX)
     QProcess *remote = new QProcess;
-    QString socketName = QLatin1String("/tmp/preforklauncher");
+    QString socketName = QStringLiteral("/tmp/preforklauncher");
     remote->setProcessChannelMode(QProcess::ForwardedChannels);
     QStringList args;
     args << "--" << "testPreforkLauncher/testPreforkLauncher" << socketName
          << "--" << "testForkLauncher/testForkLauncher";
-    qDebug() << "Trying to run: testPrefork/testPrefork" << args;
     remote->start("testPrefork/testPrefork", args);
     QVERIFY(remote->waitForStarted());
     waitForSocket(socketName);
@@ -988,6 +980,14 @@ private slots:
     void prelaunchChildAbort();
     void prelaunchWaitIdleTest();
 
+    void prelaunchForPipeLauncherIdle();
+    void prelaunchForPipeLauncherMemory();
+    void prelaunchForPipeLauncherMultiple();
+
+    void prelaunchForSocketLauncherIdle();
+    void prelaunchForSocketLauncherMemory();
+    void prelaunchForSocketLauncherMultiple();
+
     void frontend();
     void frontendWaitIdleTest();
     void subclassFrontend();
@@ -1007,6 +1007,7 @@ void tst_ProcessManager::prelaunchChildAbort()
 {
     ProcessBackendManager *manager = new ProcessBackendManager;
     TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    delegate->setIdleInterval(250);
     manager->setIdleDelegate(delegate);
 
     ProcessInfo info;
@@ -1032,6 +1033,7 @@ void tst_ProcessManager::prelaunchWaitIdleTest()
 {
     ProcessBackendManager *manager = new ProcessBackendManager;
     TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    delegate->setIdleInterval(250);
     delegate->setEnabled(false);
     manager->setIdleDelegate(delegate);
 
@@ -1050,13 +1052,317 @@ void tst_ProcessManager::prelaunchWaitIdleTest()
     delegate->setEnabled(true);
     waitForInternalProcess(manager, 1, delegate->idleInterval() + 2000);
     QCOMPARE(manager->internalProcesses().count(), 1);
-    Q_PID pid = manager->internalProcesses().at(0);
 
     // Kill the prelaunched process and verify that it is restarted
+    Q_PID pid = manager->internalProcesses().at(0);
     ::kill(pid, SIGKILL);
     waitForInternalProcess(manager, 0);
     waitForInternalProcess(manager, 1, delegate->idleInterval() + 2000);
+
     delete manager;
+}
+
+/*
+  The pipe launcher holds a prelaunch backend factory
+  We control the prelaunch process by turning on and off the IdleDelegate
+ */
+
+void tst_ProcessManager::prelaunchForPipeLauncherIdle()
+{
+    ProcessBackendManager *manager = new ProcessBackendManager;
+    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    delegate->setIdleInterval(250);
+    delegate->setEnabled(false);
+    manager->setIdleDelegate(delegate);
+
+    ProcessInfo info;
+    info.setValue("program", "testPipeLauncher/testPipeLauncher");
+    info.setValue("arguments",
+                  QStringList() << QStringLiteral("-prelaunch")
+                  << QStringLiteral("testPrelaunch/testPrelaunch"));
+    PipeProcessBackendFactory *factory = new PipeProcessBackendFactory;
+    factory->setProcessInfo(info);
+    manager->addFactory(factory);
+
+    // Wait for the factory have launched a pipe
+    waitForInternalProcess(manager);
+    QCOMPARE(manager->internalProcesses().count(), 1);
+
+    // Verify that the prelaunch has not started, even after the interval
+    waitForTimeout(delegate->idleInterval() + 2000);
+    QCOMPARE(manager->internalProcesses().count(), 1);
+
+    // Now the prelaunch process should launch
+    delegate->setEnabled(true);
+    waitForInternalProcess(manager, 2, delegate->idleInterval() + 2000);
+    QCOMPARE(manager->internalProcesses().count(), 2);
+
+    // Kill the prelaunched process and verify that it is restarted
+    Q_PID pid = manager->internalProcesses().at(1);
+    ::kill(pid, SIGKILL);
+    waitForInternalProcess(manager, 1);
+    waitForInternalProcess(manager, 2, delegate->idleInterval() + 2000);
+
+    // Kill the prelaunched process and keep it dead - otherwise we'll leave a hanging child
+    delegate->setEnabled(false);
+    pid = manager->internalProcesses().at(1);
+    ::kill(pid, SIGKILL);
+    waitForInternalProcess(manager, 1);
+    waitForTimeout(delegate->idleInterval() + 2000);
+    QCOMPARE(manager->internalProcesses().count(), 1);
+
+    delete manager;
+}
+
+/*
+  The pipe launcher holds a prelaunch backend factory
+  We control the prelaunch process by turning on and off MemoryRestricted
+ */
+
+void tst_ProcessManager::prelaunchForPipeLauncherMemory()
+{
+    ProcessBackendManager *manager = new ProcessBackendManager;
+    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    delegate->setIdleInterval(250);
+    manager->setIdleDelegate(delegate);
+    manager->setMemoryRestricted(true);
+
+    ProcessInfo info;
+    info.setValue("program", "testPipeLauncher/testPipeLauncher");
+    info.setValue("arguments",
+                  QStringList() << QStringLiteral("-prelaunch")
+                  << QStringLiteral("testPrelaunch/testPrelaunch"));
+    PipeProcessBackendFactory *factory = new PipeProcessBackendFactory;
+    factory->setProcessInfo(info);
+    manager->addFactory(factory);
+
+    // Wait for the factory have launched a pipe
+    waitForInternalProcess(manager);
+    QCOMPARE(manager->internalProcesses().count(), 1);
+
+    // Verify that the prelaunch has not started, even after the interval
+    waitForTimeout(delegate->idleInterval() + 2000);
+    QCOMPARE(manager->internalProcesses().count(), 1);
+
+    // Now the prelaunch process should launch
+    qDebug() << "Turning off memory restrictions";
+    manager->setMemoryRestricted(false);
+    waitForInternalProcess(manager, 2, delegate->idleInterval() + 2000);
+    QCOMPARE(manager->internalProcesses().count(), 2);
+
+    // Kill the prelaunched process and verify that it is restarted
+    qDebug() << "Directly kill the prelaunched process";
+    Q_PID pid = manager->internalProcesses().at(1);
+    ::kill(pid, SIGKILL);
+    waitForInternalProcess(manager, 1);
+    waitForInternalProcess(manager, 2, delegate->idleInterval() + 2000);
+
+    // Kill the prelaunched process and keep it dead - otherwise we'll leave a hanging child
+    qDebug() << "Turn on memory restrictions";
+    manager->setMemoryRestricted(true);
+    waitForInternalProcess(manager, 1);
+    waitForTimeout(delegate->idleInterval() + 2000);
+    QCOMPARE(manager->internalProcesses().count(), 1);
+
+    delete manager;
+}
+
+/*
+  Each pipe launcher holds a prelaunch backend factory
+ */
+
+void tst_ProcessManager::prelaunchForPipeLauncherMultiple()
+{
+    ProcessBackendManager *manager = new ProcessBackendManager;
+    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    delegate->setIdleInterval(250);
+    manager->setMemoryRestricted(true);
+    manager->setIdleDelegate(delegate);
+
+    ProcessInfo info;
+    info.setValue("program", "testPipeLauncher/testPipeLauncher");
+    info.setValue("arguments",
+                  QStringList() << QStringLiteral("-prelaunch")
+                  << QStringLiteral("testPrelaunch/testPrelaunch"));
+
+    for (int i = 0 ; i < kProcessCount ; i++ ) {
+        PipeProcessBackendFactory *factory = new PipeProcessBackendFactory;
+        factory->setProcessInfo(info);
+        manager->addFactory(factory);
+    }
+
+    // Wait for the factory have launched a pipe
+    qDebug() << "Waiting for" << kProcessCount << "pipe launchers";
+    waitForInternalProcess(manager, kProcessCount);
+
+    // Verify that the prelaunch has not started, even after the interval
+    qDebug() << "Ensure that nothing prelaunches" << manager->internalProcesses().count() << "of" << kProcessCount;
+    waitForTimeout(delegate->idleInterval() + 2000);
+    QCOMPARE(manager->internalProcesses().count(), kProcessCount);
+
+    // Now the prelaunch process should launch
+    qDebug() << "Turn on the prelaunches" << manager->internalProcesses();
+    manager->setMemoryRestricted(false);
+    waitForInternalProcess(manager, 2*kProcessCount, delegate->idleInterval() * kProcessCount + 2000);
+
+    // Shut off the prelaunches
+    qDebug() << "Shut off the prelaunches" << manager->internalProcesses();
+    manager->setMemoryRestricted(true);
+    waitForInternalProcess(manager, kProcessCount, delegate->idleInterval() + 2000);
+
+    delete manager;
+}
+
+
+/*
+  The socket launcher holds a prelaunch backend factory
+  We control the prelaunch process by turning on and off the IdleDelegate
+ */
+
+void tst_ProcessManager::prelaunchForSocketLauncherIdle()
+{
+    QProcess *remote = new QProcess;
+    QString socketName = QStringLiteral("/tmp/socketlauncher");
+    remote->setProcessChannelMode(QProcess::ForwardedChannels);
+    remote->start("testSocketLauncher/testSocketLauncher",
+                  QStringList() << QStringLiteral("-prelaunch") << QStringLiteral("testPrelaunch/testPrelaunch")
+                  << socketName);
+    QVERIFY(remote->waitForStarted());
+    waitForSocket(socketName);
+
+    ProcessBackendManager *manager = new ProcessBackendManager;
+    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    delegate->setIdleInterval(250);
+    delegate->setEnabled(false);
+    manager->setIdleDelegate(delegate);
+
+    SocketProcessBackendFactory *factory = new SocketProcessBackendFactory;
+    factory->setSocketName(socketName);
+    manager->addFactory(factory);
+
+    // Verify that the prelaunch has not started, even after the interval
+    waitForTimeout(delegate->idleInterval() + 2000);
+    QCOMPARE(manager->internalProcesses().count(), 0);
+
+    // Now the prelaunch process should launch
+    delegate->setEnabled(true);
+    waitForInternalProcess(manager, 1, delegate->idleInterval() + 2000);
+    QCOMPARE(manager->internalProcesses().count(), 1);
+
+    // Kill the prelaunched process and verify that it is restarted
+    Q_PID pid = manager->internalProcesses().at(0);
+    ::kill(pid, SIGKILL);
+    waitForInternalProcess(manager, 0);
+    waitForInternalProcess(manager, 1, delegate->idleInterval() + 2000);
+
+    // Kill the prelaunched process and keep it dead - otherwise we'll leave a hanging child
+    delegate->setEnabled(false);
+    pid = manager->internalProcesses().at(0);
+    ::kill(pid, SIGKILL);
+    waitForInternalProcess(manager, 0);
+    waitForTimeout(delegate->idleInterval() + 2000);
+    QCOMPARE(manager->internalProcesses().count(), 0);
+
+    delete manager;
+    delete remote;
+}
+
+/*
+  The socket launcher holds a prelaunch backend factory
+  We control the prelaunch process by turning on and off MemoryRestricted
+ */
+
+void tst_ProcessManager::prelaunchForSocketLauncherMemory()
+{
+    QProcess *remote = new QProcess;
+    QString socketName = QStringLiteral("/tmp/socketlauncher");
+    remote->setProcessChannelMode(QProcess::ForwardedChannels);
+    remote->start("testSocketLauncher/testSocketLauncher",
+                  QStringList() << QStringLiteral("-prelaunch") << QStringLiteral("testPrelaunch/testPrelaunch")
+                  << socketName);
+    QVERIFY(remote->waitForStarted());
+    waitForSocket(socketName);
+
+    ProcessBackendManager *manager = new ProcessBackendManager;
+    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    delegate->setIdleInterval(250);
+    manager->setIdleDelegate(delegate);
+    manager->setMemoryRestricted(true);
+
+    SocketProcessBackendFactory *factory = new SocketProcessBackendFactory;
+    factory->setSocketName(socketName);
+    manager->addFactory(factory);
+
+    // Verify that the prelaunch has not started, even after the interval
+    waitForTimeout(delegate->idleInterval() + 2000);
+    QCOMPARE(manager->internalProcesses().count(), 0);
+
+    // Now the prelaunch process should launch
+    manager->setMemoryRestricted(false);
+    waitForInternalProcess(manager, 1, delegate->idleInterval() + 2000);
+    QCOMPARE(manager->internalProcesses().count(), 1);
+
+    // Kill the prelaunched process and verify that it is restarted
+    Q_PID pid = manager->internalProcesses().at(0);
+    qDebug() << "Killing the prelaunched process" << pid;
+    ::kill(pid, SIGKILL);
+    qDebug() << "Verify that the process count goes to zero";
+    waitForInternalProcess(manager, 0);
+    qDebug() << "Now wait for the process count to bounce back up";
+    waitForInternalProcess(manager, 1, delegate->idleInterval() + 2000);
+
+    // Kill the prelaunched process and keep it dead - otherwise we'll leave a hanging child
+    qDebug() << "Set memory to restricted and wait for the process to die";
+    manager->setMemoryRestricted(true);
+    waitForInternalProcess(manager, 0);
+    waitForTimeout(delegate->idleInterval() + 2000);
+    QCOMPARE(manager->internalProcesses().count(), 0);
+
+    delete manager;
+    delete remote;
+}
+
+/*
+  Each socket launcher holds a prelaunch backend factory
+ */
+
+void tst_ProcessManager::prelaunchForSocketLauncherMultiple()
+{
+    QProcess *remote = new QProcess;
+    QString socketName = QStringLiteral("/tmp/socketlauncher");
+    remote->setProcessChannelMode(QProcess::ForwardedChannels);
+    remote->start("testSocketLauncher/testSocketLauncher",
+                  QStringList() << QStringLiteral("-prelaunch") << QStringLiteral("testPrelaunch/testPrelaunch")
+                  << socketName);
+    QVERIFY(remote->waitForStarted());
+    waitForSocket(socketName);
+
+    ProcessBackendManager *manager = new ProcessBackendManager;
+    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    delegate->setIdleInterval(250);
+    manager->setIdleDelegate(delegate);
+    manager->setMemoryRestricted(true);
+
+    for (int i = 0 ; i < kProcessCount ; i++ ) {
+        SocketProcessBackendFactory *factory = new SocketProcessBackendFactory;
+        factory->setSocketName(socketName);
+        manager->addFactory(factory);
+    }
+
+    // Verify that the prelaunch has not started, even after the interval
+    waitForTimeout(delegate->idleInterval() + 2000);
+    QCOMPARE(manager->internalProcesses().count(), 0);
+
+    // Now the prelaunch process should launch
+    manager->setMemoryRestricted(false);
+    waitForInternalProcess(manager, kProcessCount, delegate->idleInterval() * kProcessCount + 2000);
+
+    // Shut off the prelaunches
+    manager->setMemoryRestricted(true);
+    waitForInternalProcess(manager, 0, delegate->idleInterval() + 2000);
+
+    delete manager;
+    delete remote;
 }
 
 void tst_ProcessManager::frontend()

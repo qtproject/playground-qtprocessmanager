@@ -57,12 +57,11 @@ public:
     int index() const;
     void setIndex(int index);
 
-    virtual QList<Q_PID> internalProcesses();
-
 signals:
     void indexChanged();
 
 protected:
+    virtual PidList localInternalProcesses() const;
     virtual bool send(const QJsonObject&);
 
 private:

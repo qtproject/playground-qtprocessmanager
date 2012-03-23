@@ -67,6 +67,7 @@ protected:
 
 private slots:
     void readyRead();
+    void connected();
     void disconnected();
 
 private:

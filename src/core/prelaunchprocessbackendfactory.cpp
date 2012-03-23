@@ -111,16 +111,15 @@ bool PrelaunchProcessBackendFactory::canCreate(const ProcessInfo &info) const
 ProcessBackend * PrelaunchProcessBackendFactory::create(const ProcessInfo &info, QObject *parent)
 {
     Q_ASSERT(m_info);
-
     PrelaunchProcessBackend *prelaunch = m_prelaunch;
 
     if (hasPrelaunchedProcess()) {
         // qDebug() << "Using existing prelaunch";
         m_prelaunch = NULL;
-        startPrelaunchTimer();
         prelaunch->setInfo(info);
         prelaunch->setParent(parent);
         prelaunch->disconnect(this);
+        updateState();
     } else {
         // qDebug() << "Creating prelaunch from scratch";
         prelaunch = new PrelaunchProcessBackend(*m_info, parent);
@@ -128,18 +127,6 @@ ProcessBackend * PrelaunchProcessBackendFactory::create(const ProcessInfo &info,
         prelaunch->setInfo(info);
     }
     return prelaunch;
-}
-
-/*!
-  If there is a prelaunched process running, it will be return here.
- */
-
-QList<Q_PID> PrelaunchProcessBackendFactory::internalProcesses()
-{
-    QList<Q_PID> list;
-    if (m_prelaunch && m_prelaunch->isReady())
-        list << m_prelaunch->pid();
-    return list;
 }
 
 /*!
@@ -164,15 +151,12 @@ void PrelaunchProcessBackendFactory::setPrelaunchEnabled(bool value)
     if (m_prelaunchEnabled != value) {
         m_prelaunchEnabled = value;
         if (!m_prelaunchEnabled) {
-            setIdleCpuRequest(false);
             if (m_prelaunch) {
                 m_prelaunch->deleteLater();
                 m_prelaunch = NULL;
             }
-        } else {
-            Q_ASSERT(m_prelaunch == NULL);
-            startPrelaunchTimer();
         }
+        updateState();
         emit prelaunchEnabledChanged();
     }
 }
@@ -191,15 +175,12 @@ bool PrelaunchProcessBackendFactory::hasPrelaunchedProcess() const
 void PrelaunchProcessBackendFactory::handleMemoryRestrictionChange()
 {
     if (m_memoryRestricted) {
-        setIdleCpuRequest(false);
         if (m_prelaunch) {
             delete m_prelaunch;   // This will kill the child process as well
             m_prelaunch = NULL;
         }
-    } else {
-        Q_ASSERT(m_prelaunch == NULL);
-        startPrelaunchTimer();
     }
+    updateState();
 }
 
 /*!
@@ -216,17 +197,20 @@ PrelaunchProcessBackend *PrelaunchProcessBackendFactory::prelaunchProcessBackend
 
 void PrelaunchProcessBackendFactory::idleCpuAvailable()
 {
-    if (!m_prelaunch && !m_memoryRestricted && m_info) {
-        setIdleCpuRequest(false);   // Might delay this until the prelaunch is done....
-
+    // qDebug() << Q_FUNC_INFO;
+    if (m_prelaunchEnabled && !m_prelaunch && !m_memoryRestricted && m_info) {
+        // qDebug() << Q_FUNC_INFO << "...launching";
         m_prelaunch = new PrelaunchProcessBackend(*m_info, this);
         connect(m_prelaunch, SIGNAL(finished(int,QProcess::ExitStatus)),
                 SLOT(prelaunchFinished(int,QProcess::ExitStatus)));
         connect(m_prelaunch, SIGNAL(error(QProcess::ProcessError)),
                 SLOT(prelaunchError(QProcess::ProcessError)));
+        connect(m_prelaunch, SIGNAL(stateChanged(QProcess::ProcessState)),
+                SLOT(updateState()));
         m_prelaunch->prestart();
         emit processPrelaunched();
     }
+    updateState();
 }
 
 /*!
@@ -241,7 +225,7 @@ void PrelaunchProcessBackendFactory::prelaunchFinished(int exitCode, QProcess::E
         m_prelaunch->deleteLater();
         m_prelaunch = NULL;
     }
-    startPrelaunchTimer();
+    updateState();
 }
 
 /*!
@@ -259,21 +243,26 @@ void PrelaunchProcessBackendFactory::prelaunchError(QProcess::ProcessError err)
     if (err == QProcess::FailedToStart) {
         qWarning() << Q_FUNC_INFO << "disabling prelaunch because of process errors";
         m_prelaunchEnabled = false;
+    }
 
-    }
-    else {
-        // ### TODO: This isn't optimal
-        startPrelaunchTimer();
-    }
+    updateState();
 }
 
 /*!
-    Starts the prelaunch timer only if prelaunching is enabled.
+   Update our presented state, consisting of whether or not we need
+   idle CPU resources and how many internal processes we are running.
 */
-void PrelaunchProcessBackendFactory::startPrelaunchTimer()
+void PrelaunchProcessBackendFactory::updateState()
 {
-    if (m_prelaunchEnabled)
-        setIdleCpuRequest(true);
+    Q_ASSERT(!m_prelaunch || m_prelaunchEnabled);  // If prelaunch is not enabled, we must not have a prelaunch process
+    Q_ASSERT(!m_prelaunch || !m_memoryRestricted);  // If memory is restricted, we must not have a prelaunch process
+
+    setIdleCpuRequest(!m_memoryRestricted && m_prelaunchEnabled && !m_prelaunch && m_info);
+
+    PidList list;
+    if (m_prelaunch && m_prelaunch->isReady())
+        list << m_prelaunch->pid();
+    setInternalProcesses(list);
 }
 
 /*!
@@ -295,10 +284,8 @@ void PrelaunchProcessBackendFactory::setProcessInfo(ProcessInfo *processInfo)
                 m_prelaunch->deleteLater();
                 m_prelaunch = NULL;
             }
-            startPrelaunchTimer();
-        } else {
-            setIdleCpuRequest(false);
         }
+        updateState();
         emit processInfoChanged();
     }
 }

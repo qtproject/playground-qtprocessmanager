@@ -193,7 +193,7 @@ QStringList ProcessManager::names() const
   Return a list of all internal processes being used by factories
 */
 
-QList<Q_PID> ProcessManager::internalProcesses()
+PidList ProcessManager::internalProcesses() const
 {
     return m_backend->internalProcesses();
 }

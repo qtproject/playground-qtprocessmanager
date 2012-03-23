@@ -39,6 +39,7 @@
 
 #include "remoteprocessbackendfactory.h"
 #include "remoteprocessbackend.h"
+#include "remoteprotocol.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
@@ -75,6 +76,9 @@ const int kRemoteTimerInterval = 1000;
     \li \c{{ "command": "write", "id": NUM, "data": STRING }}
     \li Write a data string to the remote process.  We assume that the
        data string is a valid local 8 bit string.
+  \row
+    \li \c{{ "command": "memory", "restricted": bool }}
+    \li Let the remote process know if memory use is restricted.
   \endtable
 
   The following are events that are sent by the remote process
@@ -138,15 +142,73 @@ ProcessBackend * RemoteProcessBackendFactory::create(const ProcessInfo& info, QO
 }
 
 /*!
+  Idle CPU is available.  Send the message over the wire
+ */
+
+void RemoteProcessBackendFactory::idleCpuAvailable()
+{
+    QJsonObject object;
+    object.insert(RemoteProtocol::remote(), RemoteProtocol::idlecpuavailable());
+    send(object);
+}
+
+/*!
+  Tell the remote factory that memory is restricted and space should be freed up.
+ */
+
+void RemoteProcessBackendFactory::handleMemoryRestrictionChange()
+{
+    QJsonObject object;
+    object.insert(RemoteProtocol::remote(), RemoteProtocol::memory());
+    object.insert(RemoteProtocol::restricted(), m_memoryRestricted);
+    send(object);
+}
+
+/*!
+  Return a list of local internal processes.  This is separate from the
+  remote internal process list, which comes from the remote host.
+  You should override this function is a subclass if your subclass is
+  holding a process object
+*/
+
+PidList RemoteProcessBackendFactory::localInternalProcesses() const
+{
+    return PidList();
+}
+
+/*!
+  Handle first connection to the remote process.
+  This function should be called by subclasses.
+ */
+
+void RemoteProcessBackendFactory::handleConnected()
+{
+    handleMemoryRestrictionChange();  // Sends command="memory" message
+}
+
+/*!
   Receive a remote \a message and dispatch it to the correct recipient.
   Call this function from your subclass to properly dispatch messages.
  */
 
 void RemoteProcessBackendFactory::receive(const QJsonObject& message)
 {
-    int id = message.value(QLatin1String("id")).toDouble();
-    if (m_backendMap.contains(id))
-        m_backendMap.value(id)->receive(message);
+   // qDebug() << Q_FUNC_INFO << message;
+
+    QString remote = message.value(RemoteProtocol::remote()).toString();
+    if (remote == RemoteProtocol::idlecpurequested())
+        setIdleCpuRequest(message.value(RemoteProtocol::request()).toBool());
+    else if (remote == RemoteProtocol::internalprocesses()) {
+        PidList plist = localInternalProcesses() +
+            arrayToPidList(message.value(RemoteProtocol::processes()).toArray());
+        qSort(plist);
+        setInternalProcesses(plist);
+    }
+    else {
+        int id = message.value(QLatin1String("id")).toDouble();
+        if (m_backendMap.contains(id))
+            m_backendMap.value(id)->receive(message);
+    }
 }
 
 /*!

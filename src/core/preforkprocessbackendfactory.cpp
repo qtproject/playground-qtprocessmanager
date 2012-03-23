@@ -82,6 +82,7 @@ PreforkProcessBackendFactory::PreforkProcessBackendFactory(QObject *parent)
     m_pipe   = new QtAddOn::JsonStream::JsonPipe(this);
     connect(m_pipe, SIGNAL(messageReceived(const QJsonObject&)),
             SLOT(receive(const QJsonObject&)));
+    handleConnected();
 }
 
 /*!
@@ -93,7 +94,7 @@ PreforkProcessBackendFactory::~PreforkProcessBackendFactory()
     const PreforkChildData *data = Prefork::instance()->at(m_index);
     if (data) {
         QJsonObject message;
-        message.insert(RemoteProtocol::remote(), RemoteProtocol::stop());
+        message.insert(RemoteProtocol::remote(), RemoteProtocol::halt());
         m_pipe->send(message);
         m_pipe->waitForBytesWritten();
     }
@@ -128,25 +129,29 @@ void PreforkProcessBackendFactory::setIndex(int index)
 }
 
 /*!
+  Return the local process
+ */
+
+PidList PreforkProcessBackendFactory::localInternalProcesses() const
+{
+    Prefork *prefork = Prefork::instance();
+    Q_ASSERT(prefork);
+
+    QList<Q_PID> list;
+    if (m_index >= 0 && m_index < prefork->size()) {
+        const PreforkChildData *data = prefork->at(m_index);
+        list << data->pid;
+    }
+    return list;
+}
+
+/*!
   Send a \a message to the preforked process
  */
 
 bool PreforkProcessBackendFactory::send(const QJsonObject& message)
 {
     return m_pipe->send(message);
-}
-
-/*!
-  Return the preforked process
- */
-
-QList<Q_PID> PreforkProcessBackendFactory::internalProcesses()
-{
-    QList<Q_PID> list;
-    const PreforkChildData *data = Prefork::instance()->at(m_index);
-    if (data)
-        list << data->pid;
-    return list;
 }
 
 /*!

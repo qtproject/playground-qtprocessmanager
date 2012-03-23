@@ -61,8 +61,6 @@ public:
     virtual bool canCreate(const ProcessInfo &info) const;
     virtual ProcessBackend *create(const ProcessInfo& info, QObject *parent);
 
-    virtual QList<Q_PID>    internalProcesses();
-
     ProcessInfo *processInfo() const;
     void setProcessInfo(ProcessInfo *processInfo);
     void setProcessInfo(ProcessInfo& processInfo);
@@ -87,9 +85,7 @@ protected slots:
 private slots:
     void prelaunchFinished(int, QProcess::ExitStatus);
     void prelaunchError(QProcess::ProcessError);
-
-private:
-    void startPrelaunchTimer();
+    void updateState();
 
 private:
     PrelaunchProcessBackend *m_prelaunch;

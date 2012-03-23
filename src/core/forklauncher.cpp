@@ -553,7 +553,7 @@ bool ParentProcess::processFdSet(fd_set& rfds, fd_set& wfds)
 // Return 'true' if this is a child process
 bool ParentProcess::handleMessage(QJsonObject& message)
 {
-    if (message.value(RemoteProtocol::remote()).toString() == RemoteProtocol::stop()) {
+    if (message.value(RemoteProtocol::remote()).toString() == RemoteProtocol::halt()) {
         // Force all children to stop
         foreach (ChildProcess *child, m_children)
             child->stop(0);

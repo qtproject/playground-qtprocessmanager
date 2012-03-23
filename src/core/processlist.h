@@ -37,51 +37,45 @@
 **
 ****************************************************************************/
 
-#ifndef SOCKET_LAUNCHER_H
-#define SOCKET_LAUNCHER_H
+#ifndef PROCESS_LIST_H
+#define PROCESS_LIST_H
 
-#include <QObject>
-#include <QMap>
-#include <QJsonObject>
-#include <jsonserver.h>
+#include <QList>
+#include <QProcess>
+#include <QJsonArray>
 
-#include "processbackendmanager.h"
+#include "processmanager-global.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
-class LauncherClient;
+typedef QList<Q_PID> PidList;
 
-class Q_ADDON_PROCESSMANAGER_EXPORT SocketLauncher : public ProcessBackendManager {
-    Q_OBJECT
+inline bool compareSortedLists(const PidList& a, const PidList& b)
+{
+    if (a.size() != b.size())
+        return false;
+    for (int i=0 ; i < a.size() ; i++)
+        if (a.at(i) != b.at(i))
+            return false;
+    return true;
+}
 
-public:
-    SocketLauncher(QObject *parent=0);
-    Q_INVOKABLE bool listen(int port, QtAddOn::JsonStream::JsonAuthority *authority = 0);
-    Q_INVOKABLE bool listen(const QString& socketname, QtAddOn::JsonStream::JsonAuthority *authority=0);
+inline QJsonArray pidListToArray(const PidList& plist)
+{
+    QJsonArray array;
+    foreach (Q_PID pid, plist)
+        array.append((double) pid);
+    return array;
+}
 
-    QtAddOn::JsonStream::JsonServer * server() const;
-
-protected:
-    virtual void handleIdleCpuRequest();
-    virtual void handleInternalProcessChange();
-
-private slots:
-    void connectionAdded(const QString& identifier);
-    void connectionRemoved(const QString& identifier);
-    void messageReceived(const QString& identifier, const QJsonObject& message);
-    void send(const QJsonObject& message);
-
-private:
-    void sendToClient(const QJsonObject& message, LauncherClient *client);
-
-private:
-    QtAddOn::JsonStream::JsonServer *m_server;
-    QMap<QString, LauncherClient*>   m_idToClient;
-    QMap<LauncherClient*, QString>   m_clientToId;
-};
+inline PidList arrayToPidList(const QJsonArray& array)
+{
+    PidList plist;
+    for (int i = 0 ; i < array.size() ; i++)
+        plist.append((int) array.at(i).toDouble());
+    return plist;
+}
 
 QT_END_NAMESPACE_PROCESSMANAGER
 
-QT_PROCESSMANAGER_DECLARE_METATYPE_PTR(SocketLauncher)
-
-#endif // SOCKET_LAUNCHER_H
+#endif // PROCESS_LIST_H

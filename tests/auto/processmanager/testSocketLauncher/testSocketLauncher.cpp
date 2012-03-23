@@ -47,6 +47,8 @@
 
 #include "socketlauncher.h"
 #include "standardprocessbackendfactory.h"
+#include "prelaunchprocessbackendfactory.h"
+#include "processinfo.h"
 
 QT_USE_NAMESPACE_PROCESSMANAGER
 
@@ -59,6 +61,7 @@ static void usage()
              "The socketname is the name of the Unix local socket to listen on\n"
              "\n"
              "Valid arguments:\n"
+             "   -prelaunch PROGRAM       Create prelaunch launcher instead of standard\n"
              "   -validate-inbound PATH   Directory where inbound schema are stored\n"
              "   -validate-outbound PATH  Directory where outbound schema are stored\n"
              "   -warn                    Warn on invalid messages\n"
@@ -107,14 +110,21 @@ int main(int argc, char **argv)
     QCoreApplication app(argc, argv);
     QStringList args = QCoreApplication::arguments();
     progname = args.takeFirst();
+    QString prelaunch_program;
+
     while (args.size()) {
         QString arg = args.at(0);
         if (!arg.startsWith('-'))
             break;
         args.removeFirst();
-        if (arg == QLatin1String("-help"))
+        if (arg == QStringLiteral("-help"))
             usage();
-        else if (arg == QLatin1String("-validate-inbound")) {
+        else if (arg == QStringLiteral("-prelaunch")) {
+            if (!args.size())
+                usage();
+            prelaunch_program = args.takeFirst();
+        }
+        else if (arg == QStringLiteral("-validate-inbound")) {
             if (!args.size())
                 usage();
             indir = args.takeFirst();
@@ -124,7 +134,7 @@ int main(int argc, char **argv)
                 exit(1);
             }
         }
-        else if (arg == QLatin1String("-validate-outbound")) {
+        else if (arg == QStringLiteral("-validate-outbound")) {
             if (!args.size())
                 usage();
             outdir = args.takeFirst();
@@ -134,9 +144,9 @@ int main(int argc, char **argv)
                 exit(1);
             }
         }
-        else if (arg == QLatin1String("-warn"))
+        else if (arg == QStringLiteral("-warn"))
             flags |= QtAddOn::JsonStream::JsonServer::WarnIfInvalid;
-        else if (arg == QLatin1String("-drop"))
+        else if (arg == QStringLiteral("-drop"))
             flags |= QtAddOn::JsonStream::JsonServer::DropIfInvalid;
         else {
             qWarning("Unexpected argument '%s'", qPrintable(arg));
@@ -148,7 +158,16 @@ int main(int argc, char **argv)
         usage();
 
     SocketLauncher launcher;
-    launcher.addFactory(new StandardProcessBackendFactory);
+    if (!prelaunch_program.isEmpty()) {
+        ProcessInfo info;
+        info.setValue("program", prelaunch_program);
+        PrelaunchProcessBackendFactory *factory = new PrelaunchProcessBackendFactory;
+        factory->setProcessInfo(info);
+        launcher.addFactory(factory);
+    }
+    else
+        launcher.addFactory(new StandardProcessBackendFactory);
+
     if (!indir.isEmpty())
         loadSchemasFromDirectory(launcher.server()->inboundValidator(), indir);
     if (!outdir.isEmpty())

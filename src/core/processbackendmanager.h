@@ -45,6 +45,7 @@
 #include <QProcessEnvironment>
 
 #include "processmanager-global.h"
+#include "processlist.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
@@ -65,7 +66,7 @@ public:
 
     ProcessBackend *create(const ProcessInfo& info, QObject *parent=0);
     void            addFactory(ProcessBackendFactory *factory);
-    QList<Q_PID>    internalProcesses();
+    PidList         internalProcesses() const;
 
     void setMemoryRestricted(bool);
     bool memoryRestricted() const;
@@ -75,19 +76,23 @@ public:
     bool           idleCpuRequest() const { return m_idleCpuRequest; }
 
 protected:
-    virtual void handleIdleCpuRequest(bool request);
+    virtual void handleIdleCpuRequest();
+    virtual void handleInternalProcessChange();
 
 signals:
     void idleDelegateChanged();
+    void internalProcessesChanged();
 
 protected slots:
     void idleCpuAvailable();
 
 private slots:
     void updateIdleCpuRequest();
+    void updateInternalProcesses();
 
 private:
     QList<ProcessBackendFactory*> m_factories;
+    PidList                       m_internalProcesses;
     IdleDelegate                 *m_idleDelegate;
     bool                          m_memoryRestricted;
     bool                          m_idleCpuRequest;

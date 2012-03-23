@@ -1,0 +1,7 @@
+{
+    "title": "Halt schema",
+    "description": "Tell the remote factory to halt operations",
+    "properties": {
+        "remote": { "type": "string", "pattern": "halt", "required": true }
+  }
+}
