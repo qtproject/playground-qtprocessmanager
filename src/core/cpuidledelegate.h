@@ -51,7 +51,7 @@ class Q_ADDON_PROCESSMANAGER_EXPORT CpuIdleDelegate : public IdleDelegate
 {
     Q_OBJECT
     Q_PROPERTY(int idleInterval READ idleInterval WRITE setIdleInterval NOTIFY idleIntervalChanged)
-    Q_PROPERTY(int loadThreshold READ loadThreshold WRITE setLoadThreshold NOTIFY loadThresholdChanged)
+    Q_PROPERTY(double loadThreshold READ loadThreshold WRITE setLoadThreshold NOTIFY loadThresholdChanged)
 
 public:
     explicit CpuIdleDelegate(QObject *parent = 0);
