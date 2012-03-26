@@ -58,7 +58,10 @@ Table of contents:
 
 \section1 Header files
 
-\l{Global ProcessManager declarations}
+\list
+\li \l{Global ProcessManager declarations}
+\li \l{Forklauncher}
+\endlist
 
 \section1 QML Elements
 

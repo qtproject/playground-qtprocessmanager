@@ -63,7 +63,6 @@ public:
     void    setLoadThreshold(double threshold);
 
 signals:
-    void idleCpuAvailable();
     void idleIntervalChanged();
     void loadThresholdChanged();
     void loadUpdate(double);

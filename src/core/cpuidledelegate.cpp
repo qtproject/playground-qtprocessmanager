@@ -224,11 +224,6 @@ void CpuIdleDelegate::setLoadThreshold(double threshold)
 }
 
 /*!
-    \fn void CpuIdleDelegate::idleCpuAvailable()
-    Signal emitted periodically when idle CPU resources are available.
-*/
-
-/*!
   \fn void CpuIdleDelegate::idleIntervalChanged()
   This signal is emitted when the idleInterval is changed.
  */

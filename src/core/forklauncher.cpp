@@ -75,6 +75,78 @@
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
+/*!
+  \headerfile <forklauncher.h>
+  \title Forklauncher
+  \ingroup funclists
+
+  \brief The <forklauncher.h> file provides the \l{forklauncher()} function
+  to convert a runtime into a forking runtime factory.
+ */
+
+/*!
+  \fn void forklauncher(int *argc, char ***argv)
+  \relates <forklauncher.h>
+  \brief The fork launcher class converts any standard runtime object
+         into remote process backend that forks off new children.
+
+  In many cases the ProcessManager class is repeatedly asked to start
+  the same program (for example, a QML runtime environment).  Rather
+  than launch the process from scratch, it is convenient to launch the
+  process just once, do the dynamic symbol resolution and any stateless
+  initialization, and then fork off copies of it self each time the process
+  is being started.
+
+  The forklauncher functions makes it easy to convert any program into
+  a self-forking parent process.  Simply call \c{forklauncher()} just
+  after the program has started and initialized any stateless global
+  values.  You must pass a pointer to \a argc and a pointer to \a
+  argv.  For example:
+
+  \code
+  // Program "myForkProgram"
+  int main(int argc, char **argv)
+  {
+    forklauncher(&argc, &argv);
+    QCoreApplication app(argc, argv);
+    MyAppStuff stuff;
+    return app.exec();
+  }
+  \endcode
+
+  The \c{forklauncher} function grabs control of the process and listens
+  on STDIN for JSON-formatted messages that follow the remote protocol.
+  This matches logically with the \l{PipeProcessBackendFactory} class, which
+  spawns off a process and expects to talk with that process over the
+  STDIN/STDOUT pair connected to that process.  So your server code
+  looks something like:
+
+  \code
+  ProcessBackendManager *manager = new ProcessBackendManager;
+  ProcessInfo info;
+  info.setValue("program", "myForkProgram");
+  PipeProcessBackendFactory *factory = new PipeProcessBackendFactory;
+  factory->setProcessInfo(info);
+  manager->addFactory(factory);
+  \endcode
+
+  Any processes creation requests to the \l{PipeProcessBackendFactory} will
+  be sent to \c{myForkProgram}.  The \c{forkLauncher()} function will
+  receive the process creation request, call \c{fork()} to create a child
+  process, and then return from the \c{forkLauncher()} function call
+  in the child process.  Which means that the \c{myForkProgram} will
+  run the rest of the program as written, and never realize that it is
+  a forked copy of a master program which is still listening to the
+  \l{PipeProcessBackendFactory}.
+
+  The process creation routine passes a complete \l{ProcessInfo} record,
+  including program name and command line arguments.  This program name
+  and these command line arguments are written into the child's \c{argc},
+  and \c{argv} variables.  Just remember, you can only access the child's
+  command line arguments \e{after} you return from \c{forklauncher()}
+
+*/
+
 static int sig_child_pipe[2];
 static struct sigaction old_sig_child_handler;
 

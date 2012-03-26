@@ -130,7 +130,7 @@ void DeclarativeProcessManager::registerTypes(const char *uri)
     qmlRegisterType<UnixProcessBackend>();
 
     // Non-creatable, with enum values
-    qmlRegisterUncreatableType<Process>(uri, 1, 0, "Process", "Don't try to make this");
+    qmlRegisterUncreatableType<Process>(uri, 1, 0, "Process", QStringLiteral("Don't try to make this"));
 
     // Types registered from the Core library
     qmlRegisterType<CpuIdleDelegate>(uri, 1, 0, "CpuIdleDelegate");
