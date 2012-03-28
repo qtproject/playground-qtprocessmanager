@@ -65,6 +65,9 @@ protected:
     virtual void handleIdleCpuRequest();
     virtual void handleInternalProcessChange();
 
+protected slots:
+    virtual void handleInternalProcessError(QProcess::ProcessError);
+
 private slots:
     void connectionAdded(const QString& identifier);
     void connectionRemoved(const QString& identifier);

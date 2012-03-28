@@ -53,6 +53,7 @@ public:
     static inline const QString error() { return QStringLiteral("error"); }
     static inline const QString errorString() { return QStringLiteral("errorString"); }
     static inline const QString event() { return QStringLiteral("event"); }
+    static inline const QString processError() { return QStringLiteral("processError"); }
     static inline const QString exitCode() { return QStringLiteral("exitCode"); }
     static inline const QString exitStatus() { return QStringLiteral("exitStatus"); }
     static inline const QString finished() { return QStringLiteral("finished"); }
@@ -62,6 +63,7 @@ public:
     static inline const QString idlecpuavailable() { return QStringLiteral("idlecpuavailable"); }
     static inline const QString info() { return QStringLiteral("info"); }
     static inline const QString internalprocesses() { return QStringLiteral("internalprocesses"); }
+    static inline const QString internalprocesserror() { return QStringLiteral("internalprocesserror"); }
     static inline const QString key() { return QStringLiteral("key"); }
     static inline const QString memory() { return QStringLiteral("memory"); }
     static inline const QString oomAdjustment() { return QStringLiteral("oomAdjustment"); }

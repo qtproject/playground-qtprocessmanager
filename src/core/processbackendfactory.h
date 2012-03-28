@@ -83,6 +83,7 @@ public:
 
 signals:
     void internalProcessesChanged();
+    void internalProcessError(QProcess::ProcessError);
     void matchDelegateChanged();
     void rewriteDelegateChanged();
     void idleCpuRequestChanged();

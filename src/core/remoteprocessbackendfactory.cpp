@@ -204,6 +204,10 @@ void RemoteProcessBackendFactory::receive(const QJsonObject& message)
         qSort(plist);
         setInternalProcesses(plist);
     }
+    else if (remote == RemoteProtocol::internalprocesserror()) {
+        int value = (int) message.value(RemoteProtocol::processError()).toDouble();
+        emit internalProcessError(static_cast<QProcess::ProcessError>(value));
+    }
     else {
         int id = message.value(QLatin1String("id")).toDouble();
         if (m_backendMap.contains(id))

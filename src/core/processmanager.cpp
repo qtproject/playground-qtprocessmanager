@@ -70,6 +70,9 @@ ProcessManager::ProcessManager(QObject *parent)
     : QObject(parent)
 {
     m_backend = new ProcessBackendManager(this);
+    connect(m_backend, SIGNAL(internalProcessesChanged()), SIGNAL(internalProcessesChanged()));
+    connect(m_backend, SIGNAL(internalProcessError(QProcess::ProcessError)),
+            SIGNAL(internalProcessError(QProcess::ProcessError)));
 }
 
 /*!
@@ -315,6 +318,17 @@ void ProcessManager::processFrontendDestroyed()
     \fn void ProcessManager::idleDelegateChanged()
     This signal is emitted when the idle delegate is changed
 */
+
+/*!
+  \fn void ProcessManager::internalProcessesChanged()
+  This signal is emitted when the list of internal processes changes.
+*/
+
+/*!
+  \fn void ProcessManager::internalProcessError(QProcess::ProcessError error)
+  This signal is emitted when an internal process has an \a error.
+*/
+
 
 #include "moc_processmanager.cpp"
 

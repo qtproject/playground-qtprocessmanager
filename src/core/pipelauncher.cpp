@@ -122,6 +122,22 @@ void PipeLauncher::handleInternalProcessChange()
 
 /*!
   \internal
+
+  We override this function to forward internal process errors
+ */
+
+void PipeLauncher::handleInternalProcessError(QProcess::ProcessError error)
+{
+    Q_ASSERT(m_client);
+
+    QJsonObject object;
+    object.insert(RemoteProtocol::remote(), RemoteProtocol::internalprocesserror());
+    object.insert(RemoteProtocol::processError(), error);
+    m_client->send(object);
+}
+
+/*!
+  \internal
  */
 
 void PipeLauncher::receive(const QJsonObject& message)

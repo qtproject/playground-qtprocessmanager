@@ -168,6 +168,10 @@ void ProcessBackendManager::addFactory(ProcessBackendFactory *factory)
     factory->setParent(this);
     factory->setMemoryRestricted(m_memoryRestricted);
     connect(factory, SIGNAL(internalProcessesChanged()), SLOT(updateInternalProcesses()));
+    connect(factory, SIGNAL(internalProcessError(QProcess::ProcessError)),
+            SIGNAL(internalProcessError(QProcess::ProcessError)));
+    connect(factory, SIGNAL(internalProcessError(QProcess::ProcessError)),
+            SLOT(handleInternalProcessError(QProcess::ProcessError)));
     connect(factory, SIGNAL(idleCpuRequestChanged()), SLOT(updateIdleCpuRequest()));
     updateIdleCpuRequest();
 }
@@ -309,6 +313,16 @@ void ProcessBackendManager::handleInternalProcessChange()
 }
 
 /*!
+  Override thie function to customize your handling of internal
+  process \a error values.
+ */
+
+void ProcessBackendManager::handleInternalProcessError(QProcess::ProcessError error)
+{
+    Q_UNUSED(error);
+}
+
+/*!
   \fn void ProcessBackendManager::internalProcessesChanged()
   Signal emitted whenever the list of internal processes has changed.
 */
@@ -316,6 +330,11 @@ void ProcessBackendManager::handleInternalProcessChange()
 /*!
   \fn void ProcessBackendManager::idleDelegateChanged()
   Signal emitted whenever the IdleDelegate is changed.
+*/
+
+/*!
+  \fn void ProcessBackendManager::internalProcessError(QProcess::ProcessError error)
+  Signal emitted when an internal process has an \a error.
 */
 
 #include "moc_processbackendmanager.cpp"

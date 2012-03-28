@@ -75,16 +75,18 @@ public:
     void           setIdleDelegate(IdleDelegate *);
     bool           idleCpuRequest() const { return m_idleCpuRequest; }
 
+signals:
+    void idleDelegateChanged();
+    void internalProcessesChanged();
+    void internalProcessError(QProcess::ProcessError);
+
 protected:
     virtual void handleIdleCpuRequest();
     virtual void handleInternalProcessChange();
 
-signals:
-    void idleDelegateChanged();
-    void internalProcessesChanged();
-
 protected slots:
     void idleCpuAvailable();
+    virtual void handleInternalProcessError(QProcess::ProcessError);
 
 private slots:
     void updateIdleCpuRequest();

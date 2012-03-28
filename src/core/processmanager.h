@@ -89,6 +89,8 @@ public:
 signals:
     void memoryRestrictedChanged();
     void idleDelegateChanged();
+    void internalProcessesChanged();
+    void internalProcessError(QProcess::ProcessError);
 
 protected slots:
     virtual void processFrontendAboutToStart();

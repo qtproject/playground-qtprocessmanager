@@ -177,6 +177,19 @@ void SocketLauncher::handleInternalProcessChange()
 }
 
 /*!
+  \internal
+  We override this function to forward internal process errors
+ */
+
+void SocketLauncher::handleInternalProcessError(QProcess::ProcessError error)
+{
+    QJsonObject object;
+    object.insert(RemoteProtocol::remote(), RemoteProtocol::internalprocesserror());
+    object.insert(RemoteProtocol::processError(), error);
+    m_server->broadcast(object);
+}
+
+/*!
  \internal
 */
 

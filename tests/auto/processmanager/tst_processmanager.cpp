@@ -225,6 +225,18 @@ static void waitForPriority(ProcessBackend *process, int priority, int timeout=5
     }
 }
 
+static void waitForSignal(QSignalSpy& spy, int count=1, int timeout=5000)
+{
+    QTime stopWatch;
+    stopWatch.start();
+    forever {
+        if (spy.count() >= count)
+            break;
+        if (stopWatch.elapsed() >= timeout)
+            QFAIL("Timed out");
+        QTestEventLoop::instance().enterLoop(1);
+    }
+}
 
 /**********************************************************************/
 
@@ -276,44 +288,14 @@ public:
         QFAIL("String not found");
     }
 
-    void waitStart(int timeout=5000) {
-        stopWatch.restart();
-        forever {
-            if (startSpy.count())
-                break;
-            if (stopWatch.elapsed() >= timeout)
-                QFAIL("Timed out");
-            QTestEventLoop::instance().enterLoop(1);
-        }
-    }
+    void waitStart(int timeout=5000) { waitForSignal(startSpy, 1, timeout); }
+    void waitFinished(int timeout=5000) { waitForSignal(finishedSpy, 1, timeout); }
+    void waitStdout(int timeout=5000) { waitForSignal(stdoutSpy, stdoutSpy.count() + 1, timeout); }
 
     void waitFailedStart(int timeout=5000) {
         stopWatch.restart();
         forever {
             if (errorSpy.count())
-                break;
-            if (stopWatch.elapsed() >= timeout)
-                QFAIL("Timed out");
-            QTestEventLoop::instance().enterLoop(1);
-        }
-    }
-
-    void waitFinished(int timeout=5000) {
-        stopWatch.restart();
-        forever {
-            if (finishedSpy.count())
-                break;
-            if (stopWatch.elapsed() >= timeout)
-                QFAIL("Timed out");
-            QTestEventLoop::instance().enterLoop(1);
-        }
-    }
-
-    void waitStdout(int timeout=5000) {
-        stopWatch.restart();
-        int count = stdoutSpy.count();
-        forever {
-            if (stdoutSpy.count() != count)
                 break;
             if (stopWatch.elapsed() >= timeout)
                 QFAIL("Timed out");
@@ -1023,8 +1005,10 @@ void tst_ProcessManager::prelaunchChildAbort()
     Q_PID pid = manager->internalProcesses().at(0);
 
     // Kill the prelaunched process and verify that it is restarted
+    QSignalSpy spy(manager, SIGNAL(internalProcessError(QProcess::ProcessError)));
     ::kill(pid, SIGKILL);
     waitForInternalProcess(manager, 0);
+    waitForSignal(spy);
     waitForInternalProcess(manager, 1, delegate->idleInterval() + 2000);
     delete manager;
 }
@@ -1055,8 +1039,10 @@ void tst_ProcessManager::prelaunchWaitIdleTest()
 
     // Kill the prelaunched process and verify that it is restarted
     Q_PID pid = manager->internalProcesses().at(0);
+    QSignalSpy spy(manager, SIGNAL(internalProcessError(QProcess::ProcessError)));
     ::kill(pid, SIGKILL);
     waitForInternalProcess(manager, 0);
+    waitForSignal(spy);
     waitForInternalProcess(manager, 1, delegate->idleInterval() + 2000);
 
     delete manager;
@@ -1099,8 +1085,10 @@ void tst_ProcessManager::prelaunchForPipeLauncherIdle()
 
     // Kill the prelaunched process and verify that it is restarted
     Q_PID pid = manager->internalProcesses().at(1);
+    QSignalSpy spy(manager, SIGNAL(internalProcessError(QProcess::ProcessError)));
     ::kill(pid, SIGKILL);
     waitForInternalProcess(manager, 1);
+    waitForSignal(spy);
     waitForInternalProcess(manager, 2, delegate->idleInterval() + 2000);
 
     // Kill the prelaunched process and keep it dead - otherwise we'll leave a hanging child
@@ -1108,6 +1096,7 @@ void tst_ProcessManager::prelaunchForPipeLauncherIdle()
     pid = manager->internalProcesses().at(1);
     ::kill(pid, SIGKILL);
     waitForInternalProcess(manager, 1);
+    waitForSignal(spy, 2);
     waitForTimeout(delegate->idleInterval() + 2000);
     QCOMPARE(manager->internalProcesses().count(), 1);
 
@@ -1145,20 +1134,19 @@ void tst_ProcessManager::prelaunchForPipeLauncherMemory()
     QCOMPARE(manager->internalProcesses().count(), 1);
 
     // Now the prelaunch process should launch
-    qDebug() << "Turning off memory restrictions";
     manager->setMemoryRestricted(false);
     waitForInternalProcess(manager, 2, delegate->idleInterval() + 2000);
     QCOMPARE(manager->internalProcesses().count(), 2);
 
     // Kill the prelaunched process and verify that it is restarted
-    qDebug() << "Directly kill the prelaunched process";
+    QSignalSpy spy(manager, SIGNAL(internalProcessError(QProcess::ProcessError)));
     Q_PID pid = manager->internalProcesses().at(1);
     ::kill(pid, SIGKILL);
     waitForInternalProcess(manager, 1);
+    waitForSignal(spy);
     waitForInternalProcess(manager, 2, delegate->idleInterval() + 2000);
 
     // Kill the prelaunched process and keep it dead - otherwise we'll leave a hanging child
-    qDebug() << "Turn on memory restrictions";
     manager->setMemoryRestricted(true);
     waitForInternalProcess(manager, 1);
     waitForTimeout(delegate->idleInterval() + 2000);
@@ -1251,8 +1239,10 @@ void tst_ProcessManager::prelaunchForSocketLauncherIdle()
 
     // Kill the prelaunched process and verify that it is restarted
     Q_PID pid = manager->internalProcesses().at(0);
+    QSignalSpy spy(manager, SIGNAL(internalProcessError(QProcess::ProcessError)));
     ::kill(pid, SIGKILL);
     waitForInternalProcess(manager, 0);
+    waitForSignal(spy);
     waitForInternalProcess(manager, 1, delegate->idleInterval() + 2000);
 
     // Kill the prelaunched process and keep it dead - otherwise we'll leave a hanging child
@@ -1260,6 +1250,7 @@ void tst_ProcessManager::prelaunchForSocketLauncherIdle()
     pid = manager->internalProcesses().at(0);
     ::kill(pid, SIGKILL);
     waitForInternalProcess(manager, 0);
+    waitForSignal(spy, 2);
     waitForTimeout(delegate->idleInterval() + 2000);
     QCOMPARE(manager->internalProcesses().count(), 0);
 
@@ -1303,12 +1294,11 @@ void tst_ProcessManager::prelaunchForSocketLauncherMemory()
     QCOMPARE(manager->internalProcesses().count(), 1);
 
     // Kill the prelaunched process and verify that it is restarted
+    QSignalSpy spy(manager, SIGNAL(internalProcessError(QProcess::ProcessError)));
     Q_PID pid = manager->internalProcesses().at(0);
-    qDebug() << "Killing the prelaunched process" << pid;
     ::kill(pid, SIGKILL);
-    qDebug() << "Verify that the process count goes to zero";
     waitForInternalProcess(manager, 0);
-    qDebug() << "Now wait for the process count to bounce back up";
+    waitForSignal(spy);
     waitForInternalProcess(manager, 1, delegate->idleInterval() + 2000);
 
     // Kill the prelaunched process and keep it dead - otherwise we'll leave a hanging child
@@ -1412,8 +1402,10 @@ void tst_ProcessManager::frontendWaitIdleTest()
     Q_PID pid = manager->internalProcesses().at(0);
 
     // Kill the prelaunched process and verify that it is restarted
+    QSignalSpy spy(manager, SIGNAL(internalProcessError(QProcess::ProcessError)));
     ::kill(pid, SIGKILL);
     waitForInternalProcess(manager, 0);
+    waitForSignal(spy);
     waitForInternalProcess(manager, 1, delegate->idleInterval() + 2000);
     delete manager;
 }

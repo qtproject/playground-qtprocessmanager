@@ -279,6 +279,11 @@ void ProcessBackendFactory::rewrite(ProcessInfo& info)
   Create a ProcessBackend object based on the ProcessInfo \a info and \a parent.
 */
 
+/*!
+  \fn void ProcessBackendFactory::internalProcessError(QProcess::ProcessError error)
+  This signal is emitted when an internal process has an \a error.
+*/
+
 #include "moc_processbackendfactory.cpp"
 
 QT_END_NAMESPACE_PROCESSMANAGER

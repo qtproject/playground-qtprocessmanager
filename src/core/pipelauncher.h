@@ -60,6 +60,9 @@ protected:
     virtual void handleIdleCpuRequest();
     virtual void handleInternalProcessChange();
 
+protected slots:
+    virtual void handleInternalProcessError(QProcess::ProcessError);
+
 private slots:
     void receive(const QJsonObject& object);
 

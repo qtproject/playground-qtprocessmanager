@@ -246,6 +246,7 @@ void PrelaunchProcessBackendFactory::prelaunchError(QProcess::ProcessError err)
     }
 
     updateState();
+    emit internalProcessError(err);
 }
 
 /*!
