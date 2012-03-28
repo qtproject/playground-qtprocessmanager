@@ -16,6 +16,7 @@ PUBLIC_HEADERS += \
   $$PWD/idledelegate.h \
   $$PWD/timeoutidledelegate.h \
   $$PWD/cpuidledelegate.h \
+  $$PWD/ioidledelegate.h \
   $$PWD/infomatchdelegate.h \
   $$PWD/keymatchdelegate.h \
   $$PWD/processinfo.h \
@@ -55,6 +56,7 @@ SOURCES += \
   $$PWD/idledelegate.cpp \
   $$PWD/timeoutidledelegate.cpp \
   $$PWD/cpuidledelegate.cpp \
+  $$PWD/ioidledelegate.cpp \
   $$PWD/infomatchdelegate.cpp \
   $$PWD/keymatchdelegate.cpp \
   $$PWD/processinfo.cpp \
