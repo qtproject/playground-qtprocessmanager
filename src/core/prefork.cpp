@@ -229,7 +229,7 @@ int Prefork::makeChild(int start)
             ::close(fd2[0]);
             ::close(fd2[1]);
 #if defined(Q_OS_LINUX)
-            ::prctl(PR_SET_PDEATHSIG, SIGHUP);  // Ask to be killed when parent dies
+            ::prctl(PR_SET_PDEATHSIG, SIGTERM);  // Ask to be killed when parent dies
 #endif
             launch(start, end);  // This function never returns
         }

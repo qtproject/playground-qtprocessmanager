@@ -64,6 +64,10 @@
 #include "processinfo.h"
 #include "procutils.h"
 
+#if defined(Q_OS_LINUX)
+#include <sys/prctl.h>
+#endif
+
 #if defined(Q_OS_MAC) && !defined(QT_NO_CORESERVICES)
 // Shared libraries don't have direct access to environ until runtime
 # include <crt_externs.h>
@@ -443,6 +447,9 @@ bool ChildProcess::doFork()
         close(fd2[1]);
         close(fd3[0]);
         close(fd3[1]);
+#if defined(Q_OS_LINUX)
+            ::prctl(PR_SET_PDEATHSIG, SIGTERM);  // Ask to be killed when parent dies
+#endif
         return true;
     }
 

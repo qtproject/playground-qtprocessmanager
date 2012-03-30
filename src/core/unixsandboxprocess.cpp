@@ -46,6 +46,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <grp.h>
+#include <sys/prctl.h>
+#include <signal.h>
 #endif
 #include <pwd.h>
 
@@ -72,6 +74,8 @@ UnixSandboxProcess::UnixSandboxProcess(qint64 uid, qint64 gid, QObject *parent)
 /*!
   Set up child process UID, GID, and supplementary group list.
   Also set the child process to be in its own process group and fix the umask.
+  Under Linux, the child process will be set to receive a SIGTERM signal
+  when the parent process dies.
 
   The creator of the child process may have specified a UID and/or a
   GID for the child process.  Here are the currently supported cases:
@@ -121,6 +125,10 @@ UnixSandboxProcess::UnixSandboxProcess(qint64 uid, qint64 gid, QObject *parent)
 
 void UnixSandboxProcess::setupChildProcess()
 {
+#if defined(Q_OS_LINUX)
+    if (::prctl(PR_SET_PDEATHSIG, SIGTERM))
+        qFatal("UnixSandboxProcess prctl unable to set death signal: %s", strerror(errno));
+#endif
     if (::setpgid(0,0))
         qFatal("UnixSandboxProcess setpgid(): %s", strerror(errno));
 
