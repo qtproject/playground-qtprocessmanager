@@ -40,6 +40,7 @@
 
 #include "unixsandboxprocess.h"
 #include <sys/stat.h>
+#include <errno.h>
 
 #if defined(Q_OS_LINUX)
 #include <sys/types.h>
@@ -69,24 +70,95 @@ UnixSandboxProcess::UnixSandboxProcess(qint64 uid, qint64 gid, QObject *parent)
 }
 
 /*!
-  \internal Set up the user and group id
+  Set up child process UID, GID, and supplementary group list.
+  Also set the child process to be in its own process group and fix the umask.
+
+  The creator of the child process may have specified a UID and/or a
+  GID for the child process.  Here are the currently supported cases:
+
+  \table
+  \header
+    \li UID
+    \li GID
+    \li Result
+
+  \row
+    \li Invalid
+    \li Invalid
+    \li The child runs with the same UID and GID as the parent
+  \row
+    \li \b{Valid}
+    \li Invalid
+    \li The UID is looked up from \c{/etc/passwd}.  If it is
+        found, the UID and GID of the child are set from the values
+        found.  The supplemetary group list is initialized from
+        \c{/etc/groups}.  If the UID is not found, the child is killed.
+  \row
+    \li Invalid
+    \li \b{Valid}
+    \li The child's GID is set.  The supplementary
+        group list is cleared.
+  \row
+    \li \b{Valid}
+    \li \b{Valid}
+    \li The child's UID and GID are set to the values specified.  If
+        they happen to match the values in \c{/etc/passwd}
+        the supplementary group list is set as well.  If they don't
+        match, the supplementary group list is cleared.
+
+  \endtable
+
+  In the "normal" use case, the calling process will set the UID and the
+  child process will automatically get the correct GID and
+  supplementary group list by looking up information from \c{/etc/passwd}.
+
+  In the "alternative" use cases, you can set both the UID/GID or you
+  can set just the GID.  These cases are designed for running
+  processes that have a UID and/or GID that doesn't exist in the
+  \c{/etc/passwd} database.
+
 */
 
 void UnixSandboxProcess::setupChildProcess()
 {
-    ::setpgid(0,0);
-    if (m_gid >= 0)
-        ::setgid(m_gid);
-    if (m_uid >= 0)
-        ::setuid(m_uid);
+    if (::setpgid(0,0))
+        qFatal("UnixSandboxProcess setpgid(): %s", strerror(errno));
+
     ::umask(S_IWGRP | S_IWOTH);
 
-    struct passwd * pw = getpwent();
-    if (pw)
-        ::initgroups(pw->pw_name, pw->pw_gid);
-    else {
-        qWarning() << "Unable to find UID" << ::getuid() << "to set groups";
-        ::setgroups(0,0);
+    if (m_uid >= 0) {
+        errno = 0;
+        struct passwd *pw = ::getpwuid(m_uid);
+        if (!pw && errno)
+            qFatal("UnixSandboxProcess getpwuid(%ld): %s", (long) m_uid, strerror(errno));
+
+        gid_t gid = m_gid;
+        if (m_gid < 0) {   // UID set, GID unset
+            if (!pw)
+                qFatal("UnixSandboxProcess did not find uid %ld in database", (long) m_uid);
+            if (::initgroups(pw->pw_name, pw->pw_gid))
+                qFatal("UnixSandboxProcess initgroups(%s, %ld): %s", pw->pw_name, (long) pw->pw_gid, strerror(errno));
+            gid = pw->pw_gid;
+        }
+        else {  // UID set, GID set
+            if (pw && pw->pw_gid == m_gid) {
+                if (::initgroups(pw->pw_name, pw->pw_gid))
+                    qFatal("UnixSandboxProcess initgroups(%s, %ld): %s", pw->pw_name, (long) pw->pw_gid, strerror(errno));
+            } else {
+                if (::setgroups(0, NULL))
+                    qFatal("UnixSandboxProcess setgroups(0,NULL): %s", strerror(errno));
+            }
+        }
+        if (::setgid(gid))
+            qFatal("UnixSandboxProcess setgid(%ld): %s", (long) gid, strerror(errno));
+        if (::setuid(m_uid))
+            qFatal("UnixSandboxProcess setuid(%ld): %s", (long) m_uid, strerror(errno));
+    }
+    else if (m_gid >=0) {   // UID unset, GID set
+        if (::setgroups(0, NULL))
+            qFatal("UnixSandboxProcess setgroups(0,NULL): %s", strerror(errno));
+        if (::setgid(m_gid))
+            qFatal("UnixSandboxProcess setgid(%ld): %s", (long) m_gid, strerror(errno));
     }
 }
 
