@@ -44,7 +44,6 @@
 #include <errno.h>
 #include <signal.h>
 #include <QDebug>
-#include <QFile>
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
@@ -101,18 +100,16 @@ qint32 UnixProcessBackend::actualPriority() const
 }
 
 /*!
-    Set the process priority to \a priority
+    Set the process priority to \a priority.  If the process
+    is in its own process group, we fix the process priority
+    of the entire group.
 */
 
 void UnixProcessBackend::setDesiredPriority(qint32 priority)
 {
     ProcessBackend::setDesiredPriority(priority);
-    if (m_process) {
-        // ### Is this always correct?  Could we have an m_process without a pid?
-        if (setpriority(PRIO_PROCESS, m_process->pid(), priority))
-            qWarning() << "Failed to set process priority from " << actualPriority() <<
-                          "to" << priority << " : errno = " << errno;
-    }
+    if (m_process)
+        ProcUtils::setPriority(m_process->pid(), priority);
 }
 
 #if defined(Q_OS_LINUX)
@@ -249,10 +246,9 @@ qint64 UnixProcessBackend::write(const char *data, qint64 maxSize)
 */
 void UnixProcessBackend::handleProcessStarted()
 {
-    if (m_info.contains(ProcessInfoConstants::Priority) &&
-        setpriority(PRIO_PROCESS, m_process->pid(), m_info.priority()))
-        qWarning() << "Failed to set process priority at startup from " << actualPriority() <<
-            "to" << m_info.priority()  << " : errno = " << errno;
+    if (m_info.contains(ProcessInfoConstants::Priority))
+        ProcUtils::setPriority(m_process->pid(), m_info.priority());
+
     if (m_info.contains(ProcessInfoConstants::OomAdjustment) &&
         !ProcUtils::setOomAdjustment(m_process->pid(), m_info.oomAdjustment()))
         qWarning() << "Failed to set process oom score at startup from " << actualOomAdjustment() <<

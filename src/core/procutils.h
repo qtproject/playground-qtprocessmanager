@@ -111,6 +111,7 @@ public:
     static bool   setOomAdjustment(pid_t pid, qint32 oomAdjustment);
 
     static void   sendSignalToProcess(pid_t pid, int sig);
+    static void   setPriority(pid_t pid, qint32 priority);
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER

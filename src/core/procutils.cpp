@@ -45,6 +45,7 @@
 #include <sys/socket.h>
 #include <sys/resource.h>
 #include <signal.h>
+#include <errno.h>
 
 #include <QFile>
 #include <QFileInfo>
@@ -55,7 +56,6 @@
 #include <QRegExp>
 #elif defined(Q_OS_MAC)
 #include <sys/sysctl.h>
-#include <errno.h>
 #endif
 
 
@@ -407,6 +407,22 @@ void ProcUtils::sendSignalToProcess(pid_t pid, int sig)
 
     qWarning("Unable terminate process group: %d, directly killing process %d", pgrp, pid);
     ::kill(pid, sig);
+}
+
+/*!
+  Set a process or process group priority
+ */
+
+void ProcUtils::setPriority(pid_t pid, qint32 priority)
+{
+    pid_t pgrp = ::getpgid(pid);
+    if (pgrp != -1 && pgrp != ::getpgrp()) {
+        if (::setpriority(PRIO_PGRP, pgrp, priority) == 0)
+            return;
+        qErrnoWarning(errno, "Failed to set process group %d priority to %d", pgrp, priority);
+    }
+    if (::setpriority(PRIO_PROCESS, pid, priority))
+        qErrnoWarning(errno, "Failed to set process %d priority to %d", pid, priority);
 }
 
 #include "moc_procutils.cpp"
