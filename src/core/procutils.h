@@ -112,6 +112,8 @@ public:
 
     static void   sendSignalToProcess(pid_t pid, int sig);
     static void   setPriority(pid_t pid, qint32 priority);
+    static int    getThreadCount(pid_t pid);
+    static QList<qint32> getThreadPriorities(pid_t pid);
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER

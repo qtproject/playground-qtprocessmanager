@@ -43,6 +43,8 @@
 #include <string.h>
 #include <signal.h>
 #include <stdio.h>
+#include <pthread.h>
+#include <stdlib.h>
 
 const int kBufSize = 100;
 
@@ -74,11 +76,21 @@ ssize_t readline(char *buffer, int max_len)
     return len;
 }
 
+void * work(void *)
+{
+    while (1)
+        sleep(1);
+    pthread_exit((void *)0);
+}
+
 static char tough[] = "tough\n";
+const int kNumThreads = 4;
 
 int
 main(int argc, char **argv)
 {
+    pthread_t thread[kNumThreads];
+
     for (int i = 1 ; i < argc ; i++) {
         if (!strcmp(argv[i], "-noterm")) {
             struct sigaction action;
@@ -91,9 +103,21 @@ main(int argc, char **argv)
             if (writeline(tough, strlen(tough)) < 0)
                 return 3;
         }
+        else if (!strcmp(argv[i], "-threads")) {
+            pthread_attr_t attr;
+            pthread_attr_init(&attr);
+            for (int j = 0 ; j < kNumThreads ; j++) {
+                int result = pthread_create(&thread[j], &attr, work, (void *)j);
+                if (result) {
+                    printf("Error in pthread_created: %d\n", result);
+                    return 3;
+                }
+            }
+            pthread_attr_destroy(&attr);
+        }
     }
-    char buffer[kBufSize+1];
 
+    char buffer[kBufSize+1];
     while (1) {
         ssize_t count = readline(buffer, kBufSize);
         if (count < 0)
@@ -110,4 +134,6 @@ main(int argc, char **argv)
         if (result < 0)
             return 2;
     }
+
+    pthread_exit(NULL);
 }

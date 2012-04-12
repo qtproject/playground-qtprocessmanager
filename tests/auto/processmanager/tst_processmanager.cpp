@@ -54,6 +54,7 @@
 #include "pipeprocessbackendfactory.h"
 #include "socketprocessbackendfactory.h"
 #include "timeoutidledelegate.h"
+#include "procutils.h"
 
 #include <signal.h>
 
@@ -161,6 +162,19 @@ static void waitForTimeout(int timeout=5000)
     forever {
         if (stopWatch.elapsed() >= timeout)
             break;
+        QTestEventLoop::instance().enterLoop(1);
+    }
+}
+
+static void waitForThreadCount(Q_PID pid, int count, int timeout=5000)
+{
+    QTime stopWatch;
+    stopWatch.start();
+    forever {
+        if (ProcUtils::getThreadCount(pid) == count)
+            break;
+        if (stopWatch.elapsed() >= timeout)
+            QFAIL("Timed out waiting for thread count");
         QTestEventLoop::instance().enterLoop(1);
     }
 }
@@ -960,6 +974,7 @@ private slots:
     void preforkLauncherOomChangeAfter()       { preforkLauncherTest(oomChangeAfterClient); }
 
     void prelaunchChildAbort();
+    void prelaunchThreadPriority();
     void prelaunchWaitIdleTest();
 
     void prelaunchForPipeLauncherIdle();
@@ -1010,6 +1025,51 @@ void tst_ProcessManager::prelaunchChildAbort()
     waitForInternalProcess(manager, 0);
     waitForSignal(spy);
     waitForInternalProcess(manager, 1, delegate->idleInterval() + 2000);
+    delete manager;
+}
+
+#include <sys/time.h>
+#include <sys/resource.h>
+
+void tst_ProcessManager::prelaunchThreadPriority()
+{
+    ProcessBackendManager *manager = new ProcessBackendManager;
+    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    delegate->setIdleInterval(250);
+    manager->setIdleDelegate(delegate);
+
+    ProcessInfo info;
+    info.setValue("program", "testPrelaunch/testPrelaunch");
+    info.setValue("arguments", QStringList() << "-threads");
+    info.setValue("priority", 19);
+    PrelaunchProcessBackendFactory *factory = new PrelaunchProcessBackendFactory;
+    factory->setProcessInfo(info);
+    manager->addFactory(factory);
+
+    // Start the prelaunch process and verify that all threads
+    // have been created and are at the correct priority
+    waitForInternalProcess(manager);
+    Q_PID pid = manager->internalProcesses().at(0);
+    waitForThreadCount(pid, 5);
+    foreach (qint32 priority, ProcUtils::getThreadPriorities(pid))
+        QCOMPARE(priority, 19);
+
+    info.setValue("priority", 5);
+    ProcessBackend *process = manager->create(info);
+    QVERIFY(process);
+
+    Spy spy(process);
+    process->start();
+    spy.waitStart();
+    verifyRunning(process);
+    QCOMPARE(process->actualPriority(), 5);
+    foreach (qint32 priority, ProcUtils::getThreadPriorities(process->pid()))
+        QCOMPARE(priority, 5);
+
+    writeJson(process, "stop");
+    spy.waitFinished();
+    cleanupProcess(process);
+
     delete manager;
 }
 

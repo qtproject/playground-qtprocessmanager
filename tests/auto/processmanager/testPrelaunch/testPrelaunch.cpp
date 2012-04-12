@@ -47,6 +47,7 @@
 #include "processinfo.h"
 #include <signal.h>
 #include <stdio.h>
+#include <pthread.h>
 
 #if defined(Q_OS_LINUX)
 #include <sys/types.h>
@@ -156,9 +157,19 @@ private:
     int              count;
 };
 
+const int kNumThreads = 4;
+void * work(void *)
+{
+    while (1)
+        sleep(1);
+    pthread_exit((void *)0);
+}
+
 int
 main(int argc, char **argv)
 {
+    pthread_t thread[kNumThreads];
+
     QCoreApplication app(argc, argv);
     QStringList args = QCoreApplication::arguments();
     QString progname = args.takeFirst();
@@ -176,6 +187,18 @@ main(int argc, char **argv)
                 return 1;
             }
             qDebug() << "tough";
+        }
+        else if (arg == QStringLiteral("-threads")) {
+            pthread_attr_t attr;
+            pthread_attr_init(&attr);
+            for (int j = 0 ; j < kNumThreads ; j++) {
+                int result = pthread_create(&thread[j], &attr, work, (void *)j);
+                if (result) {
+                    printf("Error in pthread_created: %d\n", result);
+                    return 3;
+                }
+            }
+            pthread_attr_destroy(&attr);
         }
     }
 

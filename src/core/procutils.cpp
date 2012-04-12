@@ -48,6 +48,7 @@
 #include <errno.h>
 
 #include <QFile>
+#include <QDir>
 #include <QFileInfo>
 #include <QLocalSocket>
 #include <QDebug>
@@ -424,6 +425,49 @@ void ProcUtils::setPriority(pid_t pid, qint32 priority)
     if (::setpriority(PRIO_PROCESS, pid, priority))
         qErrnoWarning(errno, "Failed to set process %d priority to %d", pid, priority);
 }
+
+/*!
+  Return a count of the number of threads in a process
+ */
+
+int ProcUtils::getThreadCount(pid_t pid)
+{
+#if defined(Q_OS_LINUX)
+    QDir pdir(QString::fromLatin1("/proc/%1/task").arg(pid));
+    return pdir.entryList(QDir::Dirs | QDir::NoDotAndDotDot).size();
+#endif
+    return 1;
+}
+
+/*!
+  Return a list of priorities, one per thread in the process.  This function
+  returns the "user visible" priority, a number from -20 to +19.
+ */
+
+QList<qint32> ProcUtils::getThreadPriorities(pid_t pid)
+{
+    QList<qint32> plist;
+#if defined(Q_OS_LINUX)
+    static QRegExp statFile(QStringLiteral("^(\\d+) \\(.*\\) [RSDZTW] (\\d+) (\\d+) (\\d+)(?: \\d+){11} (\\d+) (\\d+)"));
+
+    QDir pdir(QString::fromLatin1("/proc/%1/task").arg(pid));
+    foreach (const QString& entry, pdir.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+        QFile file(QString::fromLatin1("%1/%2/stat").arg(pdir.path()).arg(entry));
+        if (!file.open(QIODevice::ReadOnly)) {
+            qWarning() << "Unable to read thread stat" << file.fileName();
+            return plist;
+        }
+        QByteArray contents = file.readAll();
+        if (statFile.indexIn(QString::fromLocal8Bit(contents)) != 0) {
+            qWarning("Did not match stat file expression");
+            return plist;
+        }
+        plist << statFile.cap(6).toLong();
+    }
+#endif
+    return plist;
+}
+
 
 #include "moc_procutils.cpp"
 
