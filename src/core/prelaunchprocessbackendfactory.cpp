@@ -150,12 +150,6 @@ void PrelaunchProcessBackendFactory::setPrelaunchEnabled(bool value)
 {
     if (m_prelaunchEnabled != value) {
         m_prelaunchEnabled = value;
-        if (!m_prelaunchEnabled) {
-            if (m_prelaunch) {
-                m_prelaunch->deleteLater();
-                m_prelaunch = NULL;
-            }
-        }
         updateState();
         emit prelaunchEnabledChanged();
     }
@@ -255,7 +249,6 @@ void PrelaunchProcessBackendFactory::prelaunchError(QProcess::ProcessError err)
 */
 void PrelaunchProcessBackendFactory::updateState()
 {
-    Q_ASSERT(!m_prelaunch || m_prelaunchEnabled);  // If prelaunch is not enabled, we must not have a prelaunch process
     Q_ASSERT(!m_prelaunch || !m_memoryRestricted);  // If memory is restricted, we must not have a prelaunch process
 
     setIdleCpuRequest(!m_memoryRestricted && m_prelaunchEnabled && !m_prelaunch && m_info);
