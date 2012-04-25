@@ -57,6 +57,10 @@
 #include <QRegExp>
 #elif defined(Q_OS_MAC)
 #include <sys/sysctl.h>
+#include <mach/mach.h>
+#include <mach/task.h>
+#include <mach/mach_vm.h>
+#include <mach/thread_info.h>
 #endif
 
 
@@ -428,6 +432,9 @@ void ProcUtils::setPriority(pid_t pid, qint32 priority)
 
 /*!
   Return a count of the number of threads in a process
+
+  Under Mach this requires some pretty strong permissions.  Under Linux, anyone
+  can read the number of threads.
  */
 
 int ProcUtils::getThreadCount(pid_t pid)
@@ -435,6 +442,27 @@ int ProcUtils::getThreadCount(pid_t pid)
 #if defined(Q_OS_LINUX)
     QDir pdir(QString::fromLatin1("/proc/%1/task").arg(pid));
     return pdir.entryList(QDir::Dirs | QDir::NoDotAndDotDot).size();
+#elif defined(Q_OS_MAC)
+    mach_port_t task;
+    thread_act_array_t threads;
+    mach_msg_type_number_t thread_count;
+    kern_return_t err = task_for_pid(mach_task_self(), pid, &task);
+    if (err != KERN_SUCCESS) {
+        qWarning("Unable to convert pid to task: %d", err);
+        return 1;
+    }
+    err = task_threads(task, &threads, &thread_count);
+    if (err != KERN_SUCCESS) {
+        qWarning("Call to task_threads failed: %d", err);
+        mach_port_deallocate(mach_task_self(), task);
+    }
+    qDebug("Found task with %d threads", thread_count);
+    mach_port_deallocate(mach_task_self(), task);
+    err = mach_vm_deallocate(mach_task_self(), (mach_vm_address_t) threads,
+                        sizeof(*threads) * thread_count);
+    if (err != KERN_SUCCESS)
+        qWarning("Troubling freeing thread list");
+    return thread_count;
 #endif
     return 1;
 }

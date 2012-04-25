@@ -57,6 +57,8 @@
 #include "procutils.h"
 
 #include <signal.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 QT_USE_NAMESPACE_PROCESSMANAGER
 
@@ -1028,11 +1030,10 @@ void tst_ProcessManager::prelaunchChildAbort()
     delete manager;
 }
 
-#include <sys/time.h>
-#include <sys/resource.h>
-
 void tst_ProcessManager::prelaunchThreadPriority()
 {
+    // Running this under Mac OSX has issues with permissions to read thread information
+#if defined(Q_OS_LINUX)
     ProcessBackendManager *manager = new ProcessBackendManager;
     TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
     delegate->setIdleInterval(250);
@@ -1071,6 +1072,7 @@ void tst_ProcessManager::prelaunchThreadPriority()
     cleanupProcess(process);
 
     delete manager;
+#endif
 }
 
 void tst_ProcessManager::prelaunchWaitIdleTest()
