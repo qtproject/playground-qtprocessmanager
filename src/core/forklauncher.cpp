@@ -273,8 +273,8 @@ static void fixProcessState(const ProcessInfo& info, int *argc_ptr, char ***argv
             argv[0] = strdup(info.program().toLocal8Bit().constData());
         else
             argv[0] = (*argv_ptr)[0];
-        for (int i = 0 ; i < argc ; i++ )
-            argv[i+1] = strdup(info.arguments().at(0).toLocal8Bit().constData());
+        for (int i = 1 ; i < argc ; i++ )
+            argv[i] = strdup(info.arguments().at(i-1).toLocal8Bit().constData());
         argv[argc] = 0;
         *argc_ptr = argc;
         *argv_ptr = argv;
@@ -368,11 +368,13 @@ void ChildProcess::processFdSet(QByteArray& outgoing, fd_set& rfds, fd_set& wfds
     }
     if (FD_ISSET(m_stdout, &rfds)) {  // Data to read
         readToBuffer(m_stdout, m_outbuf);
-        copyToOutgoing(outgoing, RemoteProtocol::stdout(), m_outbuf, m_id);
+        if (m_outbuf.size())
+            copyToOutgoing(outgoing, RemoteProtocol::stdout(), m_outbuf, m_id);
     }
     if (FD_ISSET(m_stderr, &rfds)) {  // Data to read
         readToBuffer(m_stderr, m_errbuf);
-        copyToOutgoing(outgoing, RemoteProtocol::stderr(), m_errbuf, m_id);
+        if (m_errbuf.size())
+            copyToOutgoing(outgoing, RemoteProtocol::stderr(), m_errbuf, m_id);
     }
     if (m_state == SentSigTerm && m_timer.hasExpired(m_timeout)) {
         m_state = SentSigKill;
@@ -577,7 +579,7 @@ void ParentProcess::waitForChildren()
     int status;
     while (1) {
         pid_t pid = ::waitpid(-1, &status, WNOHANG);
-        if (pid == -1 && errno == ECHILD)
+        if (pid == 0)
             return;
         if (pid < 0)
             qFatal("Error in wait %s", strerror(errno));
@@ -624,7 +626,7 @@ bool ParentProcess::processFdSet(fd_set& rfds, fd_set& wfds)
                 return true;
         }
     }
-    if (FD_ISSET(1, &wfds))   // Write to stdout
+    if (m_sendbuf.size() && FD_ISSET(1, &wfds))   // Write to stdout
         writeFromBuffer(1, m_sendbuf);
     return false;
 }
@@ -674,7 +676,7 @@ bool ParentProcess::handleMessage(QJsonObject& message)
         } else if (command == RemoteProtocol::write()) {
             ChildProcess *child = m_children.value(id);
             if (child)
-                child->write(message.value(RemoteProtocol::data()).toString().toLocal8Bit());
+                child->write(QByteArray::fromBase64(message.value(RemoteProtocol::data()).toString().toLatin1()));
         }
     }
     return false;

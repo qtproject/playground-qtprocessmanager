@@ -211,10 +211,6 @@ void RemoteProcessBackend::stop(int timeout)
 /*!
   Writes at most \a maxSize bytes of data from \a data to the device.
   Returns the number of bytes that were actually written, or -1 if an error occurred.
-
-  This function isn't quite correct, because we have a JSON encoding problem.
-  For the moment we'll pretend that any data sent is actually something in
-  standard ASCII.
 */
 qint64 RemoteProcessBackend::write(const char *data, qint64 maxSize)
 {
@@ -222,7 +218,7 @@ qint64 RemoteProcessBackend::write(const char *data, qint64 maxSize)
         QJsonObject object;
         object.insert(RemoteProtocol::command(), RemoteProtocol::write());
         object.insert(RemoteProtocol::id(), m_id);
-        object.insert(RemoteProtocol::data(), QString::fromLocal8Bit(data, maxSize));
+        object.insert(RemoteProtocol::data(), QString::fromLatin1(QByteArray(data, maxSize).toBase64()));
         if (m_factory->send(object))
             return maxSize;
     }
@@ -246,7 +242,6 @@ QString RemoteProcessBackend::errorString() const
 void RemoteProcessBackend::receive(const QJsonObject& message)
 {
     QString event = message.value(RemoteProtocol::event()).toString();
-    // qDebug() << Q_FUNC_INFO << message;
     if (event == RemoteProtocol::started()) {
         m_pid = message.value(RemoteProtocol::pid()).toDouble();
         emit started();
