@@ -579,7 +579,7 @@ void ParentProcess::waitForChildren()
     int status;
     while (1) {
         pid_t pid = ::waitpid(-1, &status, WNOHANG);
-        if (pid == 0)
+        if (pid == 0 || (pid == -1 && errno == ECHILD))
             return;
         if (pid < 0)
             qFatal("Error in wait %s", strerror(errno));
