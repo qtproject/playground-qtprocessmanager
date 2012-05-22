@@ -91,12 +91,14 @@ PreforkProcessBackendFactory::PreforkProcessBackendFactory(QObject *parent)
 
 PreforkProcessBackendFactory::~PreforkProcessBackendFactory()
 {
-    const PreforkChildData *data = Prefork::instance()->at(m_index);
-    if (data) {
-        QJsonObject message;
-        message.insert(RemoteProtocol::remote(), RemoteProtocol::halt());
-        m_pipe->send(message);
-        m_pipe->waitForBytesWritten();
+    if (m_index >= 0) {
+        const PreforkChildData *data = Prefork::instance()->at(m_index);
+        if (data) {
+            QJsonObject message;
+            message.insert(RemoteProtocol::remote(), RemoteProtocol::halt());
+            m_pipe->send(message);
+            m_pipe->waitForBytesWritten();
+        }
     }
 }
 
