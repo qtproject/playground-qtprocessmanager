@@ -54,7 +54,6 @@
 #include "pipeprocessbackendfactory.h"
 #include "preforkprocessbackendfactory.h"
 #include "prelaunchprocessbackendfactory.h"
-#include "processinfotemplate.h"
 #include "socketlauncher.h"
 #include "standardprocessbackendfactory.h"
 #include "socketprocessbackendfactory.h"
@@ -143,7 +142,6 @@ void DeclarativeProcessManager::registerTypes(const char *uri)
     qmlRegisterType<PrelaunchProcessBackendFactory>(uri, 1, 0, "PrelaunchProcessBackendFactory");
     qmlRegisterType<ProcessBackendManager>(uri, 1, 0, "ProcessBackendManager");
     qmlRegisterType<ProcessInfo>(uri, 1, 0, "ProcessInfo");
-    qmlRegisterType<ProcessInfoTemplate>(uri, 1, 0, "ProcessInfoTemplate");
     qmlRegisterType<ProcessManager>(uri, 1, 0, "ProcessManager");
     qmlRegisterType<SocketLauncher>(uri, 1, 0, "SocketLauncher");
     qmlRegisterType<SocketProcessBackendFactory>(uri, 1, 0, "SocketProcessBackendFactory");
@@ -155,7 +153,6 @@ void DeclarativeProcessManager::registerTypes(const char *uri)
     qmlRegisterType<DeclarativeProcessManager>(uri, 1, 0, "PmManager");
     qmlRegisterType<DeclarativeSocketLauncher>(uri, 1, 0, "PmLauncher");
     qmlRegisterType<DeclarativeRewriteDelegate>(uri, 1, 0, "PmScriptRewrite");
-    qmlRegisterType<ProcessInfoTemplate>(uri, 1, 0, "ProcessInfoTemplate");
 }
 
 /*!
