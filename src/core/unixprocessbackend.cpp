@@ -169,7 +169,7 @@ bool UnixProcessBackend::createProcess()
 
     qint64 uid = (m_info.contains(ProcessInfoConstants::Uid) ? m_info.uid() : -1);
     qint64 gid = (m_info.contains(ProcessInfoConstants::Gid) ? m_info.gid() : -1);
-    m_process = new UnixSandboxProcess(uid, gid, this);
+    m_process = new UnixSandboxProcess(uid, gid, m_info.umask(), this);
 
     m_process->setReadChannel(QProcess::StandardOutput);
     connect(m_process, SIGNAL(readyReadStandardOutput()),

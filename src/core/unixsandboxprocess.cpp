@@ -61,13 +61,14 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 */
 
 /*!
-  Construct a UnixProcessBackend with \a uid, \a gid, and optional \a parent.
+  Construct a UnixProcessBackend with \a uid, \a gid, \a umask, and optional \a parent.
 */
 
-UnixSandboxProcess::UnixSandboxProcess(qint64 uid, qint64 gid, QObject *parent)
+UnixSandboxProcess::UnixSandboxProcess(qint64 uid, qint64 gid, uint umask, QObject *parent)
     : QProcess(parent)
     , m_uid(uid)
     , m_gid(gid)
+    , m_umask(umask)
 {
 }
 
@@ -132,7 +133,8 @@ void UnixSandboxProcess::setupChildProcess()
     if (::setpgid(0,0))
         qFatal("UnixSandboxProcess setpgid(): %s", strerror(errno));
 
-    ::umask(S_IWGRP | S_IWOTH);
+    if (m_umask)
+        ::umask(m_umask);
 
     if (m_uid >= 0) {
         errno = 0;

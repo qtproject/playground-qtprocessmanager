@@ -212,7 +212,9 @@ static void fixProcessState(const ProcessInfo& info, int *argc_ptr, char ***argv
         ::setgid(info.gid());
     if (info.contains(ProcessInfoConstants::Uid))
         ::setuid(info.uid());
-    ::umask(S_IWGRP | S_IWOTH);
+    uint umask = info.umask();
+    if (umask)
+        ::umask(umask);
     struct passwd *pw = getpwent();
     if (pw)
         ::initgroups(pw->pw_name, pw->pw_gid);

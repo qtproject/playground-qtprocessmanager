@@ -57,6 +57,7 @@ const QLatin1String Environment = QLatin1String("environment");
 const QLatin1String WorkingDirectory = QLatin1String("workingDirectory");
 const QLatin1String Uid = QLatin1String("uid");
 const QLatin1String Gid = QLatin1String("gid");
+const QLatin1String Umask = QLatin1String("umask");
 const QLatin1String Priority = QLatin1String("priority");
 const QLatin1String OomAdjustment = QLatin1String("oomAdjustment");
 const QLatin1String StartOutputPattern = QLatin1String("startOutputPattern");
@@ -72,6 +73,7 @@ class Q_ADDON_PROCESSMANAGER_EXPORT ProcessInfo : public QObject
     Q_PROPERTY(QString workingDirectory READ workingDirectory WRITE setWorkingDirectory NOTIFY workingDirectoryChanged)
     Q_PROPERTY(qint64 uid READ uid WRITE setUid NOTIFY uidChanged)
     Q_PROPERTY(qint64 gid READ gid WRITE setGid NOTIFY gidChanged)
+    Q_PROPERTY(uint umask READ umask WRITE setUmask NOTIFY umaskChanged)
     Q_PROPERTY(int priority READ priority WRITE setPriority NOTIFY priorityChanged)
     Q_PROPERTY(int oomAdjustment READ oomAdjustment WRITE setOomAdjustment NOTIFY oomAdjustmentChanged)
     Q_PROPERTY(QByteArray startOutputPattern READ startOutputPattern WRITE setStartOutputPattern NOTIFY startOutputPatternChanged)
@@ -104,6 +106,9 @@ public:
     qint64 gid() const;
     void setGid(qint64 gid);
 
+    uint umask() const;
+    void setUmask(uint umask);
+
     int priority() const;
     void setPriority(int priority);
 
@@ -129,6 +134,7 @@ signals:
     void workingDirectoryChanged();
     void uidChanged();
     void gidChanged();
+    void umaskChanged();
     void priorityChanged();
     void oomAdjustmentChanged();
     void startOutputPatternChanged();

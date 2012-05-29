@@ -51,7 +51,7 @@ class UnixSandboxProcess : public QProcess
     Q_OBJECT
 
 public:
-    UnixSandboxProcess(qint64 uid, qint64 gid, QObject *parent=0);
+    UnixSandboxProcess(qint64 uid, qint64 gid, uint umask, QObject *parent=0);
 
 protected:
     void setupChildProcess();
@@ -59,6 +59,7 @@ protected:
 private:
     qint64 m_uid;
     qint64 m_gid;
+    uint m_umask;
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER

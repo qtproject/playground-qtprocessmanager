@@ -106,6 +106,11 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 */
 
 /*!
+    \property ProcessInfo::umask
+    \brief the default umask of the process.
+*/
+
+/*!
     \property ProcessInfo::priority
     \brief the Unix priority "niceness" that the program will run at.
 */
@@ -304,6 +309,26 @@ qint64 ProcessInfo::gid() const
 void ProcessInfo::setGid(qint64 newGid)
 {
     setValue(ProcessInfoConstants::Gid, newGid);
+}
+
+/*!
+    Return the process default umask
+*/
+
+uint ProcessInfo::umask() const
+{
+    return m_info.value(ProcessInfoConstants::Umask).toUInt();
+}
+
+/*!
+    Set the process default umask
+
+    If 0 (the default), the process inherits its parent's umask.
+*/
+
+void ProcessInfo::setUmask(uint newUmask)
+{
+    setValue(ProcessInfoConstants::Umask, newUmask);
 }
 
 /*!
