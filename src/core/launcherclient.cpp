@@ -108,7 +108,7 @@ void LauncherClient::receive(const QJsonObject& message)
         }
     }
     else if ( cmd == RemoteProtocol::write() ) {
-        QByteArray data = message.value(RemoteProtocol::data()).toString().toLocal8Bit();
+        QByteArray data = QByteArray::fromBase64(message.value(RemoteProtocol::data()).toString().toLocal8Bit());
         ProcessBackend *backend = m_idToBackend.value(id);
         if (backend)
             backend->write(data);
