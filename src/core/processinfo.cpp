@@ -315,20 +315,42 @@ void ProcessInfo::setGid(qint64 newGid)
     Return the process default umask
 */
 
-uint ProcessInfo::umask() const
+qint64 ProcessInfo::umask() const
 {
-    return m_info.value(ProcessInfoConstants::Umask).toUInt();
+    return m_info.value(ProcessInfoConstants::Umask).toLongLong();
 }
 
 /*!
     Set the process default umask
 
-    If 0 (the default), the process inherits its parent's umask.
+    Initializing this value to -1 (or leaving it uninitialized) will result in the
+    process inheriting its parent's umask.
 */
 
-void ProcessInfo::setUmask(uint newUmask)
+void ProcessInfo::setUmask(qint64 newUmask)
 {
     setValue(ProcessInfoConstants::Umask, newUmask);
+}
+
+/*!
+    Return the capabilities that the process will drop
+*/
+
+qint64 ProcessInfo::dropCapabilities() const
+{
+    return m_info.value(ProcessInfoConstants::DropCapabilities).toLongLong();
+}
+
+/*!
+    Set the capabilities that the process will drop
+
+    Initializing this value to 0 (or leaving it uninitialized) will result in the
+    process not dropping any capabilities.
+*/
+
+void ProcessInfo::setDropCapabilities(qint64 dropCapabilities)
+{
+    setValue(ProcessInfoConstants::DropCapabilities, dropCapabilities);
 }
 
 /*!
@@ -506,6 +528,10 @@ void ProcessInfo::emitChangeSignal(const QString &key)
         emit uidChanged();
     } else if (key == ProcessInfoConstants::Gid) {
         emit gidChanged();
+    } else if (key == ProcessInfoConstants::Umask) {
+        emit umaskChanged();
+    } else if (key == ProcessInfoConstants::DropCapabilities) {
+        emit dropCapabilitiesChanged();
     } else if (key == ProcessInfoConstants::Priority) {
         emit priorityChanged();
     } else if (key == ProcessInfoConstants::OomAdjustment) {

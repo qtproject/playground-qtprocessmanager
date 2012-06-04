@@ -14,6 +14,7 @@ MODULE_PRI = ../../modules/qt_processmanager.pri
 
 QMAKE_CXXFLAGS += -fPIC -fvisibility=hidden -fvisibility-inlines-hidden
 LIBS += -ldl
+linux*: LIBS += -lcap
 
 include($$PWD/core-lib.pri)
 

@@ -47,6 +47,7 @@
 #include <unistd.h>
 #include <grp.h>
 #include <sys/prctl.h>
+#include <sys/capability.h>
 #include <signal.h>
 #endif
 #include <pwd.h>
@@ -64,17 +65,19 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
   Construct a UnixProcessBackend with \a uid, \a gid, \a umask, and optional \a parent.
 */
 
-UnixSandboxProcess::UnixSandboxProcess(qint64 uid, qint64 gid, uint umask, QObject *parent)
+UnixSandboxProcess::UnixSandboxProcess(qint64 uid, qint64 gid, qint64 umask, qint64 dropCapabilities, QObject *parent)
     : QProcess(parent)
     , m_uid(uid)
     , m_gid(gid)
     , m_umask(umask)
+    , m_dropCapabilities(dropCapabilities)
 {
 }
 
 /*!
   Set up child process UID, GID, and supplementary group list.
-  Also set the child process to be in its own process group and fix the umask.
+  Also set the child process to be in its own process group and fix the umask
+  and the POSIX capabilities to drop.
   Under Linux, the child process will be set to receive a SIGTERM signal
   when the parent process dies.
 
@@ -133,8 +136,10 @@ void UnixSandboxProcess::setupChildProcess()
     if (::setpgid(0,0))
         qFatal("UnixSandboxProcess setpgid(): %s", strerror(errno));
 
-    if (m_umask)
-        ::umask(m_umask);
+    if (m_umask >= 0) {
+        mode_t umask = m_umask;
+        ::umask(umask);
+    }
 
     if (m_uid >= 0) {
         errno = 0;
@@ -170,6 +175,27 @@ void UnixSandboxProcess::setupChildProcess()
         if (::setgid(m_gid))
             qFatal("UnixSandboxProcess setgid(%ld): %s", (long) m_gid, strerror(errno));
     }
+
+
+#if defined (Q_OS_LINUX)
+    if (m_dropCapabilities >= 0) {
+        cap_t caps;
+        cap_value_t cap_list[63];
+        quint64 bit = 1;
+        int n = 0;
+        for (int i = 0; i < 63; ++i) {
+            if (m_dropCapabilities & (bit << i))
+                cap_list[n++] = i;
+        }
+        caps = ::cap_get_proc();
+        ::cap_set_flag(caps, CAP_EFFECTIVE, n, cap_list, CAP_CLEAR);
+        ::cap_set_flag(caps, CAP_INHERITABLE, n, cap_list, CAP_CLEAR);
+        ::cap_set_flag(caps, CAP_PERMITTED, n, cap_list, CAP_CLEAR);
+        if (::cap_set_proc(caps) == -1)
+            qFatal("UnixSandboxProcess cap_set_proc (%ld): %s", (long) m_dropCapabilities, strerror(errno));
+        ::cap_free(caps);
+    }
+#endif
 }
 
 #include "moc_unixsandboxprocess.cpp"
