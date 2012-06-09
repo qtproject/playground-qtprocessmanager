@@ -37,6 +37,7 @@
 **
 ****************************************************************************/
 
+#include <unistd.h>
 #include <signal.h>
 #include <QDebug>
 #include <QtEndian>

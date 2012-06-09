@@ -54,6 +54,7 @@
 #include <pwd.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 // Linux only?
 #include <sys/wait.h>

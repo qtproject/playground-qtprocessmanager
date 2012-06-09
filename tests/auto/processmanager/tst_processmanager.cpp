@@ -59,6 +59,7 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <unistd.h>
 
 QT_USE_NAMESPACE_PROCESSMANAGER
 
