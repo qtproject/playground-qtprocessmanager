@@ -79,7 +79,7 @@ PreforkProcessBackendFactory::PreforkProcessBackendFactory(QObject *parent)
     : RemoteProcessBackendFactory(parent)
     , m_index(-1)
 {
-    m_pipe   = new QtAddOn::JsonStream::JsonPipe(this);
+    m_pipe   = new QtAddOn::QtJsonStream::QJsonPipe(this);
     connect(m_pipe, SIGNAL(messageReceived(const QJsonObject&)),
             SLOT(receive(const QJsonObject&)));
     handleConnected();

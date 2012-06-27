@@ -43,8 +43,8 @@
 #include <QQmlComponent>
 #include <QQmlProperty>
 
-#include <jsonuidauthority.h>
-#include <jsonuidrangeauthority.h>
+#include <qjsonuidauthority.h>
+#include <qjsonuidrangeauthority.h>
 
 #include "declarativesocketlauncher.h"
 #include "declarativeprocessmanager.h"
@@ -69,9 +69,9 @@ static void registerQmlTypes()
 {
     const char *uri = "Test";
     DeclarativeProcessManager::registerTypes(uri);
-    qmlRegisterUncreatableType<QtAddOn::JsonStream::JsonAuthority>(uri, 1, 0, "JsonAuthority", "Abstract class");
-    qmlRegisterType<QtAddOn::JsonStream::JsonUIDRangeAuthority>(uri, 1, 0, "JsonUIDRangeAuthority");
-    qmlRegisterType<QtAddOn::JsonStream::JsonUIDAuthority>(uri, 1, 0, "JsonUIDAuthority");
+    qmlRegisterUncreatableType<QtAddOn::QtJsonStream::QJsonAuthority>(uri, 1, 0, "JsonAuthority", "Abstract class");
+    qmlRegisterType<QtAddOn::QtJsonStream::QJsonUIDRangeAuthority>(uri, 1, 0, "JsonUIDRangeAuthority");
+    qmlRegisterType<QtAddOn::QtJsonStream::QJsonUIDAuthority>(uri, 1, 0, "JsonUIDAuthority");
 }
 
 int main(int argc, char **argv)

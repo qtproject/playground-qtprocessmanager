@@ -47,7 +47,7 @@
 #include <QProcess>
 #include <QLocalSocket>
 
-#include <jsonuidrangeauthority.h>
+#include <qjsonuidrangeauthority.h>
 
 #include "declarativeprocessmanager.h"
 #include "declarativematchdelegate.h"
@@ -147,6 +147,11 @@ public:
         , finishedSpy(process, SIGNAL(finished(int, QProcess::ExitStatus))) {}
 
     void check( int startCount, int errorCount, int finishedCount, int stateCount ) {
+//        qDebug() << "XXX errors: ";
+//        for (int i = 0 ; i < errorSpy.count() ; i++)
+//           qDebug() << "\tXXX : " << (qVariantValue<QProcess::ProcessError>(errorSpy.at(i).at(0)));
+
+
         QVERIFY(startSpy.count() == startCount);
         QVERIFY(errorSpy.count() == errorCount);
         QVERIFY(finishedSpy.count() == finishedCount);

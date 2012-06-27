@@ -43,7 +43,7 @@
 #include <QObject>
 #include <QMap>
 #include <QJsonObject>
-#include <jsonserver.h>
+#include <qjsonserver.h>
 
 #include "processbackendmanager.h"
 
@@ -56,10 +56,10 @@ class Q_ADDON_PROCESSMANAGER_EXPORT SocketLauncher : public ProcessBackendManage
 
 public:
     SocketLauncher(QObject *parent=0);
-    Q_INVOKABLE bool listen(int port, QtAddOn::JsonStream::JsonAuthority *authority = 0);
-    Q_INVOKABLE bool listen(const QString& socketname, QtAddOn::JsonStream::JsonAuthority *authority=0);
+    Q_INVOKABLE bool listen(int port, QtAddOn::QtJsonStream::QJsonAuthority *authority = 0);
+    Q_INVOKABLE bool listen(const QString& socketname, QtAddOn::QtJsonStream::QJsonAuthority *authority=0);
 
-    QtAddOn::JsonStream::JsonServer * server() const;
+    QtAddOn::QtJsonStream::QJsonServer * server() const;
 
 protected:
     virtual void handleIdleCpuRequest();
@@ -78,9 +78,9 @@ private:
     void sendToClient(const QJsonObject& message, LauncherClient *client);
 
 private:
-    QtAddOn::JsonStream::JsonServer *m_server;
-    QMap<QString, LauncherClient*>   m_idToClient;
-    QMap<LauncherClient*, QString>   m_clientToId;
+    QtAddOn::QtJsonStream::QJsonServer *m_server;
+    QMap<QString, LauncherClient*>      m_idToClient;
+    QMap<LauncherClient*, QString>      m_clientToId;
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER

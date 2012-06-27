@@ -43,8 +43,6 @@
 #include <QtEndian>
 #include <QJsonDocument>
 
-#include <jsonpipe.h>
-
 #include "pipelauncher.h"
 #include "launcherclient.h"
 #include "remoteprotocol.h"
@@ -69,7 +67,7 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 PipeLauncher::PipeLauncher(QObject *parent)
     : ProcessBackendManager(parent)
 {
-    m_pipe   = new QtAddOn::JsonStream::JsonPipe(this);
+    m_pipe   = new QtAddOn::QtJsonStream::QJsonPipe(this);
     m_client = new LauncherClient(this);
 
     connect(m_pipe, SIGNAL(messageReceived(const QJsonObject&)),

@@ -42,8 +42,8 @@
 #include <QDir>
 #include <QDebug>
 
-#include <jsonserver.h>
-#include <schemavalidator.h>
+#include <qjsonserver.h>
+#include <qjsonschemavalidator.h>
 
 #include "socketlauncher.h"
 #include "standardprocessbackendfactory.h"
@@ -75,12 +75,12 @@ class ValidateMessage : public QObject {
 public:
     ValidateMessage(QObject *parent=0) : QObject(parent) {}
 public slots:
-    void failed(const QJsonObject& message, const QtAddOn::JsonStream::SchemaError& error) {
+    void failed(const QJsonObject& message, const QtAddOn::QtJsonStream::QJsonSchemaError& error) {
         qDebug() << Q_FUNC_INFO << "Message failed to validate" << message << error;
     }
 };
 
-static void loadSchemasFromDirectory(QtAddOn::JsonStream::SchemaValidator *validator, const QString& path)
+static void loadSchemasFromDirectory(QtAddOn::QtJsonStream::QJsonSchemaValidator *validator, const QString& path)
 {
     int count = 0;
     QDir dir(path);
@@ -90,7 +90,7 @@ static void loadSchemasFromDirectory(QtAddOn::JsonStream::SchemaValidator *valid
     dir.setNameFilters( QStringList() << "*.json" );
     foreach (QString filename, dir.entryList(QDir::Files | QDir::Readable)) {
         if (!validator->loadFromFile(dir.filePath(filename))) {
-            QtAddOn::JsonStream::SchemaError err = validator->getLastError();
+            QtAddOn::QtJsonStream::QJsonSchemaError err = validator->getLastError();
             qFatal("Error loading schema file '%s', [%d] %s",
                    qPrintable(dir.filePath(filename)), err.errorCode(), qPrintable(err.errorString()));
         }
@@ -104,7 +104,7 @@ static void loadSchemasFromDirectory(QtAddOn::JsonStream::SchemaValidator *valid
 
 int main(int argc, char **argv)
 {
-    QtAddOn::JsonStream::JsonServer::ValidatorFlags flags(QtAddOn::JsonStream::JsonServer::NoValidation);
+    QtAddOn::QtJsonStream::QJsonServer::ValidatorFlags flags(QtAddOn::QtJsonStream::QJsonServer::NoValidation);
     QString indir, outdir;
 
     QCoreApplication app(argc, argv);
@@ -145,9 +145,9 @@ int main(int argc, char **argv)
             }
         }
         else if (arg == QStringLiteral("-warn"))
-            flags |= QtAddOn::JsonStream::JsonServer::WarnIfInvalid;
+            flags |= QtAddOn::QtJsonStream::QJsonServer::WarnIfInvalid;
         else if (arg == QStringLiteral("-drop"))
-            flags |= QtAddOn::JsonStream::JsonServer::DropIfInvalid;
+            flags |= QtAddOn::QtJsonStream::QJsonServer::DropIfInvalid;
         else {
             qWarning("Unexpected argument '%s'", qPrintable(arg));
             usage();

@@ -40,7 +40,7 @@
 #ifndef PREFORK_PROCESS_BACKEND_FACTORY_H
 #define PREFORK_PROCESS_BACKEND_FACTORY_H
 
-#include "jsonpipe.h"
+#include "qjsonpipe.h"
 #include "remoteprocessbackendfactory.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
@@ -66,7 +66,7 @@ protected:
 
 private:
     int m_index;
-    QtAddOn::JsonStream::JsonPipe *m_pipe;
+    QtAddOn::QtJsonStream::QJsonPipe *m_pipe;
 };
 
 QT_END_NAMESPACE_PROCESSMANAGER

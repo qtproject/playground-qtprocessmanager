@@ -40,8 +40,8 @@
 #include <QCoreApplication>
 #include <QDebug>
 
-#include <jsonserver.h>
-#include <schemavalidator.h>
+#include <qjsonserver.h>
+#include <qjsonschemavalidator.h>
 
 #include "socketlauncher.h"
 #include "preforkprocessbackendfactory.h"
@@ -50,7 +50,7 @@ QT_USE_NAMESPACE_PROCESSMANAGER
 
 extern "C" Q_DECL_EXPORT int main(int argc, char **argv)
 {
-    QtAddOn::JsonStream::JsonServer::ValidatorFlags flags(QtAddOn::JsonStream::JsonServer::NoValidation);
+    QtAddOn::QtJsonStream::QJsonServer::ValidatorFlags flags(QtAddOn::QtJsonStream::QJsonServer::NoValidation);
     QString indir, outdir;
 
     QCoreApplication app(argc, argv);

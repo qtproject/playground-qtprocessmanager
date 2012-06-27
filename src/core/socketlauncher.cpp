@@ -63,7 +63,7 @@ QT_BEGIN_NAMESPACE_PROCESSMANAGER
 SocketLauncher::SocketLauncher(QObject *parent)
     : ProcessBackendManager(parent)
 {
-    m_server  = new QtAddOn::JsonStream::JsonServer(this);
+    m_server  = new QtAddOn::QtJsonStream::QJsonServer(this);
 
     connect(m_server, SIGNAL(messageReceived(const QString&, const QJsonObject&)),
             SLOT(messageReceived(const QString&, const QJsonObject&)));
@@ -80,7 +80,7 @@ SocketLauncher::SocketLauncher(QObject *parent)
   The optional \a authority object is used to authenticate incoming connections.
   Return true if the port can be used.
 */
-bool SocketLauncher::listen(int port, QtAddOn::JsonStream::JsonAuthority *authority)
+bool SocketLauncher::listen(int port, QtAddOn::QtJsonStream::QJsonAuthority *authority)
 {
     return m_server->listen(port, authority);
 }
@@ -90,7 +90,7 @@ bool SocketLauncher::listen(int port, QtAddOn::JsonStream::JsonAuthority *author
   The optional \a authority object is used to authenticate incoming connections.
   Return true if the server can be started.
 */
-bool SocketLauncher::listen(const QString& socketname, QtAddOn::JsonStream::JsonAuthority *authority)
+bool SocketLauncher::listen(const QString& socketname, QtAddOn::QtJsonStream::QJsonAuthority *authority)
 {
     return m_server->listen(socketname, authority);
 }
@@ -99,7 +99,7 @@ bool SocketLauncher::listen(const QString& socketname, QtAddOn::JsonStream::Json
   Return the internal JsonServer object.
  */
 
-QtAddOn::JsonStream::JsonServer * SocketLauncher::server() const
+QtAddOn::QtJsonStream::QJsonServer * SocketLauncher::server() const
 {
     return m_server;
 }
