@@ -82,6 +82,8 @@ public:
                 ::setgid(gid);
             if (uid >= 0)
                 ::setuid(uid);
+#if !defined(Q_OS_LINUX_ANDROID)
+            // Bionic does not have a getpwent() function defined
             struct passwd * pw = getpwent();
             if (pw)
                 ::initgroups(pw->pw_name, pw->pw_gid);
@@ -89,6 +91,9 @@ public:
                 qWarning() << "Unable to find UID" << ::getuid() << "to set groups";
                 ::setgroups(0,0);
             }
+#else
+            ::setgroups(0,0);
+#endif
         }
         else {
             QString cmd = object.value("command").toString();
@@ -163,6 +168,7 @@ void * work(void *)
     while (1)
         sleep(1);
     pthread_exit((void *)0);
+    return 0;
 }
 
 int

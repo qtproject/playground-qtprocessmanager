@@ -79,8 +79,9 @@ public:
     static inline const QString start() { return QStringLiteral("start"); }
     static inline const QString started() { return QStringLiteral("started"); }
     static inline const QString stateChanged() { return QStringLiteral("stateChanged"); }
-    static inline const QString stderr() { return QStringLiteral("stderr"); }
-    static inline const QString stdout() { return QStringLiteral("stdout"); }
+    // Under Bionic, stderr & stdout are macros, so they can't be used as function names
+    static inline const QString standarderror() { return QStringLiteral("stderr"); }
+    static inline const QString standardout() { return QStringLiteral("stdout"); }
     static inline const QString stop() { return QStringLiteral("stop"); }
     static inline const QString timeout() { return QStringLiteral("timeout"); }
     static inline const QString value() { return QStringLiteral("value"); }

@@ -183,7 +183,7 @@ void LauncherClient::standardOutput(const QByteArray& data)
     QJsonObject msg;
     msg.insert(RemoteProtocol::event(), RemoteProtocol::output());
     msg.insert(RemoteProtocol::id(), m_backendToId.value(backend));
-    msg.insert(RemoteProtocol::stdout(), QString::fromLocal8Bit(data.data(), data.size()));
+    msg.insert(RemoteProtocol::standardout(), QString::fromLocal8Bit(data.data(), data.size()));
     emit send(msg);
 }
 
@@ -197,7 +197,7 @@ void LauncherClient::standardError(const QByteArray& data)
     QJsonObject msg;
     msg.insert(RemoteProtocol::event(), RemoteProtocol::output());
     msg.insert(RemoteProtocol::id(), m_backendToId.value(backend));
-    msg.insert(RemoteProtocol::stderr(), QString::fromLocal8Bit(data.data(), data.size()));
+    msg.insert(RemoteProtocol::standarderror(), QString::fromLocal8Bit(data.data(), data.size()));
     emit send(msg);
 }
 

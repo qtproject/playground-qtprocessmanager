@@ -259,11 +259,11 @@ void RemoteProcessBackend::receive(const QJsonObject& message)
         emit stateChanged(m_state);
     }
     else if (event == RemoteProtocol::output()) {
-        if (message.contains(RemoteProtocol::stdout())) {
-            handleStandardOutput(message.value(RemoteProtocol::stdout()).toString().toLocal8Bit());
+        if (message.contains(RemoteProtocol::standardout())) {
+            handleStandardOutput(message.value(RemoteProtocol::standardout()).toString().toLocal8Bit());
         }
-        if (message.contains(RemoteProtocol::stderr())) {
-            handleStandardError(message.value(RemoteProtocol::stderr()).toString().toLocal8Bit());
+        if (message.contains(RemoteProtocol::standarderror())) {
+            handleStandardError(message.value(RemoteProtocol::standarderror()).toString().toLocal8Bit());
         }
     }
     else

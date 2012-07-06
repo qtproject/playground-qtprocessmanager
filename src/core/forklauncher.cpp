@@ -216,10 +216,13 @@ static void fixProcessState(const ProcessInfo& info, int *argc_ptr, char ***argv
     uint umask = info.umask();
     if (umask)
         ::umask(umask);
-    struct passwd *pw = getpwent();
+#if !defined(Q_OS_LINUX_ANDROID)
+    // Bionic does not have a getpwent() function
+    struct passwd *pw = ::getpwent();
     if (pw)
         ::initgroups(pw->pw_name, pw->pw_gid);
     else
+#endif
         ::setgroups(0,0);
 
     if (info.contains(ProcessInfoConstants::Priority)) {
@@ -372,12 +375,12 @@ void ChildProcess::processFdSet(QByteArray& outgoing, fd_set& rfds, fd_set& wfds
     if (FD_ISSET(m_stdout, &rfds)) {  // Data to read
         readToBuffer(m_stdout, m_outbuf);
         if (m_outbuf.size())
-            copyToOutgoing(outgoing, RemoteProtocol::stdout(), m_outbuf, m_id);
+            copyToOutgoing(outgoing, RemoteProtocol::standardout(), m_outbuf, m_id);
     }
     if (FD_ISSET(m_stderr, &rfds)) {  // Data to read
         readToBuffer(m_stderr, m_errbuf);
         if (m_errbuf.size())
-            copyToOutgoing(outgoing, RemoteProtocol::stderr(), m_errbuf, m_id);
+            copyToOutgoing(outgoing, RemoteProtocol::standarderror(), m_errbuf, m_id);
     }
     if (m_state == SentSigTerm && m_timer.hasExpired(m_timeout)) {
         m_state = SentSigKill;

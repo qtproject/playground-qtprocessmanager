@@ -235,9 +235,9 @@ int Prefork::makeChild(int start)
         }
         else {
             // Parent
-            m_children[m_count].stdin  = fd1[1]; // Stdin of the child (write to this)
-            m_children[m_count].stdout = fd2[0]; // Stdout of the child (read from this)
-            m_children[m_count].pid    = pid;
+            m_children[m_count].in  = fd1[1]; // Stdin of the child (write to this)
+            m_children[m_count].out = fd2[0]; // Stdout of the child (read from this)
+            m_children[m_count].pid = pid;
             m_count++;
             ::close(fd1[0]);
             ::close(fd2[1]);
@@ -335,12 +335,12 @@ const PreforkChildData *Prefork::at(int i) const
  */
 
 /*!
-  \variable PreforkChildData::stdin
+  \variable PreforkChildData::in
   \brief The file descriptor of the child's stdin (write to this)
 */
 
 /*!
-  \variable PreforkChildData::stdout
+  \variable PreforkChildData::out
   \brief The file descriptor of the child's stdout (read from this)
 */
 

@@ -123,7 +123,7 @@ void PreforkProcessBackendFactory::setIndex(int index)
     if (index >= 0 && index < prefork->size()) {
         m_index = index;
         const PreforkChildData *data = prefork->at(index);
-        m_pipe->setFds(data->stdout, data->stdin);
+        m_pipe->setFds(data->out, data->in);
         emit indexChanged();
     }
     else

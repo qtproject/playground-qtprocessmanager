@@ -12,9 +12,10 @@ DEFINES += QT_ADDON_PROCESSMANAGER_LIB
 CONFIG += module create_prl
 MODULE_PRI = ../../modules/qt_processmanager.pri
 
-QMAKE_CXXFLAGS += -fPIC -fvisibility=hidden -fvisibility-inlines-hidden
+QMAKE_CXXFLAGS += -fPIC -fvisibility-inlines-hidden
 LIBS += -ldl
-linux*: LIBS += -lcap
+
+linux*:!CONFIG(bionic): LIBS += -lcap
 
 include($$PWD/core-lib.pri)
 

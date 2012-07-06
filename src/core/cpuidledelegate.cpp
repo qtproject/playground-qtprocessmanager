@@ -45,6 +45,10 @@
 #include <mach/processor_info.h>
 #endif
 
+#if defined(Q_OS_LINUX_ANDROID)
+#include <ctype.h>
+#endif
+
 #include "cpuidledelegate.h"
 
 QT_BEGIN_NAMESPACE_PROCESSMANAGER

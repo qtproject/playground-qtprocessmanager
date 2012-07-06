@@ -47,7 +47,9 @@
 #include <unistd.h>
 #include <grp.h>
 #include <sys/prctl.h>
+#if !defined(Q_OS_LINUX_ANDROID)
 #include <sys/capability.h>
+#endif
 #include <signal.h>
 #endif
 #include <pwd.h>
@@ -177,7 +179,7 @@ void UnixSandboxProcess::setupChildProcess()
     }
 
 
-#if defined (Q_OS_LINUX)
+#if defined (Q_OS_LINUX) && !defined(Q_OS_LINUX_ANDROID)
     if (m_dropCapabilities >= 0) {
         cap_t caps;
         cap_value_t cap_list[63];

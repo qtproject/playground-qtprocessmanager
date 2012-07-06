@@ -81,6 +81,7 @@ void * work(void *)
     while (1)
         sleep(1);
     pthread_exit((void *)0);
+    return 0;
 }
 
 static char tough[] = "tough\n";

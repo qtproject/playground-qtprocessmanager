@@ -45,9 +45,9 @@
 QT_BEGIN_NAMESPACE_PROCESSMANAGER
 
 struct Q_ADDON_PROCESSMANAGER_EXPORT PreforkChildData {
-    int stdin;      // Child stdin (write to this)
-    int stdout;     // Child stdout (read from this)
-    int pid;        // Child process ID
+    int in;      // Child stdin (write to this)
+    int out;     // Child stdout (read from this)
+    int pid;     // Child process ID
 };
 
 class Q_ADDON_PROCESSMANAGER_EXPORT Prefork {
