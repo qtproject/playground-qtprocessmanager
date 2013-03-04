@@ -46,6 +46,8 @@
 //#include <string.h>
 #include <errno.h>
 #include <iostream>
+#include <sys/types.h>
+#include <unistd.h>
 
 QT_USE_NAMESPACE_PROCESSMANAGER
 

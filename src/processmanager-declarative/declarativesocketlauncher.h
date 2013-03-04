@@ -50,7 +50,7 @@ class Q_ADDON_PROCESSMANAGER_EXPORT DeclarativeSocketLauncher : public SocketLau
 {
     Q_OBJECT
     Q_INTERFACES(QQmlParserStatus)
-    Q_PROPERTY(QQmlListProperty<ProcessBackendFactory> factories READ factories)
+    Q_PROPERTY(QQmlListProperty<QtAddOn::ProcessManager::ProcessBackendFactory> factories READ factories)
     Q_PROPERTY(QQmlListProperty<QObject> children READ children)
     Q_CLASSINFO("DefaultProperty", "children")
 

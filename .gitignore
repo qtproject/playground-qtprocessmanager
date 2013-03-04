@@ -20,3 +20,4 @@ src/declarative/qtaddonprocessmanagerdeclarativeversion.h
 Makefile.Debug
 Makefile.Release
 examples/plugin/lib*
+mkspecs

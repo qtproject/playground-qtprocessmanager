@@ -128,6 +128,11 @@ void DeclarativeProcessManager::registerTypes(const char *uri)
     qmlRegisterType<StandardProcessBackend>();
     qmlRegisterType<UnixProcessBackend>();
 
+    qRegisterMetaType<ProcessFrontend*>("ProcessFrontend*");
+    qRegisterMetaType<ProcessInfo*>("ProcessInfo*");
+    qRegisterMetaType<MatchDelegate*>("MatchDelegate*");
+    qRegisterMetaType<RewriteDelegate*>("RewriteDelegate*");
+
     // Non-creatable, with enum values
     qmlRegisterUncreatableType<Process>(uri, 1, 0, "Process", QStringLiteral("Don't try to make this"));
 
@@ -195,7 +200,7 @@ void DeclarativeProcessManager::append_factory(QQmlListProperty<ProcessBackendFa
 
 QQmlListProperty<ProcessBackendFactory> DeclarativeProcessManager::factories()
 {
-    return QQmlListProperty<ProcessBackendFactory>(this, NULL, append_factory);
+    return QQmlListProperty<ProcessBackendFactory>(this, NULL, append_factory, 0, 0, 0);
 }
 
 /*!

@@ -150,7 +150,7 @@ void DeclarativeSocketLauncher::append_factory(QQmlListProperty<ProcessBackendFa
 
 QQmlListProperty<ProcessBackendFactory> DeclarativeSocketLauncher::factories()
 {
-    return QQmlListProperty<ProcessBackendFactory>(this, NULL, append_factory);
+    return QQmlListProperty<ProcessBackendFactory>(this, NULL, append_factory, NULL, NULL, NULL);
 }
 
 /*!

@@ -113,13 +113,15 @@ void DeclarativeMatchDelegate::componentComplete()
 
 bool DeclarativeMatchDelegate::matches(const ProcessInfo& info)
 {
-    if (m_script.script().isEmpty())
+    if (m_script.isEmpty())
         return false;
 
     if (!m_modelContext)
-        m_modelContext = new QQmlContext(m_script.context(), this);
+        m_modelContext = new QQmlContext(QQmlEngine::contextForObject(this), this);
+
     m_modelContext->setContextProperty(QStringLiteral("model"), (QObject *) &info);
-    QQmlExpression expr(m_modelContext, m_script.scopeObject(), m_script.script());
+
+    QQmlExpression expr(m_script, m_modelContext);
     return expr.evaluate().toBool();
 }
 

@@ -1,4 +1,4 @@
 TEMPLATE = subdirs
 CONFIG += ordered
 
-SUBDIRS = core declarative
+SUBDIRS = processmanager processmanager-declarative

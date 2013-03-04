@@ -54,7 +54,7 @@ class Q_ADDON_PROCESSMANAGER_EXPORT DeclarativeProcessManager : public ProcessMa
 {
     Q_OBJECT
     Q_INTERFACES(QQmlParserStatus)
-    Q_PROPERTY(QQmlListProperty<ProcessBackendFactory> factories READ factories)
+    Q_PROPERTY(QQmlListProperty<QtAddOn::ProcessManager::ProcessBackendFactory> factories READ factories)
 
 public:
     static void registerTypes(const char *uri);

@@ -288,12 +288,12 @@ public:
         if (failedToStart)
             QVERIFY(stateCount <=2);
         if (stateCount > 0)
-            QCOMPARE(qVariantValue<QProcess::ProcessState>(stateSpy.at(0).at(0)), QProcess::Starting);
+            QCOMPARE(stateSpy.at(0).at(0).value<QProcess::ProcessState>(), QProcess::Starting);
         if (stateCount > 1)
-            QCOMPARE(qVariantValue<QProcess::ProcessState>(stateSpy.at(1).at(0)),
+            QCOMPARE(stateSpy.at(1).at(0).value<QProcess::ProcessState>(),
                      (failedToStart ? QProcess::NotRunning : QProcess::Running));
         if (stateCount > 2)
-            QCOMPARE(qVariantValue<QProcess::ProcessState>(stateSpy.at(2).at(0)), QProcess::NotRunning);
+            QCOMPARE(stateSpy.at(2).at(0).value<QProcess::ProcessState>(), QProcess::NotRunning);
     }
 
     void checkStdout(const QByteArray s) {
@@ -322,12 +322,12 @@ public:
 
     void checkExitCode(int exitCode) {
         QVERIFY(finishedSpy.count() == 1);
-        QCOMPARE(qVariantValue<int>(finishedSpy.at(0).at(0)), exitCode);
+        QCOMPARE(finishedSpy.at(0).at(0).value<int>(), exitCode);
     }
 
     void checkExitStatus(QProcess::ExitStatus exitStatus) {
         QVERIFY(finishedSpy.count() == 1);
-        QCOMPARE(qVariantValue<QProcess::ExitStatus>(finishedSpy.at(0).at(1)), exitStatus);
+        QCOMPARE(finishedSpy.at(0).at(1).value<QProcess::ExitStatus>(), exitStatus);
     }
 
     void checkErrors(const QList<QProcess::ProcessError>& list) {

@@ -1,6 +1,6 @@
 %modules = ( # path to module name map
-    "QtAddOnProcessManager" => "$basedir/src/core",
-    "QtAddOnProcessManagerDeclarative" => "$basedir/src/declarative",
+    "QtAddOnProcessManager" => "$basedir/src/processmanager",
+    "QtAddOnProcessManagerDeclarative" => "$basedir/src/processmanager-declarative",
 );
 %moduleheaders = ( # restrict the module headers to those found in relative path
 );
@@ -11,10 +11,6 @@
     "core" => "#include <QtCore/QtCore>\n",
     "network" => "#include <QtNetwork/QtNetwork>\n",
 );
-%modulepris = (
-    "QtAddOnProcessManager" => "$basedir/modules/qt_processmanager.pri",
-    "QtAddOnProcessManagerDeclarative" => "$basedir/modules/qt_processmanagerdeclarative.pri",
-);
 # Module dependencies.
 # Every module that is required to build this module should have one entry.
 # Each of the module version specifiers can take one of the following values:
@@ -22,7 +18,7 @@
 #   - any git symbolic ref resolvable from the module's repository (e.g. "refs/heads/master" to track master branch)
 #
 %dependencies = (
-        "qtbase" => "refs/heads/master",
-        "qtdeclarative" => "refs/heads/master",
-        "qtjsbackend" => "refs/heads/master",
+        "qtbase" => "refs/heads/stable",
+        "qtdeclarative" => "refs/heads/stable",
+        "qtjsbackend" => "refs/heads/stable",
 );

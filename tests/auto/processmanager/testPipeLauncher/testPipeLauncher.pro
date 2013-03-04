@@ -1,5 +1,5 @@
 CONFIG -= app_bundle
-QT += processmanager
+QT += processmanager jsonstream
 QT -= gui
 
 include(../processmanager.pri)

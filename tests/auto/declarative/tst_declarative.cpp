@@ -158,18 +158,18 @@ public:
         QVERIFY(stateSpy.count() == stateCount);
         bool failedToStart = false;
         for (int i = 0 ; i < errorSpy.count() ; i++)
-            if (qVariantValue<QProcess::ProcessError>(errorSpy.at(i).at(0)) == QProcess::FailedToStart)
+            if (errorSpy.at(i).at(0).value<QProcess::ProcessError>() == QProcess::FailedToStart)
                 failedToStart = true;
 
         if (failedToStart)
             QVERIFY(stateCount <=2);
         if (stateCount > 0)
-            QCOMPARE(qVariantValue<QProcess::ProcessState>(stateSpy.at(0).at(0)), QProcess::Starting);
+            QCOMPARE(stateSpy.at(0).at(0).value<QProcess::ProcessState>(), QProcess::Starting);
         if (stateCount > 1)
-            QCOMPARE(qVariantValue<QProcess::ProcessState>(stateSpy.at(1).at(0)),
+            QCOMPARE(stateSpy.at(1).at(0).value<QProcess::ProcessState>(),
                      (failedToStart ? QProcess::NotRunning : QProcess::Running));
         if (stateCount > 2)
-            QCOMPARE(qVariantValue<QProcess::ProcessState>(stateSpy.at(2).at(0)), QProcess::NotRunning);
+            QCOMPARE(stateSpy.at(2).at(0).value<QProcess::ProcessState>(), QProcess::NotRunning);
     }
 
     void waitStart(int timeout=5000) {
@@ -207,18 +207,18 @@ public:
 
     void checkExitCode(int exitCode) {
         QVERIFY(finishedSpy.count() == 1);
-        QCOMPARE(qVariantValue<int>(finishedSpy.at(0).at(0)), exitCode);
+        QCOMPARE(finishedSpy.at(0).at(0).toInt(), exitCode);
     }
 
     void checkExitStatus(QProcess::ExitStatus exitStatus) {
         QVERIFY(finishedSpy.count() == 1);
-        QCOMPARE(qVariantValue<QProcess::ExitStatus>(finishedSpy.at(0).at(1)), exitStatus);
+        QCOMPARE(finishedSpy.at(0).at(1).value<QProcess::ExitStatus>(), exitStatus);
     }
 
     void checkErrors(const QList<QProcess::ProcessError>& list) {
         QCOMPARE(errorSpy.count(), list.count());
         for (int i = 0 ; i < errorSpy.count() ; i++)
-            QCOMPARE(qVariantValue<QProcess::ProcessError>(errorSpy.at(i).at(0)), list.at(i));
+            QCOMPARE(errorSpy.at(i).at(0).value<QProcess::ProcessError>(), list.at(i));
     }
 
     QTime      stopWatch;

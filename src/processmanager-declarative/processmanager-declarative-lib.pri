@@ -1,4 +1,4 @@
-QT += qml processmanager
+QT += qml processmanager jsonstream
 
 CONFIG += network
 
