@@ -49,16 +49,16 @@
 
 #include <qjsonuidrangeauthority.h>
 
-#include "declarativeprocessmanager.h"
-#include "declarativematchdelegate.h"
-#include "declarativerewritedelegate.h"
-#include "standardprocessbackendfactory.h"
-#include "prelaunchprocessbackendfactory.h"
-#include "socketprocessbackendfactory.h"
-#include "processfrontend.h"
-#include "processbackend.h"
-#include "process.h"
-#include "timeoutidledelegate.h"
+#include "qdeclarativeprocessmanager.h"
+#include "qdeclarativematchdelegate.h"
+#include "qdeclarativerewritedelegate.h"
+#include "qstandardprocessbackendfactory.h"
+#include "qprelaunchprocessbackendfactory.h"
+#include "qsocketprocessbackendfactory.h"
+#include "qprocessfrontend.h"
+#include "qprocessbackend.h"
+#include "qpmprocess.h"
+#include "qtimeoutidledelegate.h"
 
 QT_USE_NAMESPACE_PROCESSMANAGER
 
@@ -88,7 +88,7 @@ private slots:
 void tst_DeclarativeProcessManager::initTestCase()
 {
     const char *uri = "Test";
-    DeclarativeProcessManager::registerTypes(uri);
+    QDeclarativeProcessManager::registerTypes(uri);
 
     qRegisterMetaType<QProcess::ProcessState>();
     qRegisterMetaType<QProcess::ExitStatus>();
@@ -140,7 +140,7 @@ static void waitForTimeout(int timeout=5000)
 
 class Spy {
 public:
-    Spy(ProcessFrontend *process)
+    Spy(QProcessFrontend *process)
         : stateSpy(process, SIGNAL(stateChanged(QProcess::ProcessState)))
         , startSpy(process, SIGNAL(started()))
         , errorSpy(process, SIGNAL(error(QProcess::ProcessError)))
@@ -235,13 +235,13 @@ static void _frontendTest(const QString& filename)
     if (component.isError())
         qWarning() << component.errors();
 
-    DeclarativeProcessManager *manager = qobject_cast<DeclarativeProcessManager*>(component.create());
+    QDeclarativeProcessManager *manager = qobject_cast<QDeclarativeProcessManager*>(component.create());
     QVERIFY(manager != NULL);
 
     for (int i = 0 ; i < 3 ; i++ ) {
         QVariant name;
         QVERIFY(QMetaObject::invokeMethod(manager, "makeProcess", Q_RETURN_ARG(QVariant, name)));
-        ProcessFrontend *frontend = manager->processForName(name.toString());
+        QProcessFrontend *frontend = manager->processForName(name.toString());
         QVERIFY(frontend);
 
         Spy spy(frontend);
@@ -312,10 +312,10 @@ void tst_DeclarativeProcessManager::match()
     QQmlComponent component(&engine);
     component.setData(kMatchTest, QUrl());
     QCOMPARE(component.status(), QQmlComponent::Ready);
-    DeclarativeMatchDelegate *delegate = qobject_cast<DeclarativeMatchDelegate *>(component.create());
+    QDeclarativeMatchDelegate *delegate = qobject_cast<QDeclarativeMatchDelegate *>(component.create());
     QVERIFY(delegate);
 
-    ProcessInfo info;
+    QProcessInfo info;
     info.setProgram("goodprogram");
     QCOMPARE(delegate->matches(info), true);
 
@@ -356,10 +356,10 @@ void tst_DeclarativeProcessManager::rewrite()
     QQmlComponent component(&engine);
     component.setData(kRewriteTest, QUrl());
     QCOMPARE(component.status(), QQmlComponent::Ready);
-    DeclarativeRewriteDelegate *delegate = qobject_cast<DeclarativeRewriteDelegate *>(component.create());
+    QDeclarativeRewriteDelegate *delegate = qobject_cast<QDeclarativeRewriteDelegate *>(component.create());
     QVERIFY(delegate);
 
-    ProcessInfo info;
+    QProcessInfo info;
     info.setProgram("goodprogram");
     info.setArguments(QStringList() << "cat");
     QVariantMap env;
@@ -396,7 +396,7 @@ void tst_DeclarativeProcessManager::timeoutIdleDelegate()
     QQmlComponent component(&engine);
     component.setData(kTimeoutIdleDelegateTest, QUrl());
     QCOMPARE(component.status(), QQmlComponent::Ready);
-    TimeoutIdleDelegate *delegate = qobject_cast<TimeoutIdleDelegate *>(component.create());
+    QTimeoutIdleDelegate *delegate = qobject_cast<QTimeoutIdleDelegate *>(component.create());
     QVERIFY(delegate);
 
     QSignalSpy spyIdleInterval(delegate, SIGNAL(idleIntervalChanged()));

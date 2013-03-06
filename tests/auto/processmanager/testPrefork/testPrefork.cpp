@@ -39,13 +39,13 @@
 
 /* This should be called "Frigg" */
 
-#include "prefork.h"
+#include "qprefork.h"
 #include <QDebug>
 
 QT_USE_NAMESPACE_PROCESSMANAGER
 
 int main(int argc, char **argv)
 {
-    Prefork *prefork = Prefork::instance();
+    QPrefork *prefork = QPrefork::instance();
     prefork->execute(&argc, &argv);  // This function never returns
 }

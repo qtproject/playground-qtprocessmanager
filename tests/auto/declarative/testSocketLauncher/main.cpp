@@ -46,11 +46,11 @@
 #include <qjsonuidauthority.h>
 #include <qjsonuidrangeauthority.h>
 
-#include "declarativesocketlauncher.h"
-#include "declarativeprocessmanager.h"
-#include "standardprocessbackendfactory.h"
-#include "keymatchdelegate.h"
-#include "gdbrewritedelegate.h"
+#include "qdeclarativesocketlauncher.h"
+#include "qdeclarativeprocessmanager.h"
+#include "qstandardprocessbackendfactory.h"
+#include "qkeymatchdelegate.h"
+#include "qgdbrewritedelegate.h"
 
 QT_USE_NAMESPACE_PROCESSMANAGER
 
@@ -68,7 +68,7 @@ static void usage()
 static void registerQmlTypes()
 {
     const char *uri = "Test";
-    DeclarativeProcessManager::registerTypes(uri);
+    QDeclarativeProcessManager::registerTypes(uri);
     qmlRegisterUncreatableType<QtAddOn::QtJsonStream::QJsonAuthority>(uri, 1, 0, "JsonAuthority", "Abstract class");
     qmlRegisterType<QtAddOn::QtJsonStream::QJsonUIDRangeAuthority>(uri, 1, 0, "JsonUIDRangeAuthority");
     qmlRegisterType<QtAddOn::QtJsonStream::QJsonUIDAuthority>(uri, 1, 0, "JsonUIDAuthority");

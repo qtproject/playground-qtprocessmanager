@@ -45,10 +45,10 @@
 #include <qjsonserver.h>
 #include <qjsonschemavalidator.h>
 
-#include "socketlauncher.h"
-#include "standardprocessbackendfactory.h"
-#include "prelaunchprocessbackendfactory.h"
-#include "processinfo.h"
+#include "qsocketlauncher.h"
+#include "qstandardprocessbackendfactory.h"
+#include "qprelaunchprocessbackendfactory.h"
+#include "qprocessinfo.h"
 
 QT_USE_NAMESPACE_PROCESSMANAGER
 
@@ -157,16 +157,16 @@ int main(int argc, char **argv)
     if (args.size() != 1)
         usage();
 
-    SocketLauncher launcher;
+    QSocketLauncher launcher;
     if (!prelaunch_program.isEmpty()) {
-        ProcessInfo info;
+        QProcessInfo info;
         info.setValue("program", prelaunch_program);
-        PrelaunchProcessBackendFactory *factory = new PrelaunchProcessBackendFactory;
+        QPrelaunchProcessBackendFactory *factory = new QPrelaunchProcessBackendFactory;
         factory->setProcessInfo(info);
         launcher.addFactory(factory);
     }
     else
-        launcher.addFactory(new StandardProcessBackendFactory);
+        launcher.addFactory(new QStandardProcessBackendFactory);
 
     if (!indir.isEmpty())
         loadSchemasFromDirectory(launcher.server()->inboundValidator(), indir);

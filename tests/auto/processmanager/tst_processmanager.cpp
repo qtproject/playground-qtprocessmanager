@@ -42,19 +42,19 @@
 #include <QFileInfo>
 #include <QLocalSocket>
 
-#include "process.h"
-#include "processbackendmanager.h"
-#include "processmanager.h"
-#include "processinfo.h"
-#include "prelaunchprocessbackendfactory.h"
-#include "standardprocessbackendfactory.h"
-#include "processbackend.h"
-#include "processfrontend.h"
+#include "qprocess.h"
+#include "qprocessbackendmanager.h"
+#include "qprocessmanager.h"
+#include "qprocessinfo.h"
+#include "qprelaunchprocessbackendfactory.h"
+#include "qstandardprocessbackendfactory.h"
+#include "qprocessbackend.h"
+#include "qprocessfrontend.h"
 #include "qjsondocument.h"
-#include "pipeprocessbackendfactory.h"
-#include "socketprocessbackendfactory.h"
-#include "timeoutidledelegate.h"
-#include "procutils.h"
+#include "qpipeprocessbackendfactory.h"
+#include "qsocketprocessbackendfactory.h"
+#include "qtimeoutidledelegate.h"
+#include "qprocutils.h"
 
 #include <signal.h>
 #include <sys/time.h>
@@ -63,9 +63,9 @@
 
 QT_USE_NAMESPACE_PROCESSMANAGER
 
-Q_DECLARE_METATYPE(QProcess::ExitStatus);
-Q_DECLARE_METATYPE(QProcess::ProcessState);
-Q_DECLARE_METATYPE(QProcess::ProcessError);
+Q_DECLARE_METATYPE(QProcess::ExitStatus)
+Q_DECLARE_METATYPE(QProcess::ProcessState)
+Q_DECLARE_METATYPE(QProcess::ProcessError)
 
 const int kProcessCount = 10;
 
@@ -94,9 +94,9 @@ const char *errorToString[] = {
 class ErrorSpy : public QObject {
     Q_OBJECT
 public:
-    ErrorSpy(ProcessBackend *target) {connect(target, SIGNAL(error(QProcess::ProcessError)),
+    ErrorSpy(QProcessBackend *target) {connect(target, SIGNAL(error(QProcess::ProcessError)),
                                               SLOT(handleError(QProcess::ProcessError))); }
-    ErrorSpy(ProcessFrontend *target) {connect(target, SIGNAL(error(QProcess::ProcessError)),
+    ErrorSpy(QProcessFrontend *target) {connect(target, SIGNAL(error(QProcess::ProcessError)),
                                               SLOT(handleError(QProcess::ProcessError))); }
 
     int count() const { return m_errors.size(); }
@@ -106,11 +106,11 @@ public:
 private slots:
     void handleError(QProcess::ProcessError err) {
         m_errors << err;
-        ProcessBackend *backend = qobject_cast<ProcessBackend *>(sender());
+        QProcessBackend *backend = qobject_cast<QProcessBackend *>(sender());
         if (backend)
             m_errorStrings << backend->errorString();
         else
-            m_errorStrings << qobject_cast<ProcessFrontend *>(sender())->errorString();
+            m_errorStrings << qobject_cast<QProcessFrontend *>(sender())->errorString();
     }
 private:
     QList<QProcess::ProcessError> m_errors;
@@ -174,7 +174,7 @@ static void waitForThreadCount(Q_PID pid, int count, int timeout=5000)
     QTime stopWatch;
     stopWatch.start();
     forever {
-        if (ProcUtils::getThreadCount(pid) == count)
+        if (QProcUtils::getThreadCount(pid) == count)
             break;
         if (stopWatch.elapsed() >= timeout)
             QFAIL("Timed out waiting for thread count");
@@ -182,7 +182,7 @@ static void waitForThreadCount(Q_PID pid, int count, int timeout=5000)
     }
 }
 
-static void waitForInternalProcess(ProcessBackendManager *manager, int num=1, int timeout=5000)
+static void waitForInternalProcess(QProcessBackendManager *manager, int num=1, int timeout=5000)
 {
     QObject::connect(manager, SIGNAL(internalProcessesChanged()),
                      &QTestEventLoop::instance(), SLOT(exitLoop()));
@@ -199,7 +199,7 @@ static void waitForInternalProcess(ProcessBackendManager *manager, int num=1, in
                      &QTestEventLoop::instance(), SLOT(exitLoop()));
 }
 
-static void waitForInternalProcess(ProcessManager *manager, int num=1, int timeout=5000)
+static void waitForInternalProcess(QProcessManager *manager, int num=1, int timeout=5000)
 {
     QTime stopWatch;
     stopWatch.start();
@@ -229,7 +229,7 @@ static void waitForSocket(const QString& socketname, int timeout=5000)
     }
 }
 
-static void waitForPriority(ProcessBackend *process, int priority, int timeout=5000)
+static void waitForPriority(QProcessBackend *process, int priority, int timeout=5000)
 {
     QTime stopWatch;
     stopWatch.start();
@@ -259,7 +259,7 @@ static void waitForSignal(QSignalSpy& spy, int count=1, int timeout=5000)
 
 class Spy {
 public:
-    Spy(ProcessBackend *process)
+    Spy(QProcessBackend *process)
     : stateSpy(process, SIGNAL(stateChanged(QProcess::ProcessState)))
     , startSpy(process, SIGNAL(started()))
     , errorSpy(process)
@@ -267,7 +267,7 @@ public:
     , stdoutSpy(process, SIGNAL(standardOutput(const QByteArray&)))
     , stderrSpy(process, SIGNAL(standardError(const QByteArray&))) {}
 
-    Spy(ProcessFrontend *process)
+    Spy(QProcessFrontend *process)
     : stateSpy(process, SIGNAL(stateChanged(QProcess::ProcessState)))
     , startSpy(process, SIGNAL(started()))
     , errorSpy(process)
@@ -366,21 +366,21 @@ public:
 
 /******************************************************************************/
 
-static void writeLine(ProcessBackend *process, const char *command)
+static void writeLine(QProcessBackend *process, const char *command)
 {
     QByteArray data(command);
     data += '\n';
     process->write(data);
 }
 
-static void writeJson(ProcessBackend *process, const char *command)
+static void writeJson(QProcessBackend *process, const char *command)
 {
     QVariantMap map;
     map.insert("command", command);
     process->write(QJsonDocument::fromVariant(map).toBinaryData());
 }
 
-static void verifyRunning(ProcessBackend *process)
+static void verifyRunning(QProcessBackend *process)
 {
     QVERIFY(process->state() == QProcess::Running);
     pid_t pid = process->pid();
@@ -398,18 +398,18 @@ static void verifyRunning(ProcessBackend *process)
         QCOMPARE(gid, gidString.toLongLong());
 }
 
-static void cleanupProcess(ProcessBackend *process)
+static void cleanupProcess(QProcessBackend *process)
 {
     QVERIFY(process->state() == QProcess::NotRunning);
     QVERIFY(process->parent() == NULL);
     delete process;
 }
 
-typedef void (*CommandFunc)(ProcessBackend *, const char *);
+typedef void (*CommandFunc)(QProcessBackend *, const char *);
 
-static void startAndStopClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
+static void startAndStopClient(QProcessBackendManager *manager, QProcessInfo info, CommandFunc func)
 {
-    ProcessBackend *process = manager->create(info);
+    QProcessBackend *process = manager->create(info);
     QVERIFY(process);
     QVERIFY(process->state() == QProcess::NotRunning);
 
@@ -427,13 +427,13 @@ static void startAndStopClient(ProcessBackendManager *manager, ProcessInfo info,
     cleanupProcess(process);
 }
 
-static void startAndStopMultiple(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
+static void startAndStopMultiple(QProcessBackendManager *manager, QProcessInfo info, CommandFunc func)
 {
-    ProcessBackend *plist[kProcessCount];
+    QProcessBackend *plist[kProcessCount];
     Spy            *slist[kProcessCount];
 
     for (int i = 0 ; i < kProcessCount ; i++) {
-        ProcessBackend *process = manager->create(info);
+        QProcessBackend *process = manager->create(info);
         QVERIFY(process);
         QVERIFY(process->state() == QProcess::NotRunning);
         Spy *spy = new Spy(process);
@@ -466,11 +466,11 @@ static void startAndStopMultiple(ProcessBackendManager *manager, ProcessInfo inf
     }
 }
 
-static void startAndKillClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
+static void startAndKillClient(QProcessBackendManager *manager, QProcessInfo info, CommandFunc func)
 {
     Q_UNUSED(func);
 
-    ProcessBackend *process = manager->create(info);
+    QProcessBackend *process = manager->create(info);
     QVERIFY(process);
     QVERIFY(process->state() == QProcess::NotRunning);
 
@@ -490,9 +490,9 @@ static void startAndKillClient(ProcessBackendManager *manager, ProcessInfo info,
     cleanupProcess(process);
 }
 
-static void startAndCrashClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
+static void startAndCrashClient(QProcessBackendManager *manager, QProcessInfo info, CommandFunc func)
 {
-    ProcessBackend *process = manager->create(info);
+    QProcessBackend *process = manager->create(info);
     QVERIFY(process);
     QVERIFY(process->state() == QProcess::NotRunning);
 
@@ -511,11 +511,11 @@ static void startAndCrashClient(ProcessBackendManager *manager, ProcessInfo info
     cleanupProcess(process);
 }
 
-static void failToStartClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
+static void failToStartClient(QProcessBackendManager *manager, QProcessInfo info, CommandFunc func)
 {
     Q_UNUSED(func);
     info.setValue("program", "thisProgramDoesntExist");
-    ProcessBackend *process = manager->create(info);
+    QProcessBackend *process = manager->create(info);
     QVERIFY(process);
     QVERIFY(process->state() == QProcess::NotRunning);
 
@@ -527,9 +527,9 @@ static void failToStartClient(ProcessBackendManager *manager, ProcessInfo info, 
     cleanupProcess(process);
 }
 
-static void echoClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
+static void echoClient(QProcessBackendManager *manager, QProcessInfo info, CommandFunc func)
 {
-    ProcessBackend *process = manager->create(info);
+    QProcessBackend *process = manager->create(info);
     QVERIFY(process);
     QVERIFY(process->state() == QProcess::NotRunning);
 
@@ -552,10 +552,10 @@ static void echoClient(ProcessBackendManager *manager, ProcessInfo info, Command
     cleanupProcess(process);
 }
 
-static void priorityChangeBeforeClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
+static void priorityChangeBeforeClient(QProcessBackendManager *manager, QProcessInfo info, CommandFunc func)
 {
     info.setValue("priority", 19);
-    ProcessBackend *process = manager->create(info);
+    QProcessBackend *process = manager->create(info);
     QVERIFY(process);
 
     Spy spy(process);
@@ -574,9 +574,9 @@ static void priorityChangeBeforeClient(ProcessBackendManager *manager, ProcessIn
     cleanupProcess(process);
 }
 
-static void priorityChangeAfterClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
+static void priorityChangeAfterClient(QProcessBackendManager *manager, QProcessInfo info, CommandFunc func)
 {
-    ProcessBackend *process = manager->create(info);
+    QProcessBackend *process = manager->create(info);
     QVERIFY(process);
     QVERIFY(process->state() == QProcess::NotRunning);
 
@@ -598,7 +598,7 @@ static void priorityChangeAfterClient(ProcessBackendManager *manager, ProcessInf
     cleanupProcess(process);
 }
 
-static void waitForOom(ProcessBackend *process, int oom, int timeout=5000)
+static void waitForOom(QProcessBackend *process, int oom, int timeout=5000)
 {
     QTime stopWatch;
     stopWatch.start();
@@ -622,13 +622,13 @@ static bool canRunOomAdjustment()
     return false;
 }
 
-static void oomChangeBeforeClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
+static void oomChangeBeforeClient(QProcessBackendManager *manager, QProcessInfo info, CommandFunc func)
 {
     if (!canRunOomAdjustment())
         return;
 
     info.setOomAdjustment(500);
-    ProcessBackend *process = manager->create(info);
+    QProcessBackend *process = manager->create(info);
     QVERIFY(process);
 
     Spy spy(process);
@@ -647,12 +647,12 @@ static void oomChangeBeforeClient(ProcessBackendManager *manager, ProcessInfo in
     cleanupProcess(process);
 }
 
-static void oomChangeAfterClient(ProcessBackendManager *manager, ProcessInfo info, CommandFunc func)
+static void oomChangeAfterClient(QProcessBackendManager *manager, QProcessInfo info, CommandFunc func)
 {
     if (!canRunOomAdjustment())
         return;
 
-    ProcessBackend *process = manager->create(info);
+    QProcessBackend *process = manager->create(info);
     QVERIFY(process);
     QVERIFY(process->state() == QProcess::NotRunning);
 
@@ -675,10 +675,10 @@ static void oomChangeAfterClient(ProcessBackendManager *manager, ProcessInfo inf
 }
 
 
-typedef void (*clientFunc)(ProcessBackendManager *, ProcessInfo, CommandFunc);
-typedef void (*infoFunc)(ProcessInfo&);
+typedef void (*clientFunc)(QProcessBackendManager *, QProcessInfo, CommandFunc);
+typedef void (*infoFunc)(QProcessInfo&);
 
-static void fixUidGid(ProcessInfo& info)
+static void fixUidGid(QProcessInfo& info)
 {
     QString uidString = qgetenv("TEST_UID");
     QString gidString = qgetenv("TEST_GID");
@@ -688,7 +688,7 @@ static void fixUidGid(ProcessInfo& info)
         info.setGid(gidString.toLongLong());
 }
 
-static void makeTough(ProcessInfo& info)
+static void makeTough(QProcessInfo& info)
 {
     QStringList args = info.arguments();
     args << QStringLiteral("-noterm");
@@ -697,10 +697,10 @@ static void makeTough(ProcessInfo& info)
 
 static void standardTest( clientFunc func, infoFunc infoFixup=0 )
 {
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    manager->addFactory(new StandardProcessBackendFactory);
+    QProcessBackendManager *manager = new QProcessBackendManager;
+    manager->addFactory(new QStandardProcessBackendFactory);
 
-    ProcessInfo info;
+    QProcessInfo info;
     info.setValue("program", "testClient/testClient");
     if (infoFixup)
         infoFixup(info);
@@ -712,15 +712,15 @@ static void standardTest( clientFunc func, infoFunc infoFixup=0 )
 
 static void prelaunchTest( clientFunc func, infoFunc infoFixup=0 )
 {
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    manager->setIdleDelegate(new TimeoutIdleDelegate);
+    QProcessBackendManager *manager = new QProcessBackendManager;
+    manager->setIdleDelegate(new QTimeoutIdleDelegate);
 
-    ProcessInfo info;
+    QProcessInfo info;
     info.setValue("program", "testPrelaunch/testPrelaunch");
     if (infoFixup)
         infoFixup(info);
 
-    PrelaunchProcessBackendFactory *factory = new PrelaunchProcessBackendFactory;
+    QPrelaunchProcessBackendFactory *factory = new QPrelaunchProcessBackendFactory;
     factory->setProcessInfo(info);
     manager->addFactory(factory);
 
@@ -735,16 +735,16 @@ static void prelaunchTest( clientFunc func, infoFunc infoFixup=0 )
 
 static void prelaunchRestrictedTest( clientFunc func, infoFunc infoFixup=0 )
 {
-    ProcessBackendManager *manager = new ProcessBackendManager;
+    QProcessBackendManager *manager = new QProcessBackendManager;
     manager->setMemoryRestricted(true);
-    manager->setIdleDelegate(new TimeoutIdleDelegate);
+    manager->setIdleDelegate(new QTimeoutIdleDelegate);
 
-    ProcessInfo info;
+    QProcessInfo info;
     info.setValue("program", "testPrelaunch/testPrelaunch");
     if (infoFixup)
         infoFixup(info);
 
-    PrelaunchProcessBackendFactory *factory = new PrelaunchProcessBackendFactory;
+    QPrelaunchProcessBackendFactory *factory = new QPrelaunchProcessBackendFactory;
     factory->setProcessInfo(info);
     manager->addFactory(factory);
 
@@ -757,10 +757,10 @@ static void prelaunchRestrictedTest( clientFunc func, infoFunc infoFixup=0 )
 
 static void pipeLauncherTest( clientFunc func, infoFunc infoFixup=0 )
 {
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    ProcessInfo info;
+    QProcessBackendManager *manager = new QProcessBackendManager;
+    QProcessInfo info;
     info.setValue("program", "testPipeLauncher/testPipeLauncher");
-    PipeProcessBackendFactory *factory = new PipeProcessBackendFactory;
+    QPipeProcessBackendFactory *factory = new QPipeProcessBackendFactory;
     factory->setProcessInfo(info);
     manager->addFactory(factory);
 
@@ -768,7 +768,7 @@ static void pipeLauncherTest( clientFunc func, infoFunc infoFixup=0 )
     waitForInternalProcess(manager);
     QVERIFY(manager->internalProcesses().count() == 1);
 
-    ProcessInfo info2;
+    QProcessInfo info2;
     info2.setValue("program", "testClient/testClient");
     info2.setValue("pipe", "true");
     if (infoFixup)
@@ -788,12 +788,12 @@ static void socketLauncherTest( clientFunc func, QStringList args=QStringList(),
     QVERIFY(remote->waitForStarted());
     waitForSocket(socketName);
 
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    SocketProcessBackendFactory *factory = new SocketProcessBackendFactory;
+    QProcessBackendManager *manager = new QProcessBackendManager;
+    QSocketProcessBackendFactory *factory = new QSocketProcessBackendFactory;
     factory->setSocketName(socketName);
     manager->addFactory(factory);
 
-    ProcessInfo info;
+    QProcessInfo info;
     info.setValue("program", "testClient/testClient");
     if (infoFixup)
         infoFixup(info);
@@ -816,10 +816,10 @@ static void socketSchemaTest( clientFunc func, infoFunc infoFixup=0 )
 static void forkLauncherTest( clientFunc func, infoFunc infoFixup=0  )
 {
 #if defined(Q_OS_LINUX)
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    ProcessInfo info;
+    QProcessBackendManager *manager = new QProcessBackendManager;
+    QProcessInfo info;
     info.setValue("program", "testForkLauncher/testForkLauncher");
-    PipeProcessBackendFactory *factory = new PipeProcessBackendFactory;
+    QPipeProcessBackendFactory *factory = new QPipeProcessBackendFactory;
     factory->setProcessInfo(info);
     manager->addFactory(factory);
 
@@ -827,7 +827,7 @@ static void forkLauncherTest( clientFunc func, infoFunc infoFixup=0  )
     waitForInternalProcess(manager);
     QVERIFY(manager->internalProcesses().count() == 1);
 
-    ProcessInfo info2;
+    QProcessInfo info2;
     fixUidGid(info2);
     if (infoFixup)
         infoFixup(info2);
@@ -852,12 +852,12 @@ static void preforkLauncherTest( clientFunc func, infoFunc infoFixup=0 )
     QVERIFY(remote->waitForStarted());
     waitForSocket(socketName);
 
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    SocketProcessBackendFactory *factory = new SocketProcessBackendFactory;
+    QProcessBackendManager *manager = new QProcessBackendManager;
+    QSocketProcessBackendFactory *factory = new QSocketProcessBackendFactory;
     factory->setSocketName(socketName);
     manager->addFactory(factory);
 
-    ProcessInfo info;
+    QProcessInfo info;
     info.setValue("program", "testClient/testClient");
     if (infoFixup)
         infoFixup(info);
@@ -1005,14 +1005,14 @@ void tst_ProcessManager::initTestCase()
 
 void tst_ProcessManager::prelaunchChildAbort()
 {
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    QProcessBackendManager *manager = new QProcessBackendManager;
+    QTimeoutIdleDelegate *delegate = new QTimeoutIdleDelegate;
     delegate->setIdleInterval(250);
     manager->setIdleDelegate(delegate);
 
-    ProcessInfo info;
+    QProcessInfo info;
     info.setValue("program", "testPrelaunch/testPrelaunch");
-    PrelaunchProcessBackendFactory *factory = new PrelaunchProcessBackendFactory;
+    QPrelaunchProcessBackendFactory *factory = new QPrelaunchProcessBackendFactory;
     factory->setProcessInfo(info);
     manager->addFactory(factory);
 
@@ -1035,16 +1035,16 @@ void tst_ProcessManager::prelaunchThreadPriority()
 {
     // Running this under Mac OSX has issues with permissions to read thread information
 #if defined(Q_OS_LINUX)
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    QProcessBackendManager *manager = new QProcessBackendManager;
+    QTimeoutIdleDelegate *delegate = new QTimeoutIdleDelegate;
     delegate->setIdleInterval(250);
     manager->setIdleDelegate(delegate);
 
-    ProcessInfo info;
+    QProcessInfo info;
     info.setValue("program", "testPrelaunch/testPrelaunch");
     info.setValue("arguments", QStringList() << "-threads");
     info.setValue("priority", 19);
-    PrelaunchProcessBackendFactory *factory = new PrelaunchProcessBackendFactory;
+    QPrelaunchProcessBackendFactory *factory = new QPrelaunchProcessBackendFactory;
     factory->setProcessInfo(info);
     manager->addFactory(factory);
 
@@ -1053,11 +1053,11 @@ void tst_ProcessManager::prelaunchThreadPriority()
     waitForInternalProcess(manager);
     Q_PID pid = manager->internalProcesses().at(0);
     waitForThreadCount(pid, 5);
-    foreach (qint32 priority, ProcUtils::getThreadPriorities(pid))
+    foreach (qint32 priority, QProcUtils::getThreadPriorities(pid))
         QCOMPARE(priority, 19);
 
     info.setValue("priority", 5);
-    ProcessBackend *process = manager->create(info);
+    QProcessBackend *process = manager->create(info);
     QVERIFY(process);
 
     Spy spy(process);
@@ -1065,7 +1065,7 @@ void tst_ProcessManager::prelaunchThreadPriority()
     spy.waitStart();
     verifyRunning(process);
     QCOMPARE(process->actualPriority(), 5);
-    foreach (qint32 priority, ProcUtils::getThreadPriorities(process->pid()))
+    foreach (qint32 priority, QProcUtils::getThreadPriorities(process->pid()))
         QCOMPARE(priority, 5);
 
     writeJson(process, "stop");
@@ -1078,15 +1078,15 @@ void tst_ProcessManager::prelaunchThreadPriority()
 
 void tst_ProcessManager::prelaunchWaitIdleTest()
 {
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    QProcessBackendManager *manager = new QProcessBackendManager;
+    QTimeoutIdleDelegate *delegate = new QTimeoutIdleDelegate;
     delegate->setIdleInterval(250);
     delegate->setEnabled(false);
     manager->setIdleDelegate(delegate);
 
-    ProcessInfo info;
+    QProcessInfo info;
     info.setValue("program", "testPrelaunch/testPrelaunch");
-    PrelaunchProcessBackendFactory *factory = new PrelaunchProcessBackendFactory;
+    QPrelaunchProcessBackendFactory *factory = new QPrelaunchProcessBackendFactory;
     factory->setProcessInfo(info);
     manager->addFactory(factory);
 
@@ -1118,18 +1118,18 @@ void tst_ProcessManager::prelaunchWaitIdleTest()
 
 void tst_ProcessManager::prelaunchForPipeLauncherIdle()
 {
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    QProcessBackendManager *manager = new QProcessBackendManager;
+    QTimeoutIdleDelegate *delegate = new QTimeoutIdleDelegate;
     delegate->setIdleInterval(250);
     delegate->setEnabled(false);
     manager->setIdleDelegate(delegate);
 
-    ProcessInfo info;
+    QProcessInfo info;
     info.setValue("program", "testPipeLauncher/testPipeLauncher");
     info.setValue("arguments",
                   QStringList() << QStringLiteral("-prelaunch")
                   << QStringLiteral("testPrelaunch/testPrelaunch"));
-    PipeProcessBackendFactory *factory = new PipeProcessBackendFactory;
+    QPipeProcessBackendFactory *factory = new QPipeProcessBackendFactory;
     factory->setProcessInfo(info);
     manager->addFactory(factory);
 
@@ -1173,18 +1173,18 @@ void tst_ProcessManager::prelaunchForPipeLauncherIdle()
 
 void tst_ProcessManager::prelaunchForPipeLauncherMemory()
 {
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    QProcessBackendManager *manager = new QProcessBackendManager;
+    QTimeoutIdleDelegate *delegate = new QTimeoutIdleDelegate;
     delegate->setIdleInterval(250);
     manager->setIdleDelegate(delegate);
     manager->setMemoryRestricted(true);
 
-    ProcessInfo info;
+    QProcessInfo info;
     info.setValue("program", "testPipeLauncher/testPipeLauncher");
     info.setValue("arguments",
                   QStringList() << QStringLiteral("-prelaunch")
                   << QStringLiteral("testPrelaunch/testPrelaunch"));
-    PipeProcessBackendFactory *factory = new PipeProcessBackendFactory;
+    QPipeProcessBackendFactory *factory = new QPipeProcessBackendFactory;
     factory->setProcessInfo(info);
     manager->addFactory(factory);
 
@@ -1224,20 +1224,20 @@ void tst_ProcessManager::prelaunchForPipeLauncherMemory()
 
 void tst_ProcessManager::prelaunchForPipeLauncherMultiple()
 {
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    QProcessBackendManager *manager = new QProcessBackendManager;
+    QTimeoutIdleDelegate *delegate = new QTimeoutIdleDelegate;
     delegate->setIdleInterval(250);
     manager->setMemoryRestricted(true);
     manager->setIdleDelegate(delegate);
 
-    ProcessInfo info;
+    QProcessInfo info;
     info.setValue("program", "testPipeLauncher/testPipeLauncher");
     info.setValue("arguments",
                   QStringList() << QStringLiteral("-prelaunch")
                   << QStringLiteral("testPrelaunch/testPrelaunch"));
 
     for (int i = 0 ; i < kProcessCount ; i++ ) {
-        PipeProcessBackendFactory *factory = new PipeProcessBackendFactory;
+        QPipeProcessBackendFactory *factory = new QPipeProcessBackendFactory;
         factory->setProcessInfo(info);
         manager->addFactory(factory);
     }
@@ -1281,13 +1281,13 @@ void tst_ProcessManager::prelaunchForSocketLauncherIdle()
     QVERIFY(remote->waitForStarted());
     waitForSocket(socketName);
 
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    QProcessBackendManager *manager = new QProcessBackendManager;
+    QTimeoutIdleDelegate *delegate = new QTimeoutIdleDelegate;
     delegate->setIdleInterval(250);
     delegate->setEnabled(false);
     manager->setIdleDelegate(delegate);
 
-    SocketProcessBackendFactory *factory = new SocketProcessBackendFactory;
+    QSocketProcessBackendFactory *factory = new QSocketProcessBackendFactory;
     factory->setSocketName(socketName);
     manager->addFactory(factory);
 
@@ -1337,13 +1337,13 @@ void tst_ProcessManager::prelaunchForSocketLauncherMemory()
     QVERIFY(remote->waitForStarted());
     waitForSocket(socketName);
 
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    QProcessBackendManager *manager = new QProcessBackendManager;
+    QTimeoutIdleDelegate *delegate = new QTimeoutIdleDelegate;
     delegate->setIdleInterval(250);
     manager->setIdleDelegate(delegate);
     manager->setMemoryRestricted(true);
 
-    SocketProcessBackendFactory *factory = new SocketProcessBackendFactory;
+    QSocketProcessBackendFactory *factory = new QSocketProcessBackendFactory;
     factory->setSocketName(socketName);
     manager->addFactory(factory);
 
@@ -1390,14 +1390,14 @@ void tst_ProcessManager::prelaunchForSocketLauncherMultiple()
     QVERIFY(remote->waitForStarted());
     waitForSocket(socketName);
 
-    ProcessBackendManager *manager = new ProcessBackendManager;
-    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    QProcessBackendManager *manager = new QProcessBackendManager;
+    QTimeoutIdleDelegate *delegate = new QTimeoutIdleDelegate;
     delegate->setIdleInterval(250);
     manager->setIdleDelegate(delegate);
     manager->setMemoryRestricted(true);
 
     for (int i = 0 ; i < kProcessCount ; i++ ) {
-        SocketProcessBackendFactory *factory = new SocketProcessBackendFactory;
+        QSocketProcessBackendFactory *factory = new QSocketProcessBackendFactory;
         factory->setSocketName(socketName);
         manager->addFactory(factory);
     }
@@ -1420,12 +1420,12 @@ void tst_ProcessManager::prelaunchForSocketLauncherMultiple()
 
 void tst_ProcessManager::frontend()
 {
-    ProcessManager *manager = new ProcessManager;
-    manager->addBackendFactory(new StandardProcessBackendFactory);
+    QProcessManager *manager = new QProcessManager;
+    manager->addBackendFactory(new QStandardProcessBackendFactory);
 
-    ProcessInfo info;
+    QProcessInfo info;
     info.setValue("program", "testClient/testClient");
-    ProcessFrontend *process = manager->create(info);
+    QProcessFrontend *process = manager->create(info);
     QVERIFY(process);
 
     Spy spy(process);
@@ -1448,13 +1448,13 @@ void tst_ProcessManager::frontend()
 
 void tst_ProcessManager::frontendWaitIdleTest()
 {
-    ProcessManager *manager = new ProcessManager;
-    TimeoutIdleDelegate *delegate = new TimeoutIdleDelegate;
+    QProcessManager *manager = new QProcessManager;
+    QTimeoutIdleDelegate *delegate = new QTimeoutIdleDelegate;
     manager->setIdleDelegate(delegate);
 
-    ProcessInfo info;
+    QProcessInfo info;
     info.setValue("program", "testPrelaunch/testPrelaunch");
-    PrelaunchProcessBackendFactory *factory = new PrelaunchProcessBackendFactory;
+    QPrelaunchProcessBackendFactory *factory = new QPrelaunchProcessBackendFactory;
     factory->setProcessInfo(info);
     manager->addBackendFactory(factory);
 
@@ -1473,11 +1473,11 @@ void tst_ProcessManager::frontendWaitIdleTest()
     delete manager;
 }
 
-class TestProcess : public ProcessFrontend {
+class TestProcess : public QProcessFrontend {
     Q_OBJECT
     Q_PROPERTY(QString magic READ magic WRITE setMagic NOTIFY magicChanged)
 public:
-    TestProcess(ProcessBackend *backend, QObject *parent=0) : ProcessFrontend(backend, parent) {}
+    TestProcess(QProcessBackend *backend, QObject *parent=0) : QProcessFrontend(backend, parent) {}
 
     QString magic() const { return m_magic; }
     void    setMagic(const QString&s) { if (m_magic != s) { m_magic=s; emit magicChanged(); }}
@@ -1487,12 +1487,12 @@ private:
     QString m_magic;
 };
 
-class TestManager : public ProcessManager {
+class TestManager : public QProcessManager {
     Q_OBJECT
     Q_PROPERTY(QString magic READ magic WRITE setMagic NOTIFY magicChanged)
 public:
-    TestManager(QObject *parent=0) : ProcessManager(parent) {}
-    virtual Q_INVOKABLE TestProcess *createFrontend(ProcessBackend *backend) {return new TestProcess(backend);}
+    TestManager(QObject *parent=0) : QProcessManager(parent) {}
+    virtual Q_INVOKABLE TestProcess *createFrontend(QProcessBackend *backend) {return new TestProcess(backend);}
     QString magic() const { return m_magic; }
     void    setMagic(const QString&s) { if (m_magic != s) { m_magic=s; emit magicChanged(); }}
 signals:
@@ -1504,11 +1504,11 @@ private:
 void tst_ProcessManager::subclassFrontend()
 {
     TestManager *manager = new TestManager;
-    manager->addBackendFactory(new StandardProcessBackendFactory);
+    manager->addBackendFactory(new QStandardProcessBackendFactory);
 
-    ProcessInfo info;
+    QProcessInfo info;
     info.setValue("program", "testClient/testClient");
-    ProcessFrontend *process = manager->create(info);
+    QProcessFrontend *process = manager->create(info);
     QVERIFY(process);
 
     QVERIFY(process->setProperty("magic", 42));

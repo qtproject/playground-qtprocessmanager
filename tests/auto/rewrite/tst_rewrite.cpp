@@ -39,8 +39,8 @@
 
 #include <QtTest>
 
-#include "gdbrewritedelegate.h"
-#include "processinfo.h"
+#include "qgdbrewritedelegate.h"
+#include "qprocessinfo.h"
 
 QT_USE_NAMESPACE_PROCESSMANAGER
 
@@ -63,11 +63,11 @@ TestRewrite::TestRewrite(QObject *parent)
 
 void TestRewrite::rewriteGdb()
 {
-    ProcessInfo info;
+    QProcessInfo info;
     info.setProgram("/usr/bin/abc");
     info.setArguments(QStringList() << "a" << "b");
 
-    GdbRewriteDelegate delegate;
+    QGdbRewriteDelegate delegate;
     delegate.rewrite(info);
 
     QCOMPARE(info.program(), QLatin1String("gdb"));

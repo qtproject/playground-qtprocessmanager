@@ -39,19 +39,19 @@
 
 #include <QtTest>
 
-#include "infomatchdelegate.h"
-#include "keymatchdelegate.h"
+#include "qinfomatchdelegate.h"
+#include "qkeymatchdelegate.h"
 
 QT_USE_NAMESPACE_PROCESSMANAGER
 
 /******************************************************************************/
 
-static void _testKeyMatch(ProcessInfo& info,
+static void _testKeyMatch(QProcessInfo& info,
                           bool answer,
                           const char *key=0,
                           const QVariant& value=QVariant())
 {
-    KeyMatchDelegate matcher;
+    QKeyMatchDelegate matcher;
     if (key)
         matcher.setKey(key);
     if (!value.isNull())
@@ -59,7 +59,7 @@ static void _testKeyMatch(ProcessInfo& info,
     QCOMPARE(matcher.matches(info), answer);
 }
 
-static void _makeEnvironmentInfo(ProcessInfo& info,
+static void _makeEnvironmentInfo(QProcessInfo& info,
                                  const char *key1 = 0,
                                  const char *value1 = 0,
                                  const char *key2 = 0,
@@ -73,14 +73,14 @@ static void _makeEnvironmentInfo(ProcessInfo& info,
     info.setEnvironment(test_env);
 }
 
-static void _testEnvironment(InfoMatchDelegate& matcher,
+static void _testEnvironment(QInfoMatchDelegate& matcher,
                              bool answer,
                              const char *key1 = 0,
                              const char *value1 = 0,
                              const char *key2 = 0,
                              const char *value2 = 0)
 {
-    ProcessInfo test_info;
+    QProcessInfo test_info;
     _makeEnvironmentInfo(test_info, key1, value1, key2, value2);
     QCOMPARE(matcher.matches(test_info), answer);
 }
@@ -99,7 +99,7 @@ private Q_SLOTS:
 
 void TestMatcher::matchKey()
 {
-    ProcessInfo info;
+    QProcessInfo info;
     info.setProgram("/usr/bin/abc");
     info.setValue("prelaunch", "true");
 
@@ -112,13 +112,13 @@ void TestMatcher::matchKey()
 
 void TestMatcher::matchProgram()
 {
-    ProcessInfo match_info;
+    QProcessInfo match_info;
     match_info.setProgram("/usr/bin/abc");
 
-    InfoMatchDelegate matcher;
+    QInfoMatchDelegate matcher;
     matcher.setInfo(match_info);
 
-    ProcessInfo info;
+    QProcessInfo info;
     info.setProgram("/usr/bin/abc");
     QVERIFY(matcher.matches(info));  // Exactly the same value
 
@@ -128,8 +128,8 @@ void TestMatcher::matchProgram()
 
 void TestMatcher::matchEnvironment()
 {
-    InfoMatchDelegate matcher;
-    ProcessInfo match_info;
+    QInfoMatchDelegate matcher;
+    QProcessInfo match_info;
     _makeEnvironmentInfo(match_info, "test", "value");
     matcher.setInfo(match_info);
 

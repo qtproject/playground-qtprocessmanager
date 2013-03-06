@@ -44,7 +44,7 @@
 #include <QtEndian>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include "processinfo.h"
+#include "qprocessinfo.h"
 #include <signal.h>
 #include <stdio.h>
 #include <pthread.h>
@@ -74,10 +74,10 @@ public:
 
     void handleMessage(const QJsonObject& object) {
         if (!count) {
-            ProcessInfo info(object.toVariantMap());
+            QProcessInfo info(object.toVariantMap());
             // qDebug() << "Received process info" << info.toMap();
-            qint64 uid = (info.contains(ProcessInfoConstants::Uid) ? info.uid() : -1);
-            qint64 gid = (info.contains(ProcessInfoConstants::Gid) ? info.gid() : -1);
+            qint64 uid = (info.contains(QProcessInfoConstants::Uid) ? info.uid() : -1);
+            qint64 gid = (info.contains(QProcessInfoConstants::Gid) ? info.gid() : -1);
             if (gid >= 0)
                 ::setgid(gid);
             if (uid >= 0)

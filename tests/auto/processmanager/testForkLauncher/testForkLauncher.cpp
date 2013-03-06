@@ -45,7 +45,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
-#include "forklauncher.h"
+#include "qforklauncher.h"
 
 #if defined(Q_OS_LINUX)
 #include <sys/types.h>
@@ -134,7 +134,7 @@ private:
 extern "C" Q_DECL_EXPORT int
 main(int argc, char **argv)
 {
-    forklauncher(&argc, &argv);
+    qForkLauncher(&argc, &argv);
     QCoreApplication app(argc, argv);
 
     for (int i = 1 ; i < argc ; i++) {

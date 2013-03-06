@@ -1,5 +1,7 @@
 TARGET   = QtAddOnProcessManager
 
+QMAKE_DOCS = $$PWD/doc/processmanager.qdocconf
+
 load(qt_module)
 
 DEFINES += QT_ADDON_PROCESSMANAGER_LIB

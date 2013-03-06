@@ -21,3 +21,4 @@ Makefile.Debug
 Makefile.Release
 examples/plugin/lib*
 mkspecs
+doc

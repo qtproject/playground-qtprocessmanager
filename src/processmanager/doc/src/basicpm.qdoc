@@ -1,0 +1,154 @@
+/****************************************************************************
+**
+** Copyright (C) 2012 Nokia Corporation and/or its subsidiary(-ies).
+** All rights reserved.
+** Contact: Nokia Corporation (qt-info@nokia.com)
+**
+** This file is part of the documentation of ProcessManager
+**
+** $QT_BEGIN_LICENSE:FDL$
+** GNU Free Documentation License
+** Alternatively, this file may be used under the terms of the GNU Free
+** Documentation License version 1.3 as published by the Free Software
+** Foundation and appearing in the file included in the packaging of
+** this file.
+**
+** Other Usage
+** Alternatively, this file may be used in accordance with the terms
+** and conditions contained in a signed written agreement between you
+** and Nokia.
+**
+**
+**
+**
+** $QT_END_LICENSE$
+**
+****************************************************************************/
+
+/*!
+
+\page basicpm.html
+\previouspage Understanding QProcessInfo
+\contentspage {Backend Process Manager} {Contents}
+\nextpage Standard Process Manager
+
+\title Backend Process Manager
+
+The basic C++ API for controlling processes uses the QProcessBackendManager.
+The QProcessBackendManager contains an ordered list of QProcessBackendFactory objects,
+which are used to convert QProcessInfo objects into executable processes.
+
+The QProcessBackendManager can be used as follows:
+
+\code
+  QProcessBackendManager *manager = new QProcessBackendManager;
+  manager->add(new QUnixProcessBackendFactory);
+
+  QProcessInfo info;
+  info.setName("lstest");
+  info.setProgram("/bin/ls");
+  info.setWorkingDirectory("/root");
+
+  QProcessBackend *backend = manager->create(info);
+  if (backend) {
+    connect(backend, SIGNAL(started()), this, SLOT(processStarted()));
+    connect(backend, SIGNAL(finished(int, QProcess::ExitStatus)),
+            this, SLOT(processFinished(int, QProcess::ExitStatus)));
+    backend->start();
+  }
+\endcode
+
+The first step of initializing the QProcessBackendManager is to assign
+QProcessBackendFactory objects.  The order of the factories is important.
+The QProcessBackendManager::create() function asks each factory in turn
+if it can handle the QProcessInfo object.  The first factory to match
+is the one that creates the QProcessBackend object.
+The backend object behaves similarly to a QProcess object; one normally
+attaches a few signal handlers and then starts the backend running.
+Please note the it is the user's responsibility to correctly delete
+the backend object.
+
+In the next example, we'd like to be able to launch certain processes
+under GDB.  To do this, we add a new QStandardProcessBackendFactory and
+set a custom QMatchDelegate and QRewriteDelegate.  A QKeyMatchDelegate will
+match QProcessInfo records that contain a particular key value.  We
+set the delegate to match records containing a "gdb" key.  We also
+add a QGdbRewriteDelegate which rewrites the QProcessInfo record to
+execute the process under gdb.
+
+Note that the order of the factories is important; the normal
+QStandardProcessBackendFactory will match anything, so it must go last.
+
+\code
+  QProcessBackendManager *manager = new QProcessBackendManager;
+
+  QStandardProcessBackendFactory *gdb_factory = new QStandardProcessBackendFactory;
+
+  QKeyMatchDelegate *keymatch = new QKeyMatchDelegate;
+  keymatch->setKey("gdb");
+  gdb_factory->setMatchDelegate(keymatch);
+  gdb_factory->setRewriteDelegate(new QGdbRewriteDelegate);
+
+  manager->add(gdb_factory);
+  manager->add(new QStandardProcessBackendFactory);
+
+  QProcessInfo info;
+  info.setName("lstest");
+  info.setProgram("/bin/ls");
+  info.setWorkingDirectory("/root");
+  info.setValue("gdb", "true");
+
+  QProcessBackend *backend = manager->create(info);
+  if (backend) {
+    connect(backend, SIGNAL(started()), this, SLOT(processStarted()));
+    connect(backend, SIGNAL(finished(int, QProcess::ExitStatus)),
+            this, SLOT(processFinished(int, QProcess::ExitStatus)));
+    backend->start();
+  }
+\endcode
+
+\section1 Inheritance Hierarchy
+
+\image processbackend_hierarchy.png {Process Backend Hierarchy}
+\caption \e{QProcessBackend Inheritance Hierarchy}
+
+The virtual QProcessBackend object hierarchy is divided into two
+sections: the QUnixProcessBackend objects contain a QProcess internally
+and the QRemoteProcessBackend objects communicate with a separate process
+"launcher" program.  It may sound odd that a process manager would not
+launch its own processes, but this mechanism allows the process
+manager to not run with setuid privileges.
+
+\image processbackendfactory_hierarchy.png
+\caption \e{QProcessBackendFactory Inheritance Hierarchy}
+
+The QProcessBackendFactory hierarchy closely matches the QProcessBackend
+hierarchy.  The standard and prelaunch subclasses create standard and
+prelaunch process backend objects.  The remote subclass is divided
+by how it connects to the remote "launcher" program; either over a
+pipe connection or a socket connection.
+
+\image processbackendmanager_hierarchy.png
+\caption \e{QProcessBackendManager Inheritance Hierarchy}
+
+The QProcessBackendManager hierarchy is relatively simple.  The standard
+QProcessBackendManager is designed to be embedded in an application and
+take commands directly from the application or from a QProcessManager.
+
+The QPipeLauncher is a subclass that takes JSON-formatted commands over
+a pipe connection.  It is designed to be embedded into a separate
+application that is launched from your main process, and then
+connected to via a QPipeProcessBackendFactory or a
+QPreforkProcessBackendFactory (depending on how it is launched).
+
+The QSocketLauncher is a subclass that takes JSON-formatted commands
+over Unix local socket connections.  It is designed to be used in a
+separate application that may be started at any time in the system
+launch (in many cases, by \c{upstart} or \c{/etc/init.d} scripts.  It
+uses the \l{QtJsonStream::QJsonServer} class to accept socket
+connections.  You connect to a QSocketLauncher application using the
+QSocketProcessBackendFactory object.
+
+
+
+*/

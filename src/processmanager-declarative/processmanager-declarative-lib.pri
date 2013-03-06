@@ -5,13 +5,13 @@ CONFIG += network
 INCLUDEPATH += $$PWD
 
 HEADERS += \
-  $$PWD/declarativeprocessmanager.h \
-  $$PWD/declarativesocketlauncher.h \
-  $$PWD/declarativematchdelegate.h \
-  $$PWD/declarativerewritedelegate.h
+  $$PWD/qdeclarativeprocessmanager.h \
+  $$PWD/qdeclarativesocketlauncher.h \
+  $$PWD/qdeclarativematchdelegate.h \
+  $$PWD/qdeclarativerewritedelegate.h
 
 SOURCES += \
-  $$PWD/declarativeprocessmanager.cpp \
-  $$PWD/declarativesocketlauncher.cpp \
-  $$PWD/declarativematchdelegate.cpp \
-  $$PWD/declarativerewritedelegate.cpp
+  $$PWD/qdeclarativeprocessmanager.cpp \
+  $$PWD/qdeclarativesocketlauncher.cpp \
+  $$PWD/qdeclarativematchdelegate.cpp \
+  $$PWD/qdeclarativerewritedelegate.cpp

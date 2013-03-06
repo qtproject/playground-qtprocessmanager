@@ -1,0 +1,73 @@
+/****************************************************************************
+**
+** Copyright (C) 2012 Nokia Corporation and/or its subsidiary(-ies).
+** All rights reserved.
+** Contact: Nokia Corporation (qt-info@nokia.com)
+**
+** This file is part of the documentation of ProcessManager
+**
+** $QT_BEGIN_LICENSE:FDL$
+** GNU Free Documentation License
+** Alternatively, this file may be used under the terms of the GNU Free
+** Documentation License version 1.3 as published by the Free Software
+** Foundation and appearing in the file included in the packaging of
+** this file.
+**
+** Other Usage
+** Alternatively, this file may be used in accordance with the terms
+** and conditions contained in a signed written agreement between you
+** and Nokia.
+**
+**
+**
+**
+** $QT_END_LICENSE$
+**
+****************************************************************************/
+
+/*!
+
+\page understandprocessinfo.html
+\previouspage Introduction
+\contentspage {Understanding QProcessInfo} {Contents}
+\nextpage Backend Process Manager
+
+\title Understanding QProcessInfo
+
+An individual Unix process has a large number of properties that can be
+set upon process creation.  The QProcessInfo object is a lightweight wrapper
+for a QVariantMap containing the more common properties including:
+
+\list
+  \li Common name assigned to the object.  This name is used when creating
+     a process identifier.
+  \li Application to execute
+  \li Arguments to pass on the command line
+  \li Working directory
+  \li User ID (UID) and Group ID (GID)
+  \li Environment variables
+  \li Linux-specific \l {http://linux.die.net/man/7/capabilities} {capabilities}
+  \li Linux-specific \l
+     {http://www.kernel.org/doc/Documentation/cgroups/cgroups.txt}
+     {cgroups}
+  \li The priority level of the process (agents run at lower priority levels)
+  \li The OOM killer adjustment score (ranges from -1000 to +1000)
+     \l {http://www.kernel.org/doc/Documentation/filesystems/proc.txt} {[/proc/<pid>/oom_score_adj]}
+  \li Output text patterns to match to determing if the process has finished initializing.
+  \li Other machine-specific ways of limiting process
+     memory/CPU/resource use.
+\endlist
+
+The QProcessInfo object provides accessor functions for accessing the
+more common properties along with named string constants.  Because it is
+based on a QVariantMap, additional properties can be easily added to the
+structure.  From C++ code, a QProcessInfo object is typically created as follows:
+
+\code
+  QProcessInfo info;
+  info.setName("myprocess");
+  info.setProgram("/bin/ls");
+  info.setWorkingDirectory("/root");
+\endcode
+
+*/

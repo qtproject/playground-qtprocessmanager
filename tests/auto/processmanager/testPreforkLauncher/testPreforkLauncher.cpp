@@ -43,8 +43,8 @@
 #include <qjsonserver.h>
 #include <qjsonschemavalidator.h>
 
-#include "socketlauncher.h"
-#include "preforkprocessbackendfactory.h"
+#include "qsocketlauncher.h"
+#include "qpreforkprocessbackendfactory.h"
 
 QT_USE_NAMESPACE_PROCESSMANAGER
 
@@ -57,8 +57,8 @@ extern "C" Q_DECL_EXPORT int main(int argc, char **argv)
     QStringList args = QCoreApplication::arguments();
     QString progname = args.takeFirst();
 
-    SocketLauncher launcher;
-    PreforkProcessBackendFactory *factory = new PreforkProcessBackendFactory;
+    QSocketLauncher launcher;
+    QPreforkProcessBackendFactory *factory = new QPreforkProcessBackendFactory;
     factory->setIndex(0);
     launcher.addFactory(factory);
 
